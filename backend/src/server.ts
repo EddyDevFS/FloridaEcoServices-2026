@@ -80,6 +80,18 @@ app.use('/api/v1', userRoutes);
 app.use('/api/v1', reportRoutes);
 app.use('/api/v1', videoRoutes);
 
+// Final error handler (ensures JSON for API clients)
+app.use((err: any, req: Request, res: Response, next: any) => {
+  if (res.headersSent) return next(err);
+  console.error('[api] unhandled error:', err);
+  if (String(err?.message || '') === 'Not allowed by CORS') {
+    return res.status(403).json({ error: 'cors_not_allowed' });
+  }
+  // Express JSON parse errors are typically 400.
+  const status = err?.type === 'entity.parse.failed' ? 400 : 500;
+  res.status(status).json({ error: status === 400 ? 'bad_request' : 'internal_server_error' });
+});
+
 app.listen(env.port, () => {
   // eslint-disable-next-line no-console
   console.log(`[api] listening on :${env.port}`);

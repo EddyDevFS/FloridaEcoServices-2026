@@ -28,47 +28,53 @@ function accessCookieOptions() {
 }
 
 router.post('/login', async (req: Request, res: Response) => {
-  const email = String(req.body?.email || '').trim().toLowerCase();
-  const password = String(req.body?.password || '').trim();
-  if (!email || !password) return res.status(400).json({ error: 'missing_credentials' });
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const password = String(req.body?.password || '').trim();
+    if (!email || !password) return res.status(400).json({ error: 'missing_credentials' });
 
-  const prisma = getPrisma();
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) return res.status(401).json({ error: 'invalid_credentials' });
+    const prisma = getPrisma();
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return res.status(401).json({ error: 'invalid_credentials' });
 
-  const ok = await argon2.verify(user.passwordHash, password);
-  if (!ok) return res.status(401).json({ error: 'invalid_credentials' });
+    const ok = await argon2.verify(user.passwordHash, password);
+    if (!ok) return res.status(401).json({ error: 'invalid_credentials' });
 
-  const accessToken = signAccessToken(tokenEnv, {
-    userId: user.id,
-    organizationId: user.organizationId,
-    role: user.role,
-    email: user.email,
-    hotelScopeId: (user as any).hotelScopeId || null
-  });
-
-  const jti = makeRefreshJti();
-  const refreshJwt = signRefreshToken(tokenEnv, {
-    userId: user.id,
-    organizationId: user.organizationId,
-    role: user.role,
-    email: user.email,
-    hotelScopeId: (user as any).hotelScopeId || null,
-    jti,
-    typ: 'refresh'
-  });
-
-  await prisma.refreshToken.create({
-    data: {
+    const accessToken = signAccessToken(tokenEnv, {
       userId: user.id,
-      tokenHash: hashRefreshTokenJti(jti),
-      expiresAt: new Date(Date.now() + tokenEnv.refreshTtlDays * 24 * 60 * 60 * 1000)
-    }
-  });
+      organizationId: user.organizationId,
+      role: user.role,
+      email: user.email,
+      hotelScopeId: (user as any).hotelScopeId || null
+    });
 
-  res.cookie('refresh_token', refreshJwt, cookieOptions());
-  res.cookie('access_token', accessToken, accessCookieOptions());
-  res.json({ accessToken });
+    const jti = makeRefreshJti();
+    const refreshJwt = signRefreshToken(tokenEnv, {
+      userId: user.id,
+      organizationId: user.organizationId,
+      role: user.role,
+      email: user.email,
+      hotelScopeId: (user as any).hotelScopeId || null,
+      jti,
+      typ: 'refresh'
+    });
+
+    await prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        tokenHash: hashRefreshTokenJti(jti),
+        expiresAt: new Date(Date.now() + tokenEnv.refreshTtlDays * 24 * 60 * 60 * 1000)
+      }
+    });
+
+    res.cookie('refresh_token', refreshJwt, cookieOptions());
+    res.cookie('access_token', accessToken, accessCookieOptions());
+    res.json({ accessToken });
+  } catch (err) {
+    // Avoid leaking details; log server-side for diagnosis.
+    console.error('[auth.login] failed:', err);
+    res.status(500).json({ error: 'login_failed' });
+  }
 });
 
 router.post('/refresh', async (req: Request, res: Response) => {

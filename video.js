@@ -73,10 +73,11 @@
 
   async function refreshMe() {
     const token = (localStorage.getItem('feco.accessToken') || '').trim();
-    if (!token) return null;
     try {
+      // Prefer Bearer token (localStorage) but fall back to cookie-based auth
+      // (Safari/iOS can be flaky with localStorage in some contexts).
       const res = await fetch(`${apiBase}/api/v1/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         credentials: 'include'
       });
       if (!res.ok) return null;
@@ -224,10 +225,6 @@
 
   async function uploadVideo() {
     const token = (localStorage.getItem('feco.accessToken') || '').trim();
-    if (!token) {
-      ensureLogin();
-      return;
-    }
     const file = fileEl?.files?.[0];
     if (!file) return setUploadStatus('Choose a video file first.', 'error');
     const title = (titleEl?.value || '').trim();
@@ -243,7 +240,7 @@
       fd.append('file', file);
       const res = await fetch(`${apiBase}/api/v1/videos`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         credentials: 'include',
         body: fd
       });
@@ -288,4 +285,3 @@
 
   bootstrap();
 })();
-

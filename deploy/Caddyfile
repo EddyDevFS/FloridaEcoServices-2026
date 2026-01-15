@@ -1,0 +1,34 @@
+{
+  email {$ACME_EMAIL}
+}
+
+(common) {
+  encode zstd gzip
+  header {
+    # Basic hardening
+    X-Content-Type-Options nosniff
+    X-Frame-Options SAMEORIGIN
+    Referrer-Policy strict-origin-when-cross-origin
+    Permissions-Policy interest-cohort=()
+  }
+
+  # API reverse proxy (same-origin: /api/v1/*)
+  reverse_proxy /api/* api:3001
+  reverse_proxy /health api:3001
+}
+
+floridaecoservices.com, www.floridaecoservices.com {
+  import common
+  root * /srv
+  file_server
+}
+
+app.floridaecoservices.com {
+  import common
+  root * /srv
+  # App subdomain should start on the platform landing.
+  @root path /
+  redir @root /hotel.html 302
+  file_server
+}
+

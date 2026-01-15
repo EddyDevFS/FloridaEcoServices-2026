@@ -1,0 +1,1171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Florida Eco Services — Premium Cleaning & Floors (Orlando)</title>
+  <meta name="description" content="Carpet, upholstery, tile & grout, epoxy floors, pressure washing & paver sealing — Orlando & surrounding areas. Premium results. Fast quotes. Trusted by hotels & commercial sites." />
+  <meta name="theme-color" content="#0b1220" />
+
+  <!-- Optional font (online) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#070b14;
+      --ink:#eaf0ff;
+      --muted:rgba(234,240,255,.72);
+      --muted2:rgba(234,240,255,.55);
+      --line:rgba(234,240,255,.10);
+      --line2:rgba(234,240,255,.06);
+
+      --glass:rgba(8,12,22,.52);
+      --glass2:rgba(10,14,26,.38);
+      --shadow: 0 28px 90px rgba(0,0,0,.55);
+
+      --a:#3b82f6;     /* blue */
+      --b:#22c55e;     /* green */
+      --c:#a855f7;     /* purple */
+      --d:#f59e0b;     /* amber */
+
+      --r12:12px; --r16:16px; --r20:20px; --r26:26px;
+      --max: 1180px;
+
+      --ease:cubic-bezier(.2,.9,.2,1);
+      --ease2:cubic-bezier(.16,1,.3,1);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background: radial-gradient(1100px 700px at 10% -10%, rgba(59,130,246,.22), transparent 62%),
+                  radial-gradient(950px 680px at 90% 0%, rgba(34,197,94,.18), transparent 58%),
+                  radial-gradient(950px 680px at 55% 120%, rgba(168,85,247,.16), transparent 60%),
+                  var(--bg);
+      color:var(--ink);
+      letter-spacing:-.01em;
+      overflow-x:hidden;
+    }
+
+    /* Subtle noise */
+    body::before{
+      content:"";
+      position:fixed; inset:0;
+      pointer-events:none;
+      opacity:.08;
+      mix-blend-mode:overlay;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+    }
+
+    a{color:inherit; text-decoration:none}
+    button,input,select,textarea{font:inherit}
+    .wrap{max-width:var(--max); margin:0 auto; padding:0 18px}
+
+    /* Topbar */
+    .topbar{
+      position:sticky; top:0; z-index:80;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      background: linear-gradient(180deg, rgba(7,11,20,.78), rgba(7,11,20,.40));
+      border-bottom:1px solid var(--line2);
+    }
+    .topbarInner{
+      display:flex; align-items:center; justify-content:space-between; gap:14px;
+      padding: 14px 0;
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px; min-width: 220px;
+    }
+    .logo{
+      width:38px; height:38px; border-radius: 14px;
+      background:
+        radial-gradient(16px 16px at 30% 30%, rgba(255,255,255,.85), transparent 60%),
+        linear-gradient(135deg, rgba(59,130,246,.95), rgba(34,197,94,.92));
+      box-shadow: 0 18px 60px rgba(59,130,246,.28);
+      position:relative; overflow:hidden;
+    }
+    .logo::after{
+      content:"";
+      position:absolute; inset:-30%;
+      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.55), transparent 70%);
+      transform: translateX(-60%) rotate(12deg);
+      animation: shimmer 7s var(--ease) infinite;
+      opacity:.65;
+    }
+    @keyframes shimmer{ 0%{transform:translateX(-70%) rotate(12deg)} 55%{transform:translateX(70%) rotate(12deg)} 100%{transform:translateX(70%) rotate(12deg)} }
+
+    .brandText{display:flex; flex-direction:column; line-height:1.08}
+    .brandText strong{font-size:14px; letter-spacing:-.02em}
+    .brandText span{font-size:12px; color:var(--muted2)}
+    .nav{
+      display:flex; gap:8px; flex-wrap:wrap;
+      padding:6px;
+      border:1px solid var(--line2);
+      border-radius: 999px;
+      background: rgba(10,14,26,.35);
+    }
+    .nav a{
+      font-size:12px;
+      font-weight:800;
+      color:rgba(234,240,255,.78);
+      padding:10px 12px;
+      border-radius: 999px;
+      transition: transform .15s var(--ease), background .2s var(--ease), color .2s var(--ease);
+    }
+    .nav a:hover{ transform: translateY(-1px); background: rgba(234,240,255,.06); color: var(--ink); }
+
+    .topActions{display:flex; align-items:center; gap:10px; min-width: 220px; justify-content:flex-end}
+    .pill{
+      display:flex; align-items:center; gap:10px;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid var(--line2);
+      background: rgba(10,14,26,.35);
+      color:rgba(234,240,255,.78);
+      font-size:12px;
+      font-weight:800;
+    }
+    .cta{
+      border:0;
+      padding:11px 14px;
+      border-radius:999px;
+      background: linear-gradient(135deg, rgba(59,130,246,.96), rgba(34,197,94,.92));
+      color:white;
+      font-weight:900;
+      font-size:12px;
+      cursor:pointer;
+      box-shadow: 0 22px 70px rgba(59,130,246,.22);
+      transition: transform .15s var(--ease), box-shadow .2s var(--ease);
+      display:flex; align-items:center; gap:10px;
+      white-space:nowrap;
+    }
+    .cta:hover{ transform: translateY(-1px); box-shadow: 0 28px 84px rgba(59,130,246,.26); }
+    .cta:active{ transform: translateY(0); box-shadow: 0 18px 52px rgba(59,130,246,.20); }
+
+    /* Hero */
+    .hero{
+      position:relative;
+      min-height: 92vh;
+      display:grid;
+      align-items:center;
+      padding: 26px 0 34px;
+    }
+    .heroVideo{
+      position:absolute; inset:0;
+      overflow:hidden;
+      border-bottom: 1px solid var(--line2);
+    }
+    .heroVideo video{
+      width:100%; height:100%;
+      object-fit:cover;
+      filter: saturate(1.05) contrast(1.02) brightness(.9);
+      transform: scale(1.03);
+    }
+    .heroOverlay{
+      position:absolute; inset:0;
+      background:
+        radial-gradient(1100px 720px at 20% 20%, rgba(59,130,246,.25), transparent 60%),
+        radial-gradient(900px 650px at 80% 20%, rgba(34,197,94,.20), transparent 55%),
+        linear-gradient(180deg, rgba(7,11,20,.30), rgba(7,11,20,.92));
+    }
+
+    .heroInner{
+      position:relative;
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 18px;
+      align-items:stretch;
+    }
+    @media (max-width: 980px){
+      .heroInner{ grid-template-columns: 1fr; }
+      .topActions .pill{ display:none; }
+    }
+
+    .heroCard{
+      border:1px solid var(--line2);
+      background: linear-gradient(180deg, rgba(10,14,26,.55), rgba(10,14,26,.26));
+      border-radius: var(--r26);
+      box-shadow: var(--shadow);
+      padding: 22px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .kicker{
+      display:inline-flex; align-items:center; gap:10px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border:1px solid rgba(234,240,255,.12);
+      background: rgba(234,240,255,.05);
+      color: rgba(234,240,255,.80);
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+    .dot{
+      width:10px; height:10px; border-radius:999px;
+      background: linear-gradient(135deg, var(--a), var(--b));
+      box-shadow: 0 14px 30px rgba(59,130,246,.30);
+    }
+
+    h1{
+      margin: 14px 0 10px;
+      font-size: 46px;
+      line-height:1.02;
+      letter-spacing:-.04em;
+    }
+    @media (max-width: 560px){
+      h1{ font-size: 36px; }
+    }
+    .lead{
+      color: var(--muted);
+      font-size: 15px;
+      line-height:1.55;
+      margin: 0 0 14px;
+      max-width: 62ch;
+    }
+
+    .heroBadges{
+      display:flex; flex-wrap:wrap; gap:10px;
+      margin-top: 14px;
+    }
+    .badge{
+      display:flex; align-items:center; gap:10px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line2);
+      background: rgba(10,14,26,.35);
+      color: rgba(234,240,255,.78);
+      font-size: 12px;
+      font-weight: 800;
+      box-shadow: 0 12px 55px rgba(0,0,0,.20);
+    }
+    .miniIcon{
+      width: 26px; height: 26px;
+      border-radius: 12px;
+      display:grid; place-items:center;
+      background: rgba(234,240,255,.06);
+      border: 1px solid rgba(234,240,255,.10);
+    }
+
+    .heroActions{
+      display:flex; flex-wrap:wrap; gap:10px;
+      margin-top: 16px;
+    }
+    .btnPrimary{
+      border:0;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(59,130,246,.96), rgba(34,197,94,.92));
+      color:#fff;
+      font-weight: 950;
+      cursor:pointer;
+      box-shadow: 0 28px 90px rgba(59,130,246,.20);
+      transition: transform .15s var(--ease), box-shadow .2s var(--ease);
+      display:flex; align-items:center; gap:10px;
+    }
+    .btnPrimary:hover{ transform: translateY(-1px); box-shadow: 0 34px 110px rgba(59,130,246,.24); }
+    .btnGhost{
+      border: 1px solid rgba(234,240,255,.14);
+      background: rgba(10,14,26,.35);
+      color: rgba(234,240,255,.85);
+      padding: 14px 16px;
+      border-radius: 16px;
+      font-weight: 900;
+      cursor:pointer;
+      box-shadow: 0 18px 70px rgba(0,0,0,.22);
+      transition: transform .15s var(--ease), background .2s var(--ease);
+    }
+    .btnGhost:hover{ transform: translateY(-1px); background: rgba(234,240,255,.06); }
+
+    /* Quote card */
+    .quoteCard{
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      gap:14px;
+    }
+    .quoteTop strong{ display:block; font-size:14px; letter-spacing:-.02em }
+    .quoteTop span{ display:block; margin-top:4px; color: var(--muted); font-size:12px; line-height:1.5 }
+    .quoteForm{
+      display:grid; gap:10px;
+    }
+    .field{
+      display:flex; flex-direction:column; gap:7px;
+    }
+    label{ font-size: 12px; color: rgba(234,240,255,.75); font-weight: 800; }
+    input, select, textarea{
+      width:100%;
+      border-radius: 14px;
+      border: 1px solid rgba(234,240,255,.14);
+      background: rgba(10,14,26,.35);
+      color: var(--ink);
+      padding: 12px 12px;
+      outline:none;
+      box-shadow: 0 18px 60px rgba(0,0,0,.20);
+    }
+    input:focus, select:focus, textarea:focus{
+      border-color: rgba(59,130,246,.45);
+      box-shadow: 0 0 0 6px rgba(59,130,246,.18), 0 18px 60px rgba(0,0,0,.20);
+    }
+    .row2{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    @media (max-width: 560px){ .row2{ grid-template-columns:1fr; } }
+
+    .note{
+      font-size:12px;
+      color: rgba(234,240,255,.70);
+      line-height:1.45;
+    }
+    .fine{
+      color: rgba(234,240,255,.55);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    /* Reviews marquee */
+    .marqueeWrap{
+      border-top:1px solid var(--line2);
+      border-bottom:1px solid var(--line2);
+      background: rgba(10,14,26,.25);
+      overflow:hidden;
+    }
+    .marquee{
+      display:flex;
+      gap:12px;
+      padding: 14px 0;
+      will-change: transform;
+      animation: scroll 26s linear infinite;
+    }
+    .marquee:hover{ animation-play-state: paused; }
+    @keyframes scroll{
+      from{ transform: translateX(0); }
+      to{ transform: translateX(-50%); }
+    }
+    .reviewPill{
+      flex:0 0 auto;
+      display:flex; align-items:center; gap:10px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border:1px solid rgba(234,240,255,.12);
+      background: rgba(10,14,26,.35);
+      box-shadow: 0 18px 60px rgba(0,0,0,.22);
+      color: rgba(234,240,255,.82);
+      font-size: 12px;
+      font-weight: 800;
+      white-space:nowrap;
+    }
+    .stars{ letter-spacing: .08em; color: rgba(245,158,11,.95); }
+
+    /* Sections */
+    section{ scroll-margin-top: 92px; }
+    .section{
+      padding: 58px 0;
+    }
+    .h2Row{
+      display:flex; align-items:flex-end; justify-content:space-between; gap:18px;
+      margin-bottom: 18px;
+      flex-wrap:wrap;
+    }
+    h2{
+      margin:0;
+      font-size: 28px;
+      letter-spacing:-.03em;
+    }
+    .sub{
+      margin:0;
+      color: var(--muted);
+      line-height:1.6;
+      max-width: 70ch;
+      font-size: 14px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+    .card{
+      grid-column: span 12;
+      border: 1px solid var(--line2);
+      background: linear-gradient(180deg, rgba(10,14,26,.55), rgba(10,14,26,.26));
+      border-radius: var(--r20);
+      box-shadow: 0 24px 90px rgba(0,0,0,.35);
+      padding: 16px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      overflow:hidden;
+      position:relative;
+    }
+
+    /* Services cards */
+    .service{
+      grid-column: span 4;
+      min-height: 190px;
+      cursor:pointer;
+      transition: transform .18s var(--ease), box-shadow .2s var(--ease), border-color .2s var(--ease);
+    }
+    .service:hover{
+      transform: translateY(-3px);
+      border-color: rgba(59,130,246,.28);
+      box-shadow: 0 34px 120px rgba(0,0,0,.40);
+    }
+    @media (max-width: 980px){ .service{ grid-column: span 6; } }
+    @media (max-width: 560px){ .service{ grid-column: span 12; } }
+
+    .svcTop{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      margin-bottom: 12px;
+    }
+    .svcIcon{
+      width:44px; height:44px; border-radius: 16px;
+      display:grid; place-items:center;
+      background: rgba(234,240,255,.06);
+      border: 1px solid rgba(234,240,255,.12);
+      box-shadow: 0 18px 55px rgba(0,0,0,.25);
+      font-size: 18px;
+    }
+    .svcTitle{
+      font-weight: 950;
+      letter-spacing:-.02em;
+      margin: 0;
+      font-size: 14px;
+    }
+    .svcDesc{
+      margin: 0;
+      color: rgba(234,240,255,.72);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .svcMeta{
+      margin-top: 14px;
+      display:flex; flex-wrap:wrap; gap:8px;
+    }
+    .tag{
+      font-size: 11px;
+      font-weight: 900;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(234,240,255,.12);
+      background: rgba(234,240,255,.05);
+      color: rgba(234,240,255,.78);
+    }
+
+    /* Pricing */
+    .pricing{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+    .priceCard{ grid-column: span 4; }
+    @media (max-width: 980px){ .priceCard{ grid-column: span 6; } }
+    @media (max-width: 560px){ .priceCard{ grid-column: span 12; } }
+
+    .priceTop{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+      margin-bottom: 10px;
+    }
+    .priceTop strong{ font-size: 14px; letter-spacing:-.02em }
+    .from{
+      font-size: 12px;
+      color: rgba(234,240,255,.78);
+      border: 1px solid rgba(234,240,255,.12);
+      background: rgba(234,240,255,.05);
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-weight: 950;
+      white-space:nowrap;
+    }
+    .priceList{ margin: 10px 0 0; padding-left: 16px; color: rgba(234,240,255,.76); font-size: 13px; line-height:1.55 }
+    .priceList li{ margin: 6px 0; }
+
+    /* Before/After slider (simple) */
+    .ba{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+      align-items:stretch;
+    }
+    @media (max-width: 980px){ .ba{ grid-template-columns: 1fr; } }
+    .baFrame{
+      border-radius: var(--r20);
+      overflow:hidden;
+      border:1px solid rgba(234,240,255,.12);
+      background: rgba(10,14,26,.35);
+      box-shadow: 0 28px 110px rgba(0,0,0,.38);
+      min-height: 320px;
+      position:relative;
+    }
+    .baImg{
+      position:absolute; inset:0;
+      background-size: cover;
+      background-position:center;
+      filter: saturate(1.03) contrast(1.02);
+    }
+    .baAfter{
+      clip-path: inset(0 0 0 50%);
+    }
+    .baHandle{
+      position:absolute; top:0; bottom:0; left:50%;
+      width:2px;
+      background: rgba(234,240,255,.60);
+      box-shadow: 0 0 0 6px rgba(59,130,246,.14);
+    }
+    .baKnob{
+      position:absolute; top:50%; left:50%;
+      transform: translate(-50%,-50%);
+      width: 44px; height: 44px;
+      border-radius: 16px;
+      background: rgba(10,14,26,.72);
+      border: 1px solid rgba(234,240,255,.18);
+      display:grid; place-items:center;
+      box-shadow: 0 28px 90px rgba(0,0,0,.45);
+      font-weight: 950;
+    }
+    .baLabel{
+      position:absolute; top:12px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 950;
+      border: 1px solid rgba(234,240,255,.12);
+      background: rgba(10,14,26,.55);
+      color: rgba(234,240,255,.86);
+      backdrop-filter: blur(10px);
+    }
+    .baLabel.left{ left: 12px; }
+    .baLabel.right{ right: 12px; }
+
+    /* Commercial / Hotels */
+    .split{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      align-items:stretch;
+    }
+    @media (max-width: 980px){ .split{ grid-template-columns: 1fr; } }
+    .feature{
+      display:flex; gap:12px;
+      padding: 12px;
+      border-radius: 18px;
+      border: 1px solid rgba(234,240,255,.12);
+      background: rgba(234,240,255,.04);
+    }
+    .feature b{ display:block; font-size: 13px; letter-spacing:-.01em; }
+    .feature span{ display:block; margin-top:3px; color: rgba(234,240,255,.72); font-size: 12px; line-height:1.5 }
+    .fIcon{
+      width:42px; height:42px; border-radius: 16px;
+      display:grid; place-items:center;
+      background: rgba(234,240,255,.06);
+      border: 1px solid rgba(234,240,255,.12);
+      flex:0 0 auto;
+    }
+
+    /* Footer */
+    footer{
+      border-top: 1px solid var(--line2);
+      padding: 26px 0 90px;
+      color: rgba(234,240,255,.65);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    /* Sticky mobile bottom bar */
+    .stickyBar{
+      position: fixed;
+      left: 12px; right: 12px; bottom: 12px;
+      z-index: 90;
+      border-radius: 20px;
+      border: 1px solid rgba(234,240,255,.12);
+      background: rgba(10,14,26,.60);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 30px 110px rgba(0,0,0,.55);
+      padding: 10px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .sLeft{ display:flex; flex-direction:column; gap:2px; padding-left: 6px; }
+    .sLeft strong{ font-size: 12px; letter-spacing:-.01em }
+    .sLeft span{ font-size: 11px; color: rgba(234,240,255,.65) }
+    .sBtns{ display:flex; gap:10px; }
+    .miniBtn{
+      border: 1px solid rgba(234,240,255,.12);
+      background: rgba(234,240,255,.05);
+      color: rgba(234,240,255,.90);
+      padding: 12px 12px;
+      border-radius: 16px;
+      font-weight: 950;
+      cursor:pointer;
+      transition: transform .15s var(--ease), background .2s var(--ease);
+      display:flex; align-items:center; gap:10px;
+      white-space:nowrap;
+    }
+    .miniBtn:hover{ transform: translateY(-1px); background: rgba(234,240,255,.08); }
+    .miniBtn.primary{
+      border:0;
+      background: linear-gradient(135deg, rgba(59,130,246,.96), rgba(34,197,94,.92));
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- TOPBAR -->
+  <header class="topbar" role="banner">
+    <div class="wrap">
+      <div class="topbarInner">
+        <div class="brand" aria-label="Brand">
+          <div class="logo" aria-hidden="true"></div>
+          <div class="brandText">
+            <strong>Florida Eco Services</strong>
+            <span>Orlando • Premium Cleaning & Floors</span>
+          </div>
+        </div>
+
+        <nav class="nav" aria-label="Primary navigation">
+          <a href="#services">Services</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#results">Results</a>
+          <a href="#commercial">Hotels & Commercial</a>
+          <a href="#contact">Contact</a>
+        </nav>
+
+        <div class="topActions">
+          <div class="pill" title="Hours of operation">7/7 • 6am–10pm</div>
+          <button class="cta" type="button" onclick="scrollToId('contact')">
+            ✨ Get Instant Quote
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <main>
+    <section class="hero" aria-label="Hero">
+      <div class="heroVideo" aria-hidden="true">
+        <!-- Replace the src with your own background video (mp4) -->
+        <video autoplay muted loop playsinline preload="metadata">
+          <source src="assets/hero-placeholder.mp4" type="video/mp4" />
+        </video>
+      </div>
+      <div class="heroOverlay" aria-hidden="true"></div>
+
+      <div class="wrap">
+        <div class="heroInner">
+          <div class="heroCard">
+            <div class="kicker"><span class="dot"></span> Orlando’s premium cleaning & floor specialists</div>
+            <h1>“Wow” results.<br/>Zero stress.</h1>
+            <p class="lead">
+              Carpet cleaning, upholstery, tile & grout, epoxy floors, pressure washing & paver sealing —
+              plus a real <strong>maintenance plan</strong> for hotels and commercial sites.
+              <br/><br/>
+              You don’t buy a method. You buy a <strong>solution</strong>: fast scheduling, pro execution, and a finish that protects your image.
+            </p>
+
+            <div class="heroBadges" aria-label="Key benefits">
+              <div class="badge"><span class="miniIcon">⏱️</span> Fast turnarounds</div>
+              <div class="badge"><span class="miniIcon">✅</span> Licensed & insured</div>
+              <div class="badge"><span class="miniIcon">🧼</span> Pro-grade equipment</div>
+              <div class="badge"><span class="miniIcon">🏨</span> Hotel maintenance ready</div>
+            </div>
+
+            <div class="heroActions">
+              <button class="btnPrimary" type="button" onclick="scrollToId('contact')">✨ Get a quote now</button>
+              <button class="btnGhost" type="button" onclick="scrollToId('services')">Explore services →</button>
+            </div>
+
+            <p class="fine" style="margin-top:12px;">
+              *Background video is a placeholder. Replace with your real footage (carpet extraction / grout brushing / epoxy pour / paver sealing).
+            </p>
+          </div>
+
+          <div class="heroCard quoteCard" id="contactCard">
+            <div class="quoteTop">
+              <strong>Instant quote request</strong>
+              <span>Tell us what you need. We’ll reply fast with a clear price & next availability.</span>
+            </div>
+
+            <form class="quoteForm" id="quoteForm">
+              <div class="row2">
+                <div class="field">
+                  <label for="name">Name</label>
+                  <input id="name" name="name" autocomplete="name" placeholder="Your name" required />
+                </div>
+                <div class="field">
+                  <label for="phone">Phone</label>
+                  <input id="phone" name="phone" autocomplete="tel" placeholder="(xxx) xxx-xxxx" required />
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="service">Service</label>
+                <select id="service" name="service" required>
+                  <option value="" selected disabled>Select a service…</option>
+                  <option>Carpet Cleaning</option>
+                  <option>Upholstery Cleaning</option>
+                  <option>Tile & Grout Cleaning</option>
+                  <option>Epoxy Floor</option>
+                  <option>Pressure Washing / Paver Sealing</option>
+                  <option>Hotel / Store / Factory (Commercial)</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="details">Details</label>
+                <textarea id="details" name="details" placeholder="Example: 3 bedrooms carpet + stairs / or 2 bathrooms grout / or 800 sqft epoxy…"></textarea>
+              </div>
+
+              <button class="btnPrimary" type="submit">Send request →</button>
+              <div class="note">
+                Prefer direct? Call/Text: <strong id="brandPhone">+1 (786) 757-4703</strong>
+              </div>
+              <div class="fine">
+                Orlando & surrounding areas • 7/7 — 6am to 10pm
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REVIEWS MARQUEE -->
+    <div class="marqueeWrap" aria-label="Reviews">
+      <div class="wrap">
+        <div class="marquee" id="marquee">
+          <!-- Duplicate set for infinite scroll -->
+          <div class="reviewPill"><span class="stars">★★★★★</span> “Looks brand new.” — Maria</div>
+          <div class="reviewPill"><span class="stars">★★★★★</span> “Fast, professional, spotless.” — Kevin</div>
+          <div class="reviewPill"><span class="stars">★★★★★</span> “Best grout cleaning I’ve seen.” — Jasmine</div>
+          <div class="reviewPill"><span class="stars">★★★★★</span> “Epoxy came out insane.” — Andre</div>
+          <div class="reviewPill"><span class="stars">★★★★★</span> “On time, clear pricing.” — Chris</div>
+          <div class="reviewPill"><span class="stars">★★★★★</span> “Hotel-level standards.” — GM (Orlando)</div>
+
+          <div class="reviewPill"><span class="stars">★★★★★</span> “Looks brand new.” — Maria</div>
+          <div class="reviewPill"><span class="stars">★★★★★</span> “Fast, professional, spotless.” — Kevin</div>
+          <div class="reviewPill"><span class="stars">★★★★★</span> “Best grout cleaning I’ve seen.” — Jasmine</div>
+          <div class="reviewPill"><span class="stars">★★★★★</span> “Epoxy came out insane.” — Andre</div>
+          <div class="reviewPill"><span class="stars">★★★★★</span> “On time, clear pricing.” — Chris</div>
+          <div class="reviewPill"><span class="stars">★★★★★</span> “Hotel-level standards.” — GM (Orlando)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SERVICES -->
+    <section class="section" id="services" aria-label="Services">
+      <div class="wrap">
+        <div class="h2Row">
+          <div>
+            <h2>Everything you need. One trusted team.</h2>
+            <p class="sub">
+              Premium finishes for residential & commercial. Built for speed, consistency and a “wow” first impression.
+            </p>
+          </div>
+          <button class="btnGhost" type="button" onclick="scrollToId('pricing')">See pricing →</button>
+        </div>
+
+        <div class="grid">
+          <div class="card service" onclick="prefillService('Carpet Cleaning')">
+            <div class="svcTop">
+              <div class="svcIcon">🧽</div>
+              <div class="tag">Deep clean • Fast dry</div>
+            </div>
+            <p class="svcTitle">Carpet Cleaning</p>
+            <p class="svcDesc">Extraction + encapsulation options. Designed for high-traffic areas and fast turnarounds.</p>
+            <div class="svcMeta">
+              <span class="tag">Odor control</span>
+              <span class="tag">Stain focus</span>
+              <span class="tag">Family & pet safe</span>
+            </div>
+          </div>
+
+          <div class="card service" onclick="prefillService('Upholstery Cleaning')">
+            <div class="svcTop">
+              <div class="svcIcon">🛋️</div>
+              <div class="tag">Fabric safe</div>
+            </div>
+            <p class="svcTitle">Upholstery Cleaning</p>
+            <p class="svcDesc">Sofas, chairs, sectionals. Gentle, controlled moisture, premium finish.</p>
+            <div class="svcMeta">
+              <span class="tag">Spot treatment</span>
+              <span class="tag">Low moisture</span>
+              <span class="tag">Deodorize</span>
+            </div>
+          </div>
+
+          <div class="card service" onclick="prefillService('Tile & Grout Cleaning')">
+            <div class="svcTop">
+              <div class="svcIcon">🧱</div>
+              <div class="tag">Mechanical brush</div>
+            </div>
+            <p class="svcTitle">Tile & Grout Cleaning</p>
+            <p class="svcDesc">Deep scrub + extraction rinse (up to 1200 PSI). Real grout restoration look.</p>
+            <div class="svcMeta">
+              <span class="tag">High-traffic</span>
+              <span class="tag">Bathrooms</span>
+              <span class="tag">Kitchens</span>
+            </div>
+          </div>
+
+          <div class="card service" onclick="prefillService('Epoxy Floor')">
+            <div class="svcTop">
+              <div class="svcIcon">✨</div>
+              <div class="tag">Industrial grade</div>
+            </div>
+            <p class="svcTitle">Epoxy Floor</p>
+            <p class="svcDesc">Garage, warehouses, commercial floors. Durable, beautiful, built to last.</p>
+            <div class="svcMeta">
+              <span class="tag">Flake systems</span>
+              <span class="tag">Quartz options</span>
+              <span class="tag">Topcoat</span>
+            </div>
+          </div>
+
+          <div class="card service" onclick="prefillService('Pressure Washing / Paver Sealing')">
+            <div class="svcTop">
+              <div class="svcIcon">💦</div>
+              <div class="tag">Instant curb appeal</div>
+            </div>
+            <p class="svcTitle">Pressure Washing / Paver Sealing</p>
+            <p class="svcDesc">Driveways, patios, pool decks, pavers — clean, sand, seal for a premium look.</p>
+            <div class="svcMeta">
+              <span class="tag">Mildew removal</span>
+              <span class="tag">Joint sand</span>
+              <span class="tag">Seal & protect</span>
+            </div>
+          </div>
+
+          <div class="card service" onclick="prefillService('Hotel / Store / Factory (Commercial)')">
+            <div class="svcTop">
+              <div class="svcIcon">🏨</div>
+              <div class="tag">Maintenance plan + App</div>
+            </div>
+            <p class="svcTitle">Hotels / Stores / Factories</p>
+            <p class="svcDesc">Recurring maintenance built for managers: simple scheduling, proof, consistency, control.</p>
+            <div class="svcMeta">
+              <span class="tag">7/7 • 6am-10pm</span>
+              <span class="tag">Fast turnaround</span>
+              <span class="tag">Audit-ready</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRICING -->
+    <section class="section" id="pricing" aria-label="Pricing">
+      <div class="wrap">
+        <div class="h2Row">
+          <div>
+            <h2>Pricing that makes sense.</h2>
+            <p class="sub">
+              Clear starting points + real quotes based on sqft / condition / access. No surprises.
+              <strong>Tap a card</strong> to prefill the quote form.
+            </p>
+          </div>
+        </div>
+
+        <div class="pricing">
+          <div class="card priceCard" onclick="prefillService('Carpet Cleaning')">
+            <div class="priceTop">
+              <strong>Carpet Cleaning</strong>
+              <span class="from" id="pCarpet">Starting at —</span>
+            </div>
+            <ul class="priceList">
+              <li>Transparent quote based on rooms / sqft</li>
+              <li>Stain focus & deodorize options</li>
+              <li>Fast dry methods available</li>
+            </ul>
+          </div>
+
+          <div class="card priceCard" onclick="prefillService('Tile & Grout Cleaning')">
+            <div class="priceTop">
+              <strong>Tile & Grout</strong>
+              <span class="from" id="pTile">Starting at —</span>
+            </div>
+            <ul class="priceList">
+              <li>Deep scrub (mechanical brush)</li>
+              <li>Extraction rinse up to 1200 PSI</li>
+              <li>Ideal for kitchens & bathrooms</li>
+            </ul>
+          </div>
+
+          <div class="card priceCard" onclick="prefillService('Epoxy Floor')">
+            <div class="priceTop">
+              <strong>Epoxy Floor</strong>
+              <span class="from" id="pEpoxy">Starting at —</span>
+            </div>
+            <ul class="priceList">
+              <li>Garage & commercial systems</li>
+              <li>Flake / quartz epoxy options</li>
+              <li>Durability + premium finish</li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="fine" style="margin-top:12px;">
+          You can set the “Starting at” prices in the small JS block at the bottom of this file.
+        </p>
+      </div>
+    </section>
+
+    <!-- RESULTS -->
+    <section class="section" id="results" aria-label="Results">
+      <div class="wrap">
+        <div class="h2Row">
+          <div>
+            <h2>Results you can see instantly.</h2>
+            <p class="sub">Replace these placeholders with your real before/after photos. This section closes the deal on iPad.</p>
+          </div>
+        </div>
+
+        <div class="ba">
+          <div class="baFrame" id="ba1">
+            <div class="baImg" style="background-image:url('assets/before1.jpg');"></div>
+            <div class="baImg baAfter" style="background-image:url('assets/after1.jpg');"></div>
+            <div class="baHandle"></div>
+            <div class="baKnob">⇆</div>
+            <div class="baLabel left">Before</div>
+            <div class="baLabel right">After</div>
+          </div>
+
+          <div class="card">
+            <h3 style="margin:0 0 10px; font-size:16px; letter-spacing:-.02em;">Why it looks different</h3>
+            <p class="sub" style="margin:0 0 12px;">
+              We combine pro equipment with repeatable processes — so results stay consistent across rooms, units, and properties.
+            </p>
+            <div class="feature">
+              <div class="fIcon">🧪</div>
+              <div>
+                <b>CRB / Encapsulation options</b>
+                <span>Smart methods when fast dry + quick turnaround matters.</span>
+              </div>
+            </div>
+            <div style="height:10px"></div>
+            <div class="feature">
+              <div class="fIcon">🧰</div>
+              <div>
+                <b>Tile deep clean system</b>
+                <span>Mechanical brush + extraction rinse for real grout refresh.</span>
+              </div>
+            </div>
+            <div style="height:10px"></div>
+            <div class="feature">
+              <div class="fIcon">✅</div>
+              <div>
+                <b>Professional finish</b>
+                <span>Clean, dry, ready — built for image and uptime.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMMERCIAL -->
+    <section class="section" id="commercial" aria-label="Hotels and commercial">
+      <div class="wrap">
+        <div class="h2Row">
+          <div>
+            <h2>Hotels & Commercial: we sell solutions.</h2>
+            <p class="sub">
+              Not a cleaning method — a maintenance system. Built for busy managers who need control, proof, and a brand-level finish.
+            </p>
+          </div>
+          <button class="btnPrimary" type="button" onclick="prefillService('Hotel / Store / Factory (Commercial)')">Talk commercial →</button>
+        </div>
+
+        <div class="split">
+          <div class="card">
+            <h3 style="margin:0 0 10px; font-size:16px; letter-spacing:-.02em;">The maintenance plan (built for managers)</h3>
+            <p class="sub" style="margin:0 0 12px;">
+              30 minutes per room • 30 minutes dry • back in service fast — plus a dedicated app to plan, track and prove.
+            </p>
+
+            <div class="feature">
+              <div class="fIcon">📅</div>
+              <div>
+                <b>Plan rooms in minutes</b>
+                <span>Select rooms by floor, enforce rules, reduce mistakes. Designed for iPad speed.</span>
+              </div>
+            </div>
+            <div style="height:10px"></div>
+            <div class="feature">
+              <div class="fIcon">🧾</div>
+              <div>
+                <b>Proof & accountability</b>
+                <span>Room history, notes, skipped reasons, timestamps. Zero gray areas.</span>
+              </div>
+            </div>
+            <div style="height:10px"></div>
+            <div class="feature">
+              <div class="fIcon">⚡</div>
+              <div>
+                <b>Budget stays attractive</b>
+                <span>Maintenance pricing designed so “image” is never blocked by cost.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 style="margin:0 0 10px; font-size:16px; letter-spacing:-.02em;">Where we operate</h3>
+            <p class="sub" style="margin:0 0 12px;">
+              Orlando + surrounding areas. Early morning or late evening availability to avoid disruption.
+            </p>
+
+            <div class="feature">
+              <div class="fIcon">📍</div>
+              <div>
+                <b>Orlando & nearby cities</b>
+                <span>Clermont, Winter Garden, Kissimmee, Davenport, Lake Buena Vista, and more.</span>
+              </div>
+            </div>
+            <div style="height:10px"></div>
+            <div class="feature">
+              <div class="fIcon">🕒</div>
+              <div>
+                <b>7/7 — 6am to 10pm</b>
+                <span>Schedule around your operations. Minimal friction.</span>
+              </div>
+            </div>
+            <div style="height:10px"></div>
+            <div class="feature">
+              <div class="fIcon">🏭</div>
+              <div>
+                <b>Stores / factories / high traffic</b>
+                <span>Repeatable processes for consistent output across large sites.</span>
+              </div>
+            </div>
+
+            <div style="height:14px"></div>
+            <button class="btnPrimary" type="button" onclick="scrollToId('contact')">Get a commercial quote →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="section" id="contact" aria-label="Contact">
+      <div class="wrap">
+        <div class="h2Row">
+          <div>
+            <h2>Ready? Let’s price it.</h2>
+            <p class="sub">Short form, fast response. Or call/text right now.</p>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="card" style="grid-column: span 7;">
+            <h3 style="margin:0 0 10px; font-size:16px; letter-spacing:-.02em;">Send your request</h3>
+            <p class="sub" style="margin:0 0 12px;">This uses the same form as the hero. On a real site, you’ll connect it to email/SMS/CRM.</p>
+            <button class="btnPrimary" type="button" onclick="scrollToId('contactCard')">Open instant form →</button>
+          </div>
+
+          <div class="card" style="grid-column: span 5;">
+            <h3 style="margin:0 0 10px; font-size:16px; letter-spacing:-.02em;">Direct</h3>
+            <p class="sub" style="margin:0 0 12px;">
+              <strong>Phone/Text:</strong> <span id="brandPhone2">+1 (786) 757-4703</span><br/>
+              <strong>Email:</strong> <span id="brandEmail">support@floridaecoservices.com</span><br/>
+              <strong>Hours:</strong> 7/7 — 6am to 10pm
+            </p>
+            <div class="heroActions">
+              <a class="btnPrimary" href="tel:+17867574703">📞 Call now</a>
+              <a class="btnGhost" href="sms:+17867574703">💬 Text</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer role="contentinfo">
+      <div class="wrap">
+        <div style="display:flex; gap:14px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap;">
+          <div>
+            <strong style="color:rgba(234,240,255,.85)">Florida Eco Services</strong><br/>
+            Orlando & surrounding areas • Premium Cleaning & Floors
+          </div>
+          <div style="max-width: 64ch;">
+            This is a high-end mockup built for iPad sales presentations. Replace placeholder assets (video/images/reviews),
+            wire the form to your backend, and you’ve got a “agency-level” website.
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Sticky bottom bar (perfect on iPad) -->
+    <div class="stickyBar" aria-label="Quick actions">
+      <div class="sLeft">
+        <strong>Florida Eco Services</strong>
+        <span>Tap to call • Or get an instant quote</span>
+      </div>
+      <div class="sBtns">
+        <a class="miniBtn" href="tel:+17867574703">📞 Call</a>
+        <button class="miniBtn primary" type="button" onclick="scrollToId('contact')">✨ Quote</button>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // ====== EDIT THESE VALUES (you can also read from .env in your React build) ======
+    const BRAND = {
+      phoneDisplay: "+1 (786) 757-4703",
+      phoneTel: "+17867574703",
+      email: "support@floridaecoservices.com",
+      pricingStartingAt: {
+        carpet: "$129",
+        tile: "$149",
+        epoxy: "$6.50/sqft"
+      }
+    };
+
+    // Apply branding
+    document.getElementById("brandPhone").textContent = BRAND.phoneDisplay;
+    document.getElementById("brandPhone2").textContent = BRAND.phoneDisplay;
+    document.getElementById("brandEmail").textContent = BRAND.email;
+    document.querySelectorAll('a[href^="tel:"]').forEach(a => a.setAttribute("href", "tel:" + BRAND.phoneTel));
+    document.querySelectorAll('a[href^="sms:"]').forEach(a => a.setAttribute("href", "sms:" + BRAND.phoneTel));
+
+    // Pricing labels
+    document.getElementById("pCarpet").textContent = "Starting at " + BRAND.pricingStartingAt.carpet;
+    document.getElementById("pTile").textContent   = "Starting at " + BRAND.pricingStartingAt.tile;
+    document.getElementById("pEpoxy").textContent  = "Starting at " + BRAND.pricingStartingAt.epoxy;
+
+    // Smooth scroll helper
+    function scrollToId(id){
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.scrollIntoView({behavior:"smooth", block:"start"});
+    }
+    window.scrollToId = scrollToId;
+
+    // Prefill service in form
+    function prefillService(serviceName){
+      const sel = document.getElementById("service");
+      if(!sel) return;
+      [...sel.options].forEach((o,i)=>{
+        if(o.text === serviceName){ sel.selectedIndex = i; }
+      });
+      scrollToId("contactCard");
+      // small UX ping
+      sel.focus({preventScroll:true});
+    }
+    window.prefillService = prefillService;
+
+    // Fake submit (hook to backend later)
+    document.getElementById("quoteForm").addEventListener("submit", (e)=>{
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(e.target).entries());
+      alert("Quote request sent (mockup) ✅\\n\\n" + JSON.stringify(data, null, 2));
+      e.target.reset();
+    });
+  </script>
+</body>
+</html>

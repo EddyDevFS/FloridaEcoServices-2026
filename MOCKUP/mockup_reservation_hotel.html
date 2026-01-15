@@ -1,0 +1,2582 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hotel Cleaning Dashboard — Mockup (2027)</title>
+
+  <!-- Optional font (works if online) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg: #f6f7fb;
+      --panel: rgba(255,255,255,.86);
+      --panelSolid: #ffffff;
+      --ink: #0b1220;
+      --muted: rgba(11,18,32,.62);
+      --muted2: rgba(11,18,32,.44);
+      --border: rgba(11,18,32,.10);
+      --border2: rgba(11,18,32,.08);
+
+      --shadow-sm: 0 6px 22px rgba(11,18,32,.06);
+      --shadow-md: 0 18px 55px rgba(11,18,32,.10);
+      --shadow-lg: 0 34px 80px rgba(11,18,32,.16);
+
+      --r12: 12px;
+      --r14: 14px;
+      --r16: 16px;
+      --r18: 18px;
+      --r22: 22px;
+
+      --good: #20c997;      /* 🟢 */
+      --soon: #f1b40f;      /* 🟡 */
+      --over: #ff4d4f;      /* 🔴 */
+      --sel:  #3b82f6;      /* 🔵 */
+      --neu:  #d9dee8;      /* ⚪ */
+      --next: #8b5cf6;      /* 🟣 Next visit */
+
+      --focus: rgba(59,130,246,.25);
+      --glow: 0 0 0 6px var(--focus);
+
+      --ease: cubic-bezier(.2,.8,.2,1);
+      --ease2: cubic-bezier(.16,1,.3,1);
+
+      --max: 1200px;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 800px at 10% -10%, rgba(59,130,246,.16), transparent 60%),
+        radial-gradient(900px 700px at 90% 0%, rgba(32,201,151,.14), transparent 55%),
+        radial-gradient(1000px 800px at 55% 120%, rgba(241,180,15,.12), transparent 55%),
+        var(--bg);
+      letter-spacing:-.01em;
+    }
+
+    /* Subtle noise */
+    body:before{
+      content:"";
+      position:fixed; inset:0;
+      pointer-events:none;
+      opacity:.06;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+      mix-blend-mode:multiply;
+    }
+
+    a{ color:inherit; text-decoration:none; }
+    button, input, select, textarea{ font:inherit; }
+    .wrap{ max-width:var(--max); margin:0 auto; padding: 22px 18px 34px; }
+
+    /* Topbar */
+    .topbar{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      background: rgba(246,247,251,.72);
+      border-bottom: 1px solid rgba(11,18,32,.07);
+    }
+    .topbarInner{
+      max-width:var(--max);
+      margin:0 auto;
+      padding: 14px 18px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+
+    .brand{
+      display:flex; align-items:center; gap:10px; min-width: 240px;
+    }
+    .logo{
+      width:34px; height:34px; border-radius: 12px;
+      background:
+        radial-gradient(16px 16px at 30% 30%, rgba(255,255,255,.9), transparent 60%),
+        linear-gradient(135deg, rgba(59,130,246,.95), rgba(32,201,151,.92));
+      box-shadow: 0 12px 32px rgba(59,130,246,.25);
+      position:relative;
+      overflow:hidden;
+    }
+    .logo:after{
+      content:"";
+      position:absolute; inset:-20%;
+      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.55), transparent 70%);
+      transform: translateX(-40%) rotate(12deg);
+      animation: shimmer 6.5s var(--ease) infinite;
+      opacity:.65;
+    }
+    @keyframes shimmer{
+      0%{ transform: translateX(-60%) rotate(12deg); }
+      55%{ transform: translateX(60%) rotate(12deg); }
+      100%{ transform: translateX(60%) rotate(12deg); }
+    }
+
+    .brandText{ display:flex; flex-direction:column; line-height:1.1; }
+    .hotelName{ font-weight: 700; font-size: 14px; }
+    .subtle{ font-size: 12px; color: var(--muted); }
+
+    .nav{
+      display:flex; align-items:center; gap:8px;
+      background: rgba(255,255,255,.70);
+      border:1px solid rgba(11,18,32,.08);
+      border-radius: 999px;
+      padding: 4px;
+      box-shadow: var(--shadow-sm);
+    }
+    .nav button{
+      border:0; background:transparent;
+      padding: 10px 12px;
+      border-radius: 999px;
+      font-weight:600;
+      font-size: 13px;
+      color: rgba(11,18,32,.72);
+      display:flex; gap:8px; align-items:center;
+      transition: transform .15s var(--ease), background .2s var(--ease), color .2s var(--ease);
+      cursor:pointer;
+      outline:none;
+    }
+    .nav button:hover{ transform: translateY(-1px); background: rgba(11,18,32,.04); }
+    .nav button[data-active="true"]{
+      background: rgba(11,18,32,.06);
+      color: var(--ink);
+    }
+
+    .actions{
+      display:flex; align-items:center; justify-content:flex-end; gap:10px; min-width: 240px;
+    }
+    .pill{
+      display:flex; align-items:center; gap:10px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.72);
+      border: 1px solid rgba(11,18,32,.08);
+      box-shadow: var(--shadow-sm);
+      color: rgba(11,18,32,.78);
+      font-size: 13px;
+    }
+    .pill select{
+      border:0; background:transparent; outline:none;
+      font-weight: 600;
+      color: var(--ink);
+      cursor:pointer;
+    }
+
+    .cta{
+      border:0;
+      padding: 11px 14px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(59,130,246,.96), rgba(32,201,151,.92));
+      color: white;
+      font-weight: 700;
+      font-size: 13px;
+      box-shadow: 0 18px 40px rgba(59,130,246,.22);
+      cursor:pointer;
+      transition: transform .15s var(--ease), box-shadow .2s var(--ease);
+      outline:none;
+      display:flex; align-items:center; gap:10px;
+      white-space:nowrap;
+    }
+    .cta:hover{ transform: translateY(-1px); box-shadow: 0 22px 48px rgba(59,130,246,.26); }
+    .cta:active{ transform: translateY(0); box-shadow: 0 12px 28px rgba(59,130,246,.20); }
+
+    /* Page sections */
+    .page{ display:none; }
+    .page[data-active="true"]{ display:block; }
+
+    /* Headings */
+    h1{
+      font-size: 28px;
+      margin: 18px 0 8px;
+      letter-spacing: -0.03em;
+    }
+    .lead{ color: var(--muted); margin: 0 0 18px; font-size: 14px; line-height:1.5; }
+
+    /* Cards */
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+    .card{
+      grid-column: span 12;
+      background: var(--panel);
+      border: 1px solid rgba(11,18,32,.08);
+      border-radius: var(--r18);
+      box-shadow: var(--shadow-md);
+      overflow:hidden;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .cardHeader{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid rgba(11,18,32,.06);
+    }
+    .cardTitle{
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: -0.02em;
+    }
+    .cardSub{
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+    .cardBody{ padding: 14px 16px 16px; }
+
+    .statRow{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 12px;
+    }
+    .stat{
+      background: rgba(255,255,255,.76);
+      border: 1px solid rgba(11,18,32,.08);
+      border-radius: var(--r16);
+      padding: 12px;
+      box-shadow: var(--shadow-sm);
+      transition: transform .2s var(--ease), box-shadow .2s var(--ease);
+    }
+    .stat:hover{ transform: translateY(-2px); box-shadow: 0 18px 45px rgba(11,18,32,.10); }
+    .statLabel{ font-size: 12px; color: var(--muted); }
+    .statValue{ font-size: 22px; font-weight: 800; margin-top: 6px; letter-spacing: -0.03em; }
+
+    .progressWrap{ display:flex; flex-direction:column; gap:10px; }
+    .progressMeta{
+      display:flex; justify-content:space-between; align-items:center;
+      font-size: 12px; color: var(--muted);
+    }
+    .bar{
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(11,18,32,.08);
+      overflow:hidden;
+      position:relative;
+    }
+    .bar > span{
+      position:absolute; left:0; top:0; bottom:0;
+      width: 55%;
+      background: linear-gradient(90deg, rgba(32,201,151,.92), rgba(59,130,246,.92));
+      border-radius: 999px;
+      box-shadow: 0 18px 34px rgba(59,130,246,.25);
+      transition: width .6s var(--ease2);
+    }
+    .chips{ display:flex; gap:8px; flex-wrap:wrap; }
+    .chip{
+      font-size: 12px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(11,18,32,.08);
+      background: rgba(255,255,255,.70);
+      color: rgba(11,18,32,.78);
+      box-shadow: var(--shadow-sm);
+      display:flex; align-items:center; gap:8px;
+    }
+    .dot{ width:10px; height:10px; border-radius:999px; background: var(--neu); }
+
+    /* Scheduler layout */
+    .twoCol{
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap: 14px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      .twoCol{ grid-template-columns: 1fr; }
+      .brand, .actions{ min-width: unset; }
+      .statRow{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+
+    /* Stepper */
+    .stepper{
+      display:flex; gap:10px; flex-wrap:wrap;
+      padding: 10px 10px 0;
+    }
+    .step{
+      display:flex; align-items:center; gap:10px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.62);
+      border: 1px solid rgba(11,18,32,.08);
+      box-shadow: var(--shadow-sm);
+      color: rgba(11,18,32,.72);
+      font-size: 13px;
+      font-weight: 700;
+      cursor:pointer;
+      transition: transform .15s var(--ease), background .2s var(--ease);
+      user-select:none;
+    }
+    .step:hover{ transform: translateY(-1px); background: rgba(255,255,255,.78); }
+    .step[data-active="true"]{
+      background: rgba(11,18,32,.06);
+      color: var(--ink);
+    }
+    .stepIndex{
+      width: 22px; height: 22px;
+      border-radius: 999px;
+      display:grid; place-items:center;
+      font-size: 12px;
+      background: rgba(11,18,32,.06);
+      border: 1px solid rgba(11,18,32,.08);
+    }
+
+    /* Calendar */
+    .calendar{
+      background: rgba(255,255,255,.76);
+      border: 1px solid rgba(11,18,32,.08);
+      border-radius: var(--r18);
+      padding: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+    .calHead{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      margin-bottom: 10px;
+    }
+    .calHead .month{
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .calNav{
+      display:flex; gap:8px;
+    }
+    .iconBtn{
+      width: 34px; height: 34px;
+      border-radius: 12px;
+      border: 1px solid rgba(11,18,32,.10);
+      background: rgba(255,255,255,.85);
+      box-shadow: var(--shadow-sm);
+      cursor:pointer;
+      transition: transform .15s var(--ease), background .2s var(--ease);
+    }
+    .iconBtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,1); }
+    .dow{
+      display:grid; grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin: 10px 0 6px;
+      font-size: 11px;
+      color: var(--muted2);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing:.06em;
+    }
+    .days{
+      display:grid; grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+    }
+    .day{
+      height: 40px;
+      border-radius: 14px;
+      border: 1px solid rgba(11,18,32,.08);
+      background: rgba(255,255,255,.72);
+      display:flex; align-items:center; justify-content:center;
+      font-weight: 700;
+      font-size: 12px;
+      color: rgba(11,18,32,.78);
+      cursor:pointer;
+      transition: transform .15s var(--ease), box-shadow .2s var(--ease), background .2s var(--ease);
+      position:relative;
+      user-select:none;
+    }
+    .day:hover{ transform: translateY(-1px); box-shadow: 0 18px 45px rgba(11,18,32,.10); }
+    .day[data-out="true"]{ opacity:.35; cursor:default; }
+    .day[data-out="true"]:hover{ transform:none; box-shadow:none; }
+    .day[data-available="false"]{
+      background: rgba(11,18,32,.05);
+      color: rgba(11,18,32,.40);
+    }
+    .day[data-available="false"]::after{
+      content:"";
+      width: 8px; height: 8px; border-radius: 999px;
+      background: rgba(255,77,79,.85);
+      position:absolute; bottom: 6px; right: 7px;
+      box-shadow: 0 8px 20px rgba(255,77,79,.22);
+    }
+    .day[data-available="true"]::after{
+      content:"";
+      width: 8px; height: 8px; border-radius: 999px;
+      background: rgba(32,201,151,.85);
+      position:absolute; bottom: 6px; right: 7px;
+      box-shadow: 0 8px 20px rgba(32,201,151,.22);
+    }
+    .day[data-selected="true"]{
+      background: rgba(59,130,246,.12);
+      border-color: rgba(59,130,246,.35);
+      box-shadow: 0 18px 55px rgba(59,130,246,.16);
+      color: var(--ink);
+    }
+
+    /* Selection summary (sticky) */
+    .stickySummary{
+      position:sticky; top: 86px;
+      display:flex; flex-direction:column; gap:12px;
+    }
+    .summaryBox{
+      background: rgba(255,255,255,.86);
+      border: 1px solid rgba(11,18,32,.10);
+      border-radius: var(--r18);
+      padding: 12px;
+      box-shadow: var(--shadow-md);
+    }
+    .summaryTop{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+    }
+    .big{
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      font-size: 18px;
+    }
+    .small{
+      font-size: 12px;
+      color: var(--muted);
+      line-height:1.4;
+    }
+    .hint{
+      margin-top: 10px;
+      padding: 10px 11px;
+      border-radius: 14px;
+      background: rgba(241,180,15,.10);
+      border: 1px solid rgba(241,180,15,.22);
+      color: rgba(11,18,32,.78);
+      font-size: 12px;
+      display:flex; gap:10px; align-items:flex-start;
+    }
+    .hint .badge{
+      width: 20px; height: 20px;
+      border-radius: 999px;
+      background: rgba(241,180,15,.22);
+      display:grid; place-items:center;
+      font-weight: 900;
+      font-size: 12px;
+      margin-top: 1px;
+    }
+    .ctaBlock{
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .primaryBtn{
+      border:0;
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(11,18,32,.92), rgba(11,18,32,.82));
+      color:#fff;
+      font-weight: 900;
+      cursor:pointer;
+      box-shadow: 0 24px 60px rgba(11,18,32,.22);
+      transition: transform .15s var(--ease), box-shadow .2s var(--ease), opacity .2s var(--ease);
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      outline:none;
+    }
+    .primaryBtn:hover{ transform: translateY(-1px); box-shadow: 0 28px 72px rgba(11,18,32,.26); }
+    .primaryBtn:active{ transform: translateY(0); box-shadow: 0 18px 50px rgba(11,18,32,.20); }
+    .primaryBtn[disabled]{
+      opacity:.45;
+      cursor:not-allowed;
+      transform:none !important;
+      box-shadow: var(--shadow-sm) !important;
+    }
+    .ghostBtn{
+      border: 1px solid rgba(11,18,32,.10);
+      background: rgba(255,255,255,.82);
+      color: rgba(11,18,32,.86);
+      padding: 10px 12px;
+      border-radius: 16px;
+      font-weight: 800;
+      cursor:pointer;
+      box-shadow: var(--shadow-sm);
+      transition: transform .15s var(--ease), background .2s var(--ease);
+    }
+    .ghostBtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,1); }
+
+    /* Floor sections */
+    .floors{
+      display:flex; flex-direction:column; gap:12px;
+    }
+    .floor{
+      background: rgba(255,255,255,.72);
+      border: 1px solid rgba(11,18,32,.08);
+      border-radius: var(--r18);
+      box-shadow: var(--shadow-sm);
+      overflow:hidden;
+    }
+    .floorHead{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding: 12px 12px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .floorLeft{
+      display:flex; align-items:center; gap:10px;
+    }
+    .caret{
+      width: 34px; height: 34px;
+      border-radius: 12px;
+      display:grid; place-items:center;
+      border: 1px solid rgba(11,18,32,.10);
+      background: rgba(255,255,255,.85);
+      box-shadow: var(--shadow-sm);
+      transition: transform .2s var(--ease);
+    }
+    .floor[data-open="true"] .caret{ transform: rotate(90deg); }
+    .floorTitle{
+      display:flex; flex-direction:column; line-height:1.2;
+    }
+    .floorTitle strong{ font-size: 13px; letter-spacing:-.01em; }
+    .floorTitle span{ font-size: 12px; color: var(--muted); margin-top:2px; }
+
+    .floorRule{
+      display:flex; align-items:center; gap:10px;
+      font-size: 12px;
+      color: rgba(11,18,32,.72);
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(11,18,32,.10);
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--shadow-sm);
+      white-space:nowrap;
+    }
+    .floorRule[data-ok="false"]{
+      border-color: rgba(241,180,15,.35);
+      background: rgba(241,180,15,.10);
+    }
+    .floorRule .miniDot{ width:10px; height:10px; border-radius:999px; background: var(--soon); }
+
+    .rooms{
+      padding: 0 12px 12px;
+      display:none;
+    }
+    .floor[data-open="true"] .rooms{ display:block; }
+    .roomGrid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+      gap: 10px;
+    }
+    @media (max-width: 980px){
+      .roomGrid{ grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); }
+    }
+    @media (max-width: 560px){
+      .roomGrid{ grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+    }
+
+    .room{
+      position:relative;
+      background: rgba(255,255,255,.94);
+      border: 1px solid rgba(11,18,32,.10);
+      border-radius: 18px;
+      padding: 14px 14px 56px;
+      cursor:pointer;
+      box-shadow: var(--shadow-sm);
+      transition: transform .18s var(--ease), box-shadow .2s var(--ease), border-color .2s var(--ease), background .2s var(--ease);
+      min-height: 112px;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      justify-content:flex-start;
+      gap: 10px;
+    }
+    .room:hover{
+      transform: translateY(-2px);
+      box-shadow: 0 18px 55px rgba(11,18,32,.12);
+    }
+    .room:focus{ outline:none; box-shadow: var(--shadow-md), var(--glow); }
+    .roomTop{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      gap: 10px;
+      padding-right: 10px;
+    }
+    .roomNo{
+      font-weight: 950;
+      letter-spacing:-.02em;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .roomStatusLine{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 900;
+      color: rgba(11,18,32,.80);
+      padding: 9px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(11,18,32,.10);
+      background: rgba(11,18,32,.03);
+      box-shadow: 0 10px 26px rgba(11,18,32,.06);
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sDot{
+      width:10px;
+      height:10px;
+      border-radius:999px;
+      flex:0 0 auto;
+      box-shadow: 0 10px 22px rgba(11,18,32,.10);
+    }
+
+    .room[data-status="cleaned"] .roomStatusLine{
+      border-color: rgba(32,201,151,.22);
+      background: rgba(32,201,151,.08);
+    }
+    .room[data-status="due"] .roomStatusLine{
+      border-color: rgba(241,180,15,.26);
+      background: rgba(241,180,15,.10);
+    }
+    .room[data-status="overdue"] .roomStatusLine{
+      border-color: rgba(255,77,79,.26);
+      background: rgba(255,77,79,.08);
+    }
+    .room[data-status="neutral"] .roomStatusLine{
+      border-color: rgba(217,222,232,1);
+      background: rgba(11,18,32,.02);
+    }
+
+    /* Selected overrides readability */
+    .room[data-selected="true"] .roomStatusLine{
+      border-color: rgba(59,130,246,.26);
+      background: rgba(59,130,246,.10);
+      color: rgba(11,18,32,.88);
+    }
+
+    .nextBtn{
+      position:absolute;
+      bottom: 12px; left: 12px;
+      width: 34px; height: 34px;
+      border-radius: 14px;
+      border: 1px solid rgba(11,18,32,.10);
+      background: rgba(255,255,255,.88);
+      box-shadow: var(--shadow-sm);
+      display:grid; place-items:center;
+      cursor:pointer;
+      transition: transform .15s var(--ease), background .2s var(--ease);
+      z-index: 3;
+      font-size: 16px;
+    }
+    .nextBtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,1); }
+    .nextBtn[data-has="true"]{
+      border-color: rgba(139,92,246,.35);
+      box-shadow: 0 18px 55px rgba(139,92,246,.16);
+    }
+
+    @keyframes pulseRing{
+      0%{ box-shadow: 0 0 0 0 rgba(139,92,246,.00), 0 18px 55px rgba(11,18,32,.12); }
+      55%{ box-shadow: 0 0 0 6px rgba(139,92,246,.18), 0 22px 66px rgba(11,18,32,.14); }
+      100%{ box-shadow: 0 0 0 0 rgba(139,92,246,.00), 0 18px 55px rgba(11,18,32,.12); }
+    }
+
+    .room[data-next="true"][data-selected="false"]{
+      border-color: rgba(139,92,246,.28);
+      background: rgba(139,92,246,.05);
+      animation: pulseRing 2.2s var(--ease2) infinite;
+    }
+
+    .roomTag{
+      display:none;
+    }
+
+    .commentBtn{
+      position:absolute;
+      bottom: 12px; right: 12px;
+      width: 34px; height: 34px;
+      border-radius: 14px;
+      border: 1px solid rgba(11,18,32,.10);
+      background: rgba(255,255,255,.88);
+      box-shadow: var(--shadow-sm);
+      display:grid; place-items:center;
+      cursor:pointer;
+      transition: transform .15s var(--ease), background .2s var(--ease);
+      z-index: 3;
+      font-size: 16px;
+    }
+    .commentBtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,1); }
+    .commentBtn[data-has="true"]{
+      border-color: rgba(59,130,246,.30);
+      box-shadow: 0 18px 55px rgba(59,130,246,.16);
+    }
+
+    /* Status styling */
+    .room[data-status="cleaned"]{ border-left: 6px solid rgba(32,201,151,.92); }
+    .room[data-status="due"]{ border-left: 6px solid rgba(241,180,15,.92); }
+    .room[data-status="overdue"]{ border-left: 6px solid rgba(255,77,79,.92); }
+    .room[data-status="neutral"]{ border-left: 6px solid rgba(217,222,232,1); }
+
+    /* Selected overrides all */
+    .room[data-selected="true"]{
+      border-left: 6px solid rgba(59,130,246,.98);
+      border-color: rgba(59,130,246,.40);
+      background: rgba(59,130,246,.06);
+      box-shadow: 0 22px 66px rgba(59,130,246,.18);
+    }
+    .room[data-selected="true"] .roomTag{
+      border-color: rgba(59,130,246,.22);
+      background: rgba(59,130,246,.08);
+    }
+
+    /* Floating tooltip (outside room card) */
+    .hoverTip{
+      position: fixed;
+      left: 0; top: 0;
+      width: max-content;
+      max-width: min(360px, calc(100vw - 24px));
+      background: rgba(11,18,32,.92);
+      color: rgba(255,255,255,.92);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 14px;
+      padding: 10px 10px;
+      box-shadow: 0 24px 70px rgba(11,18,32,.28);
+      font-size: 12px;
+      line-height: 1.35;
+      opacity: 0;
+      transform: translate(-50%,-100%) translateY(6px);
+      pointer-events: none;
+      transition: opacity .14s var(--ease), transform .18s var(--ease);
+      z-index: 220;
+    }
+    .hoverTip[data-show="true"]{
+      opacity: 1;
+      transform: translate(-50%,-100%) translateY(0);
+    }
+    .hoverTip strong{ display:block; font-size: 12px; margin-bottom: 3px; letter-spacing:-.01em; }
+    .hoverTip .mut{ color: rgba(255,255,255,.70); }
+
+    /* Arrow */
+    .hoverTip::after{
+      content:"";
+      position:absolute;
+      width: 10px; height: 10px;
+      background: rgba(11,18,32,.92);
+      border-right: 1px solid rgba(255,255,255,.10);
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      transform: rotate(45deg);
+      left: 50%;
+      margin-left: -5px;
+      bottom: -6px;
+    }
+    .hoverTip[data-pos="bottom"]{
+      transform: translate(-50%, 0) translateY(-6px);
+    }
+    .hoverTip[data-pos="bottom"][data-show="true"]{
+      transform: translate(-50%, 0) translateY(0);
+    }
+    .hoverTip[data-pos="bottom"]::after{
+      top: -6px;
+      bottom: auto;
+      transform: rotate(225deg);
+    }
+
+    /* Modal */
+    .modalBack{
+      position:fixed; inset:0;
+      background: rgba(11,18,32,.35);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 22px;
+      z-index: 100;
+    }
+    .modalBack[data-open="true"]{ display:flex; }
+    .modal{
+      width: min(620px, 100%);
+      background: rgba(255,255,255,.92);
+      border: 1px solid rgba(11,18,32,.10);
+      border-radius: 22px;
+      box-shadow: var(--shadow-lg);
+      overflow:hidden;
+      transform: translateY(10px) scale(.98);
+      opacity: 0;
+      transition: transform .22s var(--ease2), opacity .22s var(--ease2);
+    }
+    .modalBack[data-open="true"] .modal{
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+    .modalHead{
+      padding: 16px 16px 12px;
+      display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+      border-bottom: 1px solid rgba(11,18,32,.06);
+    }
+    .modalTitle{
+      display:flex; flex-direction:column; gap:4px;
+    }
+    .modalTitle strong{ font-size: 14px; letter-spacing:-.02em; }
+    .modalTitle span{ font-size: 12px; color: var(--muted); }
+    .modalClose{
+      border: 1px solid rgba(11,18,32,.10);
+      background: rgba(255,255,255,.90);
+      width: 38px; height: 38px;
+      border-radius: 14px;
+      cursor:pointer;
+      box-shadow: var(--shadow-sm);
+      transition: transform .15s var(--ease);
+    }
+    .modalClose:hover{ transform: translateY(-1px); }
+    .modalBody{
+      padding: 14px 16px 16px;
+      display:grid; gap:12px;
+    }
+    .checks{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 10px;
+    }
+    @media (max-width: 560px){
+      .checks{ grid-template-columns: 1fr; }
+    }
+    .check{
+      display:flex; align-items:center; gap:10px;
+      background: rgba(255,255,255,.78);
+      border: 1px solid rgba(11,18,32,.10);
+      border-radius: 16px;
+      padding: 10px 12px;
+      box-shadow: var(--shadow-sm);
+      cursor:pointer;
+      user-select:none;
+      transition: transform .15s var(--ease), background .2s var(--ease);
+    }
+    .check:hover{ transform: translateY(-1px); background: rgba(255,255,255,1); }
+    .check input{ width: 16px; height: 16px; accent-color: #3b82f6; }
+    textarea{
+      width:100%;
+      min-height: 96px;
+      border-radius: 16px;
+      border: 1px solid rgba(11,18,32,.10);
+      background: rgba(255,255,255,.84);
+      padding: 12px;
+      outline:none;
+      resize: vertical;
+      box-shadow: var(--shadow-sm);
+    }
+    textarea:focus{ box-shadow: var(--shadow-md), var(--glow); border-color: rgba(59,130,246,.35); }
+    .modalFoot{
+      padding: 12px 16px 16px;
+      display:flex; justify-content:flex-end; gap:10px;
+      border-top: 1px solid rgba(11,18,32,.06);
+      background: rgba(255,255,255,.70);
+    }
+
+    /* Review */
+    .reviewList{
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .reviewItem{
+      background: rgba(255,255,255,.78);
+      border: 1px solid rgba(11,18,32,.10);
+      border-radius: 18px;
+      padding: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+    .reviewHead{
+      display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
+      margin-bottom: 8px;
+    }
+    .reviewHead strong{ font-size: 13px; letter-spacing:-.01em; }
+    .reviewHead span{ font-size: 12px; color: var(--muted); }
+    .roomsLine{
+      display:flex; flex-wrap:wrap; gap:8px;
+    }
+    .pillRoom{
+      font-size: 12px;
+      font-weight: 800;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(11,18,32,.06);
+      border: 1px solid rgba(11,18,32,.10);
+      color: rgba(11,18,32,.86);
+      display:flex; align-items:center; gap:8px;
+    }
+    .pillRoom .mini{
+      width: 10px; height: 10px; border-radius:999px;
+      background: rgba(59,130,246,.92);
+    }
+
+    /* Timeline */
+    .timeline{
+      display:flex; flex-direction:column; gap:10px;
+    }
+    details.visit{
+      background: rgba(255,255,255,.76);
+      border: 1px solid rgba(11,18,32,.10);
+      border-radius: 18px;
+      box-shadow: var(--shadow-sm);
+      overflow:hidden;
+    }
+    details.visit summary{
+      list-style:none;
+      cursor:pointer;
+      padding: 12px 12px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      user-select:none;
+    }
+    details.visit summary::-webkit-details-marker{ display:none; }
+    .visitLeft{
+      display:flex; flex-direction:column; gap:4px;
+    }
+    .visitLeft strong{ font-size: 13px; letter-spacing:-.01em; }
+    .visitLeft span{ font-size: 12px; color: var(--muted); }
+    .statusPill{
+      font-size: 12px;
+      font-weight: 900;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(11,18,32,.10);
+      background: rgba(255,255,255,.80);
+      display:flex; align-items:center; gap:8px;
+      white-space:nowrap;
+    }
+    .statusPill .dot{ background: var(--neu); }
+    .statusPill[data-s="scheduled"] .dot{ background: var(--sel); }
+    .statusPill[data-s="progress"] .dot{ background: var(--soon); }
+    .statusPill[data-s="done"] .dot{ background: var(--good); }
+
+    .visitBody{
+      padding: 0 12px 12px;
+      border-top: 1px solid rgba(11,18,32,.06);
+      color: rgba(11,18,32,.82);
+      font-size: 13px;
+      line-height:1.5;
+    }
+
+    /* Toast */
+    .toast{
+      position:fixed; bottom:18px; left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: rgba(11,18,32,.92);
+      color: rgba(255,255,255,.92);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 16px;
+      padding: 10px 12px;
+      box-shadow: 0 24px 70px rgba(11,18,32,.30);
+      display:flex; align-items:center; gap:10px;
+      opacity: 0;
+      pointer-events:none;
+      transition: opacity .18s var(--ease), transform .18s var(--ease);
+      font-size: 12px;
+      z-index: 120;
+      max-width: min(720px, calc(100% - 24px));
+    }
+    .toast[data-show="true"]{
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .toast .tDot{
+      width:10px; height:10px; border-radius:999px;
+      background: rgba(241,180,15,.95);
+      box-shadow: 0 10px 22px rgba(241,180,15,.25);
+    }
+
+    /* Subsection visibility for schedule steps */
+    .stepPane{ display:none; }
+    .stepPane[data-active="true"]{ display:block; }
+
+    /* Small helper row */
+    .row{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      flex-wrap:wrap;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbarInner">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div class="brandText">
+          <div class="hotelName" id="hotelName">Lakeview Suites — Clermont</div>
+          <div class="subtle">Cleaning Management Dashboard</div>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="Primary">
+        <button type="button" data-route="dashboard" data-active="true">Dashboard</button>
+        <button type="button" data-route="schedule">Schedule</button>
+        <button type="button" data-route="visits">Visits</button>
+      </nav>
+
+      <div class="actions">
+        <div class="pill" title="Select reporting year">
+          <span style="font-weight:800;">Year</span>
+          <select id="yearSelect" aria-label="Year">
+            <option value="2026">2026</option>
+            <option value="2027" selected>2027</option>
+          </select>
+        </div>
+
+        <button class="cta" id="ctaSchedule" type="button">
+          <span aria-hidden="true">✨</span>
+          <span>Schedule next cleaning</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- PAGE 1: DASHBOARD -->
+    <section class="page" id="page-dashboard" data-active="true" aria-label="Dashboard">
+      <h1>Operational clarity. Zero friction.</h1>
+      <p class="lead">
+        Plan deep-cleaning visits and keep every room on schedule — <strong>simple statuses</strong>, <strong>floor-level rules</strong>, and <strong>instant trust</strong>.
+      </p>
+
+      <div class="grid">
+        <div class="card" style="grid-column: span 12;">
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle">Year overview</div>
+              <div class="cardSub">Rooms are automatically classified by frequency & last cleaning date.</div>
+            </div>
+            <div class="chips" aria-label="Status legend (ultra simple)">
+              <div class="chip"><span class="dot" style="background:var(--good)"></span> Cleaned</div>
+              <div class="chip"><span class="dot" style="background:var(--soon)"></span> Due soon</div>
+              <div class="chip"><span class="dot" style="background:var(--over)"></span> Overdue</div>
+              <div class="chip"><span class="dot" style="background:var(--sel)"></span> Selected</div>
+              <div class="chip"><span class="dot" style="background:var(--neu)"></span> Neutral</div>
+            </div>
+          </div>
+
+          <div class="cardBody">
+            <div class="statRow">
+              <div class="stat">
+                <div class="statLabel">Total rooms</div>
+                <div class="statValue" id="kpiTotal">—</div>
+              </div>
+              <div class="stat">
+                <div class="statLabel">Rooms cleaned this year</div>
+                <div class="statValue" id="kpiCleaned">—</div>
+              </div>
+              <div class="stat">
+                <div class="statLabel">Rooms due soon</div>
+                <div class="statValue" id="kpiDue">—</div>
+              </div>
+              <div class="stat">
+                <div class="statLabel">Rooms overdue</div>
+                <div class="statValue" id="kpiOverdue">—</div>
+              </div>
+            </div>
+
+            <div style="height:14px"></div>
+
+            <div class="progressWrap">
+              <div class="progressMeta">
+                <div><strong id="cycleLabel">2×/year cycle</strong> — progress</div>
+                <div id="progressMetaRight">—%</div>
+              </div>
+              <div class="bar" aria-label="Yearly progress bar">
+                <span id="progressBar"></span>
+              </div>
+              <div class="small">
+                This visual represents how far rooms are through their expected cleaning cycle(s).
+                Rooms automatically move to <strong>Due soon</strong> and <strong>Overdue</strong> based on frequency.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="grid-column: span 12;">
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle">Next best action</div>
+              <div class="cardSub">Schedule a visit in under 60 seconds. Rules are enforced with friendly hints.</div>
+            </div>
+            <button class="cta" type="button" id="dashCTA">
+              <span aria-hidden="true">🗓️</span>
+              <span>Schedule next cleaning</span>
+            </button>
+          </div>
+          <div class="cardBody">
+            <div class="row">
+              <div class="small">
+                <strong>Tip:</strong> Start with rooms that are <span style="font-weight:900;color:rgba(255,77,79,.95)">Overdue</span>,
+                then add <span style="font-weight:900;color:rgba(241,180,15,.95)">Due soon</span> to optimize your crew’s run.
+              </div>
+              <div class="chips">
+                <div class="chip"><span class="dot" style="background:rgba(11,18,32,.18)"></span> Estimated price auto-calculated</div>
+                <div class="chip"><span class="dot" style="background:rgba(11,18,32,.18)"></span> Selection can be modified later</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 2: SCHEDULE CLEANING -->
+    <section class="page" id="page-schedule" aria-label="Schedule cleaning">
+      <div class="row" style="margin-top: 18px;">
+        <div>
+          <h1 style="margin:0 0 6px;">Schedule cleaning</h1>
+          <p class="lead" style="margin:0;">
+            Step-by-step, no clutter. The main screen is your floor map. Statuses are instantly readable.
+          </p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <div class="stepper" role="tablist" aria-label="Schedule steps">
+          <div class="step" role="tab" tabindex="0" data-step="1" data-active="true">
+            <div class="stepIndex">1</div> Select date
+          </div>
+          <div class="step" role="tab" tabindex="0" data-step="2">
+            <div class="stepIndex">2</div> Select rooms
+          </div>
+          <div class="step" role="tab" tabindex="0" data-step="3">
+            <div class="stepIndex">3</div> Review & confirm
+          </div>
+        </div>
+        <div class="cardBody">
+          <div class="twoCol">
+            <!-- LEFT: sticky summary -->
+            <aside class="stickySummary" aria-label="Live selection summary">
+              <div class="summaryBox">
+                <div class="summaryTop">
+                  <div>
+                    <div class="big" id="liveCount">0 rooms selected</div>
+                    <div class="small" id="liveMeta">Estimated time: — • Estimated price: —</div>
+                  </div>
+                  <div class="chip" title="Auto-estimation">
+                    <span class="dot" style="background: rgba(11,18,32,.18)"></span>
+                    Smart estimate
+                  </div>
+                </div>
+
+                <div class="hint" id="rulesHint" style="display:none;">
+                  <div class="badge">!</div>
+                  <div>
+                    <div style="font-weight:900;">Selection rules</div>
+                    <div id="rulesText" style="margin-top:2px;">—</div>
+                  </div>
+                </div>
+
+                <div style="height:10px"></div>
+
+                <div class="ctaBlock">
+                  <button class="primaryBtn" id="goReviewBtn" type="button" disabled>
+                    <span>Continue to review</span>
+                    <span style="opacity:.9;">→</span>
+                  </button>
+                  <button class="ghostBtn" id="resetBtn" type="button">Reset selection</button>
+                </div>
+
+                <div style="height:10px"></div>
+                <div class="small">
+                  You can adjust selection later. Rooms update automatically after completion.
+                </div>
+              </div>
+
+              <div class="summaryBox">
+                <div class="cardTitle" style="margin-bottom:8px;">Status system (ultra simple)</div>
+                <div class="small" style="margin-bottom:10px;">
+                  <strong>🟢 Cleaned</strong> OK • <strong>🟡 Due soon</strong> Coming up • <strong>🔴 Overdue</strong> Issue •
+                  <strong>🔵 Selected</strong> This visit • <strong>⚪ Neutral</strong> No issues • <strong>🟣 Next</strong> Next visit
+                </div>
+                <div class="chips">
+                  <div class="chip"><span class="dot" style="background:var(--good)"></span> Done & recent</div>
+                  <div class="chip"><span class="dot" style="background:var(--soon)"></span> Approaching</div>
+                  <div class="chip"><span class="dot" style="background:var(--over)"></span> Over schedule</div>
+                </div>
+              </div>
+            </aside>
+
+            <!-- RIGHT: step panes -->
+            <section aria-label="Schedule steps content">
+              <!-- STEP 1 -->
+              <div class="stepPane" id="step-1" data-active="true">
+                <div class="cardTitle">Step 1 — Select date</div>
+                <div class="cardSub" style="margin-bottom:12px;">
+                  Green = available slots • Red = blocked. Duration updates with room count.
+                </div>
+
+              <div class="calendar" aria-label="Calendar date selector">
+                  <div class="calHead">
+                    <div class="month" id="calMonth">—</div>
+                    <div class="calNav">
+                      <button class="iconBtn" id="calPrev" type="button" aria-label="Previous month">‹</button>
+                      <button class="iconBtn" id="calNext" type="button" aria-label="Next month">›</button>
+                    </div>
+                  </div>
+
+                  <div class="dow" aria-hidden="true">
+                    <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                  </div>
+                  <div class="days" id="calDays"></div>
+
+                  <div style="height:10px"></div>
+                  <div class="small" id="dateMeta">Select a date to continue.</div>
+                  <div style="height:10px"></div>
+                  <button class="primaryBtn" id="toRoomsBtn" type="button" disabled>
+                    <span>Continue to room selection</span>
+                    <span style="opacity:.9;">→</span>
+                  </button>
+                </div>
+                <div class="summaryBox" style="margin-top:12px;">
+                  <div class="cardTitle">Auto-plan (optional)</div>
+                  <div class="cardSub" style="margin-bottom:12px;">
+                    Choose your preferences — we’ll pick an available date and preselect rooms (prioritizing Overdue, then Due soon).
+                  </div>
+
+                  <div class="row" style="gap:10px; margin-bottom:10px;">
+                    <div class="pill" style="box-shadow:none;">
+                      <span style="font-weight:800;">Cycle</span>
+                      <select id="apCycle" aria-label="Target cleanings per year">
+                        <option value="2" selected>2×/year</option>
+                        <option value="3">3×/year</option>
+                        <option value="4">4×/year</option>
+                      </select>
+                    </div>
+
+                    <div class="pill" style="box-shadow:none;">
+                      <span style="font-weight:800;">Min / floor</span>
+                      <select id="apMinPerFloor" aria-label="Minimum rooms per selected floor">
+                        <option value="3" selected>3 rooms</option>
+                        <option value="4">4 rooms</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="small" style="margin-bottom:10px;">Preferred weekdays</div>
+                  <div class="checks" style="grid-template-columns: repeat(3, minmax(0,1fr));">
+                    <label class="check"><input type="checkbox" class="apDay" value="1" checked> Mon</label>
+                    <label class="check"><input type="checkbox" class="apDay" value="2" checked> Tue</label>
+                    <label class="check"><input type="checkbox" class="apDay" value="3" checked> Wed</label>
+                    <label class="check"><input type="checkbox" class="apDay" value="4" checked> Thu</label>
+                    <label class="check"><input type="checkbox" class="apDay" value="5" checked> Fri</label>
+                    <label class="check"><input type="checkbox" class="apDay" value="6"> Sat</label>
+                  </div>
+
+                  <div style="height:10px;"></div>
+                  <button class="primaryBtn" id="autoPlanBtn" type="button">
+                    <span>Generate a smart plan</span>
+                    <span style="opacity:.9;">⚡</span>
+                  </button>
+                  <div class="small" style="margin-top:10px;">
+                    Floors are optional. If you select only 1–2 rooms on a floor, a <strong>+$30</strong> small-batch fee applies.
+                  </div>
+                </div>
+              </div>
+
+              <!-- STEP 2 -->
+              <div class="stepPane" id="step-2">
+                <div class="row" style="margin-bottom:12px;">
+                  <div>
+                    <div class="cardTitle">Step 2 — Select rooms (main screen)</div>
+                    <div class="cardSub">
+                      Click a room to select it. Hover for last cleaning & frequency. 💬 for room notes.
+                    </div>
+                  </div>
+                  <div class="chips" aria-label="Quick filters">
+                    <button class="chip" id="filterOver" type="button" title="Select all overdue rooms">
+                      <span class="dot" style="background:var(--over)"></span> Add overdue
+                    </button>
+                    <button class="chip" id="filterDue" type="button" title="Select all due soon rooms">
+                      <span class="dot" style="background:var(--soon)"></span> Add due soon
+                    </button>
+                    <button class="chip" id="filterClear" type="button" title="Clear selection">
+                      <span class="dot" style="background:rgba(11,18,32,.18)"></span> Clear
+                    </button>
+                  </div>
+                </div>
+
+                <div class="floors" id="floors"></div>
+              </div>
+
+              <!-- STEP 3 -->
+              <div class="stepPane" id="step-3">
+                <div class="cardTitle">Step 3 — Review & confirm</div>
+                <div class="cardSub" style="margin-bottom:12px;">
+                  Summary by floor, comments included, total price estimated. Selection can be modified later.
+                </div>
+
+                <div class="reviewList" id="reviewList"></div>
+
+                <div style="height:12px"></div>
+
+                <div class="summaryBox">
+                  <div class="row">
+                    <div>
+                      <div class="big" id="reviewTotal">—</div>
+                      <div class="small" id="reviewMeta">—</div>
+                    </div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                      <button class="ghostBtn" id="backToRoomsBtn" type="button">← Back to selection</button>
+                      <button class="primaryBtn" id="confirmBtn" type="button">
+                        <span>Confirm cleaning visit</span>
+                        <span style="opacity:.9;">✓</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="small" style="margin-top:10px;">
+                    Reassurance: <strong>Selection can be modified later.</strong> After completion, room statuses update automatically for the year.
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 3: VISITS -->
+    <section class="page" id="page-visits" aria-label="Upcoming & past visits">
+      <h1>Upcoming & past visits</h1>
+      <p class="lead">
+        Timeline view — expand for details. After completion, rooms automatically update their status.
+      </p>
+
+      <div class="card">
+        <div class="cardHeader">
+          <div>
+            <div class="cardTitle">Visits timeline</div>
+            <div class="cardSub">Operationally clear: Scheduled • In progress • Completed</div>
+          </div>
+          <div class="chips">
+            <div class="chip"><span class="dot" style="background:var(--sel)"></span> Scheduled</div>
+            <div class="chip"><span class="dot" style="background:var(--soon)"></span> In progress</div>
+            <div class="chip"><span class="dot" style="background:var(--good)"></span> Completed</div>
+          </div>
+        </div>
+        <div class="cardBody">
+          <div class="timeline" id="visitsTimeline"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- COMMENT MODAL -->
+  <div class="modalBack" id="modalBack" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modalHead">
+        <div class="modalTitle">
+          <strong id="modalTitle">Room notes</strong>
+          <span id="modalSub">Quick flags + optional note</span>
+        </div>
+        <button class="modalClose" id="modalClose" type="button" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modalBody">
+        <div class="checks">
+          <label class="check"><input type="checkbox" value="Odor"> Odor</label>
+          <label class="check"><input type="checkbox" value="Stains"> Stains</label>
+          <label class="check"><input type="checkbox" value="Allergies"> Allergies</label>
+          <label class="check"><input type="checkbox" value="Heavy grout"> Heavy grout</label>
+          <label class="check"><input type="checkbox" value="Priority room"> Priority room</label>
+        </div>
+        <textarea id="modalText" placeholder="Optional note… (ex: needs extra attention near entry, guest reported odor, etc.)"></textarea>
+      </div>
+
+      <div class="modalFoot">
+        <button class="ghostBtn" id="modalCancel" type="button">Cancel</button>
+        <button class="primaryBtn" id="modalSave" type="button">
+          <span>Save notes</span><span style="opacity:.9;">✓</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast" role="status" aria-live="polite">
+    <div class="tDot"></div>
+    <div id="toastText">—</div>
+  </div>
+
+  <!-- FLOATING HOVER TOOLTIP (outside cards) -->
+  <div class="hoverTip" id="hoverTip" role="tooltip" aria-hidden="true"></div>
+
+  <script>
+    /*******************************
+     * MOCK DATA (Hotel-side only)
+     *******************************/
+    const TODAY = new Date("2027-06-18T12:00:00"); // fixed for mock determinism
+    const DEFAULT_FREQ_PER_YEAR = 2;
+
+    // Pricing & duration assumptions (mock)
+    const PRICE_PER_ROOM = 58;      // dollars
+    const HOURS_PER_ROOM = 0.5;     // 30 min per room avg
+
+    const hotel = {
+      name: "Lakeview Suites — Clermont",
+      totalRooms: 36,
+      floors: [
+        { floor: 1, rooms: ["101","102","103","104","105","106","107","108","109","110","111","112"] },
+        { floor: 2, rooms: ["201","202","203","204","205","206","207","208","209","210","211","212"] },
+        { floor: 3, rooms: ["301","302","303","304","305","306","307","308","309","310","311","312"] },
+      ],
+      // Per room: lastCleaned + frequency/year (2x or 3x)
+      roomMeta: {
+        // Floor 1
+        "101": { last: "2027-05-22", freq: 2 },
+        "102": { last: "2027-01-10", freq: 2 },
+        "103": { last: "2026-12-02", freq: 2 },
+        "104": { last: "2027-02-16", freq: 3 },
+        "105": { last: "2027-03-08", freq: 2 },
+        "106": { last: "2026-09-20", freq: 2 },
+        "107": { last: "2027-04-11", freq: 3 },
+        "108": { last: "2026-11-14", freq: 2 },
+        "109": { last: "2027-05-01", freq: 2 },
+        "110": { last: "2026-10-03", freq: 3 },
+        "111": { last: "2027-02-02", freq: 2 },
+        "112": { last: "2026-08-28", freq: 2 },
+
+        // Floor 2
+        "201": { last: "2027-06-01", freq: 2 },
+        "202": { last: "2026-12-18", freq: 2 },
+        "203": { last: "2026-09-02", freq: 2 },
+        "204": { last: "2027-04-29", freq: 3 },
+        "205": { last: "2027-02-20", freq: 2 },
+        "206": { last: "2026-10-19", freq: 2 },
+        "207": { last: "2027-01-26", freq: 3 },
+        "208": { last: "2027-03-30", freq: 2 },
+        "209": { last: "2026-08-12", freq: 2 },
+        "210": { last: "2027-05-12", freq: 2 },
+        "211": { last: "2026-11-25", freq: 3 },
+        "212": { last: "2027-02-11", freq: 2 },
+
+        // Floor 3
+        "301": { last: "2027-03-12", freq: 2 },
+        "302": { last: "2026-07-18", freq: 2 },
+        "303": { last: "2027-02-28", freq: 3 },
+        "304": { last: "2027-05-07", freq: 2 },
+        "305": { last: "2026-12-28", freq: 2 },
+        "306": { last: "2026-09-11", freq: 2 },
+        "307": { last: "2027-01-09", freq: 3 },
+        "308": { last: "2027-04-02", freq: 2 },
+        "309": { last: "2026-10-27", freq: 2 },
+        "310": { last: "2027-02-04", freq: 2 },
+        "311": { last: "2027-06-06", freq: 2 },
+        "312": { last: "2026-08-05", freq: 3 },
+      }
+    };
+
+    // Visits (mock)
+    const visits = [
+      {
+        id: "v-2027-07-02",
+        date: "2027-07-02",
+        status: "scheduled",
+        rooms: ["106","112","203","206","209","302","306","309","312","103","108","211"],
+        notes: { "112": { flags:["Priority room"], text:"Guest reported odor last week." } },
+        price: 12 * PRICE_PER_ROOM
+      },
+      {
+        id: "v-2027-06-10",
+        date: "2027-06-10",
+        status: "done",
+        rooms: ["102","107","205","210","301","308","304","111","212","305"],
+        notes: {},
+        price: 10 * PRICE_PER_ROOM
+      },
+      {
+        id: "v-2027-05-03",
+        date: "2027-05-03",
+        status: "progress",
+        rooms: ["104","207","303","307","110","211","312","204","107","303"],
+        notes: {},
+        price: 10 * PRICE_PER_ROOM
+      }
+    ];
+
+    /*******************************
+     * STATE
+     *******************************/
+    const state = {
+      route: "dashboard",
+      year: 2027,
+      schedule: {
+        step: 1,
+        date: null,
+        selectedRooms: new Set(),
+        comments: new Map(), // roomNo -> { flags:[], text:"" }
+        nextVisit: new Set(), // roomNo -> flagged for next visit (purple pulse)
+      },
+      calendar: {
+        cursor: new Date("2027-07-01T12:00:00"),
+        availability: new Map(), // dateKey => true/false
+      },
+      modal: {
+        room: null
+      }
+    };
+
+    // Calendar availability mock (some blocked days)
+    (() => {
+      const blocked = new Set(["2027-07-07","2027-07-14","2027-07-21","2027-07-28","2027-08-04"]);
+      const start = new Date("2027-06-25T00:00:00");
+      for (let i=0;i<80;i++){
+        const d = new Date(start); d.setDate(start.getDate()+i);
+        const key = iso(d);
+        state.calendar.availability.set(key, !blocked.has(key));
+      }
+    })();
+
+    /*******************************
+     * HELPERS
+     *******************************/
+    function iso(d){
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,"0");
+      const day = String(d.getDate()).padStart(2,"0");
+      return `${y}-${m}-${day}`;
+    }
+    function parseISO(s){
+      const [y,m,d] = s.split("-").map(Number);
+      return new Date(y, m-1, d, 12, 0, 0);
+    }
+    function diffDays(a,b){
+      const ms = (a.getTime() - b.getTime());
+      return Math.round(ms / (1000*60*60*24));
+    }
+    function monthsBetween(a,b){
+      // rough month diff for status; good enough for UI
+      const months = (a.getFullYear()-b.getFullYear())*12 + (a.getMonth()-b.getMonth());
+      return months + (a.getDate()>=b.getDate()?0:-1);
+    }
+    function statusForRoom(roomNo){
+      const meta = hotel.roomMeta[roomNo] || { last: "2027-01-01", freq: DEFAULT_FREQ_PER_YEAR };
+      const last = parseISO(meta.last);
+      const freq = meta.freq || DEFAULT_FREQ_PER_YEAR;
+      const monthsSince = monthsBetween(TODAY, last);
+
+      // Expected interval (months) and thresholds
+      const interval = 12 / freq;            // 6 months for 2x/year, 4 months for 3x/year
+      const dueSoonAt = interval - 1;        // 1 month before due
+      const overdueAt = interval;            // due date
+
+      let status = "neutral";
+      if (monthsSince <= Math.max(1, Math.floor(interval/3))) status = "cleaned";
+      if (monthsSince >= dueSoonAt) status = "due";
+      if (monthsSince >= overdueAt) status = "overdue";
+
+      // Selected overrides
+      if (state.schedule.selectedRooms.has(roomNo)) status = "selected";
+      return { status, monthsSince, freq, lastISO: meta.last };
+    }
+    function fmtDate(s){
+      const d = parseISO(s);
+      return d.toLocaleDateString(undefined, { weekday:"short", year:"numeric", month:"short", day:"numeric" });
+    }
+    function estHours(count){ return Math.max(1, Math.round(count * HOURS_PER_ROOM * 2) / 2); } // nearest 0.5h
+    function floorSelectedCount(floor){
+      return floor.rooms.filter(r=>state.schedule.selectedRooms.has(r)).length;
+    }
+    function smallBatchFeeForFloor(floor){
+      const c = floorSelectedCount(floor);
+      return (c > 0 && c < 3) ? 30 : 0; // 1–2 rooms on that floor
+    }
+    function smallBatchFeeTotal(){
+      return hotel.floors.reduce((sum,f)=> sum + smallBatchFeeForFloor(f), 0);
+    }
+    function estPrice(count){
+      return (count * PRICE_PER_ROOM) + smallBatchFeeTotal();
+    }
+    function money(n){ return n.toLocaleString(undefined, { style:"currency", currency:"USD", maximumFractionDigits:0 }); }
+    function toast(msg, tone="warn"){
+      const el = document.getElementById("toast");
+      const text = document.getElementById("toastText");
+      const dot = el.querySelector(".tDot");
+      text.textContent = msg;
+      dot.style.background =
+        tone==="ok" ? "rgba(32,201,151,.95)" :
+        tone==="bad" ? "rgba(255,77,79,.95)" :
+        "rgba(241,180,15,.95)";
+      el.dataset.show = "true";
+      clearTimeout(toast._t);
+      toast._t = setTimeout(()=>{ el.dataset.show = "false"; }, 2300);
+    }
+
+    /*******************************
+     * FLOATING ROOM TOOLTIP (outside card)
+     *******************************/
+    function hideHoverTip(){
+      const tip = document.getElementById("hoverTip");
+      if(!tip) return;
+      tip.dataset.show = "false";
+      tip.setAttribute("aria-hidden", "true");
+    }
+
+    function showHoverTip(anchorEl, html){
+      const tip = document.getElementById("hoverTip");
+      if(!tip || !anchorEl) return;
+
+      tip.innerHTML = html;
+      tip.dataset.show = "true";
+      tip.setAttribute("aria-hidden", "false");
+
+      // First pass: default above
+      tip.dataset.pos = "top";
+      tip.style.left = "0px";
+      tip.style.top = "0px";
+
+      requestAnimationFrame(()=>{
+        const a = anchorEl.getBoundingClientRect();
+        const t = tip.getBoundingClientRect();
+
+        let x = a.left + a.width/2;
+        let y = a.top - 12;
+
+        // Clamp X within viewport
+        const minX = 12 + t.width/2;
+        const maxX = window.innerWidth - 12 - t.width/2;
+        x = Math.max(minX, Math.min(maxX, x));
+
+        // If not enough space above, place below
+        if((y - t.height) < 12){
+          tip.dataset.pos = "bottom";
+          y = a.bottom + 12;
+        } else {
+          tip.dataset.pos = "top";
+        }
+
+        tip.style.left = `${x}px`;
+        tip.style.top = `${y}px`;
+      });
+    }
+
+    // Hide tooltip on scroll/resize (prevents stale positioning)
+    window.addEventListener("scroll", hideHoverTip, true);
+    window.addEventListener("resize", hideHoverTip);
+
+    /*******************************
+     * ROUTER
+     *******************************/
+    function setRoute(route){
+      state.route = route;
+      document.querySelectorAll(".nav button").forEach(b=>{
+        b.dataset.active = (b.dataset.route===route) ? "true" : "false";
+      });
+      document.querySelectorAll(".page").forEach(p=>{
+        p.dataset.active = (p.id === `page-${route}`) ? "true" : "false";
+      });
+
+      if(route === "dashboard") renderDashboard();
+      if(route === "schedule") renderSchedule();
+      if(route === "visits") renderVisits();
+    }
+
+    /*******************************
+     * DASHBOARD RENDER
+     *******************************/
+    function renderDashboard(){
+      document.getElementById("hotelName").textContent = hotel.name;
+
+      let cleaned=0, due=0, overdue=0;
+      const allRooms = hotel.floors.flatMap(f=>f.rooms);
+      allRooms.forEach(r=>{
+        const s = statusForRoom(r).status;
+        // for dashboard, ignore "selected" and treat as their underlying status
+        if (s==="selected"){
+          // compute underlying without selection
+          const prev = state.schedule.selectedRooms.has(r);
+          state.schedule.selectedRooms.delete(r);
+          const base = statusForRoom(r).status;
+          if(prev) state.schedule.selectedRooms.add(r);
+          if(base==="cleaned") cleaned++;
+          else if(base==="due") due++;
+          else if(base==="overdue") overdue++;
+        } else {
+          if(s==="cleaned") cleaned++;
+          else if(s==="due") due++;
+          else if(s==="overdue") overdue++;
+        }
+      });
+
+      document.getElementById("kpiTotal").textContent = allRooms.length;
+      document.getElementById("kpiCleaned").textContent = cleaned;
+      document.getElementById("kpiDue").textContent = due;
+      document.getElementById("kpiOverdue").textContent = overdue;
+
+      // Progress: simple ratio of "not overdue" rooms
+      const ok = allRooms.length - overdue;
+      const pct = Math.round((ok / allRooms.length) * 100);
+      document.getElementById("progressMetaRight").textContent = `${pct}%`;
+      document.getElementById("progressBar").style.width = `${pct}%`;
+
+      // cycle label (show dominant frequency)
+      const freqCounts = {};
+      allRooms.forEach(r=>{
+        const f = (hotel.roomMeta[r]?.freq ?? DEFAULT_FREQ_PER_YEAR);
+        freqCounts[f] = (freqCounts[f]||0) + 1;
+      });
+      const dominant = Object.entries(freqCounts).sort((a,b)=>b[1]-a[1])[0]?.[0] ?? DEFAULT_FREQ_PER_YEAR;
+      document.getElementById("cycleLabel").textContent = `${dominant}×/year cycle`;
+    }
+
+    /*******************************
+     * SCHEDULE RENDER
+     *******************************/
+    function setStep(n){
+      state.schedule.step = n;
+      document.querySelectorAll(".step").forEach(s=>{
+        s.dataset.active = (Number(s.dataset.step)===n) ? "true" : "false";
+      });
+      document.querySelectorAll(".stepPane").forEach(p=>{
+        p.dataset.active = (p.id === `step-${n}`) ? "true" : "false";
+      });
+      // gate navigation: step 2 requires date, step 3 requires rules ok
+      if(n===2 && !state.schedule.date){
+        state.schedule.step = 1;
+        setStep(1);
+        toast("Please select an available date first.", "warn");
+        return;
+      }
+      if(n===3){
+        const ok = rulesOK();
+        if(!ok.ok){
+          toast(ok.message, "warn");
+          setStep(2);
+          return;
+        }
+        renderReview();
+      }
+    }
+
+    function renderSchedule(){
+      // keep the stepper consistent
+      setStep(state.schedule.step);
+      renderCalendar();
+      renderFloors();
+      renderLiveSummary();
+      renderRulesHint();
+    }
+
+    function renderCalendar(){
+      const monthEl = document.getElementById("calMonth");
+      const daysEl = document.getElementById("calDays");
+      daysEl.innerHTML = "";
+
+      const cursor = state.calendar.cursor;
+      const mName = cursor.toLocaleDateString(undefined, { month:"long", year:"numeric" });
+      monthEl.textContent = mName;
+
+      // build grid: start on Sunday
+      const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1, 12);
+      const startDay = first.getDay();
+      const gridStart = new Date(first); gridStart.setDate(first.getDate() - startDay);
+
+      for(let i=0;i<42;i++){
+        const d = new Date(gridStart); d.setDate(gridStart.getDate()+i);
+        const key = iso(d);
+        const inMonth = d.getMonth() === cursor.getMonth();
+        const available = state.calendar.availability.get(key) ?? true;
+
+        const btn = document.createElement("div");
+        btn.className = "day";
+        btn.textContent = d.getDate();
+        btn.dataset.out = inMonth ? "false" : "true";
+        btn.dataset.available = available ? "true" : "false";
+        btn.dataset.selected = (state.schedule.date===key) ? "true" : "false";
+
+        if(inMonth){
+          btn.addEventListener("click", ()=>{
+            if(!available){
+              toast("That day is blocked — choose an available slot.", "bad");
+              return;
+            }
+            state.schedule.date = key;
+            document.getElementById("toRoomsBtn").disabled = false;
+            document.getElementById("dateMeta").innerHTML =
+              `Selected: <strong>${fmtDate(key)}</strong> • You can now choose rooms.`;
+            renderCalendar();
+          });
+        } else {
+          btn.style.pointerEvents = "none";
+        }
+
+        daysEl.appendChild(btn);
+      }
+
+      // update meta if already selected
+      const toRoomsBtn = document.getElementById("toRoomsBtn");
+      if(state.schedule.date){
+        toRoomsBtn.disabled = false;
+        document.getElementById("dateMeta").innerHTML =
+          `Selected: <strong>${fmtDate(state.schedule.date)}</strong> • Availability confirmed.`;
+      } else {
+        toRoomsBtn.disabled = true;
+        document.getElementById("dateMeta").textContent = "Select a date to continue.";
+      }
+    }
+
+    function renderFloors(){
+      const root = document.getElementById("floors");
+      root.innerHTML = "";
+
+      hotel.floors.forEach((f, idx)=>{
+        const floorSelCount = f.rooms.filter(r=>state.schedule.selectedRooms.has(r)).length;
+
+        const floorEl = document.createElement("div");
+        floorEl.className = "floor";
+        floorEl.dataset.open = (idx===0) ? "true" : "false";
+
+        const head = document.createElement("div");
+        head.className = "floorHead";
+
+        const left = document.createElement("div");
+        left.className = "floorLeft";
+        left.innerHTML = `
+          <div class="caret" aria-hidden="true">›</div>
+          <div class="floorTitle">
+            <strong>Floor ${f.floor}</strong>
+            <span>${f.rooms.length} rooms • ${floorSelCount} selected</span>
+          </div>
+        `;
+
+        const rule = document.createElement("div");
+        rule.className = "floorRule";
+
+        const fee = (floorSelCount > 0 && floorSelCount < 3) ? 30 : 0;
+        const ok = (floorSelCount === 0) || (floorSelCount >= 3);
+        rule.dataset.ok = ok ? "true" : "false";
+
+        if(floorSelCount === 0){
+          rule.innerHTML = `
+            <span class="miniDot" style="background:var(--neu)"></span>
+            No rooms selected
+          `;
+        } else if(fee){
+          rule.innerHTML = `
+            <span class="miniDot" style="background:var(--soon)"></span>
+            1–2 rooms = +$${fee}
+          `;
+        } else {
+          rule.innerHTML = `
+            <span class="miniDot" style="background:var(--good)"></span>
+            No surcharge
+          `;
+        }
+
+        head.appendChild(left);
+        head.appendChild(rule);
+
+        head.addEventListener("click", ()=>{
+          floorEl.dataset.open = (floorEl.dataset.open==="true") ? "false" : "true";
+        });
+
+        const roomsWrap = document.createElement("div");
+        roomsWrap.className = "rooms";
+        const grid = document.createElement("div");
+        grid.className = "roomGrid";
+
+        f.rooms.forEach(roomNo=>{
+          const { status, monthsSince, freq, lastISO } = statusForRoom(roomNo);
+          const room = document.createElement("div");
+          room.className = "room";
+          room.tabIndex = 0;
+          room.dataset.status =
+            status === "selected" ? "neutral" : status; // base status for border
+          room.dataset.selected = state.schedule.selectedRooms.has(roomNo) ? "true" : "false";
+
+          const labelMap = {
+            cleaned: "Cleaned",
+            due: "Due soon",
+            overdue: "Overdue",
+            neutral: "Neutral"
+          };
+
+          const baseStatus = (status === "selected") ? computeBaseStatus(roomNo) : status;
+          const isNext = state.schedule.nextVisit.has(roomNo);
+
+          room.innerHTML = `
+            <div class="roomTop">
+              <div class="roomNo">${roomNo}</div>
+              <div class="roomStatusLine" title="${labelMap[baseStatus]}">
+                <span class="sDot" style="background:${statusDotColor(baseStatus)}"></span>
+                <span>${labelMap[baseStatus]}</span>
+              </div>
+            </div>
+          `;
+
+          // Floating tooltip HTML
+          const tipHTML = `
+            <strong>Room ${roomNo}</strong>
+            <div class="mut">Last cleaned: ${fmtDate(lastISO)} • Frequency: ${freq}×/year</div>
+            <div class="mut">History: ${Math.max(0, monthsSince)} months since last deep clean</div>
+            <div class="mut">Next visit: ${isNext ? "Yes" : "No"}</div>
+          `;
+
+          room.addEventListener("mouseenter", ()=> showHoverTip(room, tipHTML));
+          room.addEventListener("mouseleave", hideHoverTip);
+          room.addEventListener("focus", ()=> showHoverTip(room, tipHTML));
+          room.addEventListener("blur", hideHoverTip);
+
+          // Comment button (stop propagation)
+          const cBtn = document.createElement("button");
+          cBtn.type = "button";
+          cBtn.className = "commentBtn";
+          cBtn.title = "Room comments";
+          cBtn.textContent = "💬";
+          const has = state.schedule.comments.has(roomNo);
+          cBtn.dataset.has = has ? "true" : "false";
+          cBtn.addEventListener("click", (e)=>{
+            e.stopPropagation();
+            hideHoverTip();
+            openModal(roomNo);
+          });
+
+          room.appendChild(cBtn);
+
+          // Next-visit toggle button (stop propagation)
+          const nBtn = document.createElement("button");
+          nBtn.type = "button";
+          nBtn.className = "nextBtn";
+          nBtn.title = "Mark for next visit";
+          nBtn.textContent = "⏭";
+          const hasNext = state.schedule.nextVisit.has(roomNo);
+          nBtn.dataset.has = hasNext ? "true" : "false";
+          nBtn.addEventListener("click", (e)=>{
+            e.stopPropagation();
+            hideHoverTip();
+            if(state.schedule.nextVisit.has(roomNo)) state.schedule.nextVisit.delete(roomNo);
+            else state.schedule.nextVisit.add(roomNo);
+            toast(`Room ${roomNo} ${state.schedule.nextVisit.has(roomNo) ? "marked for next visit" : "unmarked"}.`, "ok");
+            renderFloors();
+            // keep review in sync if it is open
+            if(state.schedule.step===3) renderReview();
+          });
+          room.appendChild(nBtn);
+
+          const toggle = ()=>{
+            // enforce "selected" visual status
+            if(state.schedule.selectedRooms.has(roomNo)){
+              state.schedule.selectedRooms.delete(roomNo);
+            } else {
+              state.schedule.selectedRooms.add(roomNo);
+            }
+            renderFloors();
+            renderLiveSummary();
+            renderRulesHint();
+          };
+
+          room.addEventListener("click", toggle);
+          room.addEventListener("keydown", (e)=>{
+            if(e.key==="Enter" || e.key===" "){
+              e.preventDefault();
+              toggle();
+            }
+          });
+
+          // Apply correct dataset after selection
+          if(state.schedule.selectedRooms.has(roomNo)){
+            room.dataset.selected = "true";
+            room.dataset.status = "neutral"; // left border comes from selected style
+            room.dataset.selected = "true";
+          } else {
+            room.dataset.selected = "false";
+            room.dataset.status = baseStatus;
+          }
+          room.dataset.next = state.schedule.nextVisit.has(roomNo) ? "true" : "false";
+
+          grid.appendChild(room);
+        });
+
+        roomsWrap.appendChild(grid);
+        floorEl.appendChild(head);
+        floorEl.appendChild(roomsWrap);
+        root.appendChild(floorEl);
+      });
+
+      // Apply rule hint to sidebar
+      renderRulesHint();
+    }
+
+    function computeBaseStatus(roomNo){
+      const prev = state.schedule.selectedRooms.has(roomNo);
+      if(prev) state.schedule.selectedRooms.delete(roomNo);
+      const base = statusForRoom(roomNo).status;
+      if(prev) state.schedule.selectedRooms.add(roomNo);
+      return base;
+    }
+    function statusDotColor(baseStatus){
+      if(baseStatus==="cleaned") return "var(--good)";
+      if(baseStatus==="due") return "var(--soon)";
+      if(baseStatus==="overdue") return "var(--over)";
+      return "var(--neu)";
+    }
+
+    function rulesOK(){
+      const total = state.schedule.selectedRooms.size;
+      if(total < 10){
+        return { ok:false, message: "Select at least 10 rooms per visit (friendly minimum)." };
+      }
+      return { ok:true, message:"OK" };
+    }
+
+    function renderRulesHint(){
+      const hint = document.getElementById("rulesHint");
+      const text = document.getElementById("rulesText");
+      const btn = document.getElementById("goReviewBtn");
+
+      const total = state.schedule.selectedRooms.size;
+
+      const feeFloors = hotel.floors
+        .map(f => ({ floor:f.floor, count: f.rooms.filter(r=>state.schedule.selectedRooms.has(r)).length }))
+        .filter(x => x.count > 0 && x.count < 3);
+
+      const missingTotal = Math.max(0, 10 - total);
+
+      const messages = [];
+      if(missingTotal>0) messages.push(`Add <strong>${missingTotal}</strong> more room(s) to reach <strong>10 minimum</strong>.`);
+      if(feeFloors.length){
+        const floors = feeFloors.map(x=>`Floor ${x.floor}: <strong>${x.count}</strong> room(s) → <strong>+$30</strong> (or add to 3 to remove fee)`).join("<br/>");
+        messages.push(`<div style="margin-top:6px;"><strong>Small-batch fees</strong><br/>${floors}</div>`);
+      }
+
+      const ok = (missingTotal===0) && (total>0);
+
+      if(total===0){
+        hint.style.display = "none";
+        btn.disabled = true;
+        return;
+      }
+
+      hint.style.display = messages.length ? "flex" : "none";
+      text.innerHTML = messages.join("<br/>");
+
+      btn.disabled = (missingTotal > 0);
+    }
+
+    function renderLiveSummary(){
+      const count = state.schedule.selectedRooms.size;
+      document.getElementById("liveCount").textContent = `${count} room${count===1?"":"s"} selected`;
+
+      const hours = count ? estHours(count) : null;
+      const price = count ? estPrice(count) : null;
+      const date = state.schedule.date ? fmtDate(state.schedule.date) : "Select date";
+      const fee = smallBatchFeeTotal();
+      const feeText = fee ? ` • Fees: ${money(fee)}` : "";
+
+      document.getElementById("liveMeta").textContent =
+        count
+          ? `Estimated time: ${hours}h • Estimated price: ${money(price)}${feeText} • Date: ${date}`
+          : `Estimated time: — • Estimated price: —`;
+
+      // Update "Continue to review" availability
+      const ok = rulesOK();
+      const goReviewBtn = document.getElementById("goReviewBtn");
+      goReviewBtn.disabled = !ok.ok;
+
+      // Update the calendar "estimated duration" line too
+      const dateMeta = document.getElementById("dateMeta");
+      if(state.schedule.date && count){
+        dateMeta.innerHTML = `Selected: <strong>${fmtDate(state.schedule.date)}</strong> • Estimated duration: <strong>${hours}h</strong> (based on selection).`;
+      }
+    }
+
+    function renderReview(){
+      const list = document.getElementById("reviewList");
+      list.innerHTML = "";
+
+      // Group selected rooms by floor
+      const selected = Array.from(state.schedule.selectedRooms);
+      const byFloor = hotel.floors.map(f=>{
+        const rooms = f.rooms.filter(r=>state.schedule.selectedRooms.has(r));
+        return { floor: f.floor, rooms };
+      }).filter(x=>x.rooms.length);
+
+      byFloor.forEach(group=>{
+        const el = document.createElement("div");
+        el.className = "reviewItem";
+
+        const withComments = group.rooms.filter(r=>state.schedule.comments.has(r)).length;
+
+        el.innerHTML = `
+          <div class="reviewHead">
+            <strong>Floor ${group.floor}</strong>
+            <span>${group.rooms.length} rooms • ${withComments} with notes</span>
+          </div>
+          <div class="roomsLine"></div>
+        `;
+
+        const line = el.querySelector(".roomsLine");
+        group.rooms.forEach(r=>{
+          const pill = document.createElement("div");
+          pill.className = "pillRoom";
+          pill.innerHTML = `<span class="mini"></span> ${r}${state.schedule.comments.has(r) ? " • 💬" : ""}`;
+          line.appendChild(pill);
+        });
+
+        // show comment snippets
+        group.rooms.forEach(r=>{
+          if(!state.schedule.comments.has(r)) return;
+          const c = state.schedule.comments.get(r);
+          const row = document.createElement("div");
+          row.className = "small";
+          row.style.marginTop = "10px";
+          row.innerHTML = `<strong>${r} notes:</strong> ${
+            (c.flags?.length ? c.flags.join(", ") : "—")
+          }${c.text ? ` • “${escapeHTML(c.text)}”` : ""}`;
+          el.appendChild(row);
+        });
+
+        list.appendChild(el);
+      });
+
+      const total = selected.length;
+      const hours = estHours(total);
+      const price = estPrice(total);
+      const fee = smallBatchFeeTotal();
+
+      document.getElementById("reviewTotal").textContent = `${money(price)} total`;
+      document.getElementById("reviewMeta").textContent =
+        `${total} rooms • Estimated time: ${hours}h • Date: ${state.schedule.date ? fmtDate(state.schedule.date) : "—"}${fee ? ` • Fees: ${money(fee)}` : ""}`;
+    }
+
+    // ----- AUTOPLAN HELPERS -----
+    function getAutoPlanPrefs(){
+      const cycleEl = document.getElementById("apCycle");
+      const minEl = document.getElementById("apMinPerFloor");
+      const daysEls = Array.from(document.querySelectorAll(".apDay"));
+      const preferredDays = daysEls.filter(x=>x.checked).map(x=>Number(x.value));
+      return {
+        cycle: cycleEl ? Number(cycleEl.value) : 2,
+        minPerFloor: minEl ? Number(minEl.value) : 3,
+        preferredDays: preferredDays.length ? preferredDays : [1,2,3,4,5]
+      };
+    }
+
+    function pickSmartDate(preferredDays){
+      // pick earliest available date matching preferred weekday, from TODAY forward
+      const keys = Array.from(state.calendar.availability.keys()).sort();
+      const todayKey = iso(TODAY);
+      for(const k of keys){
+        if(k < todayKey) continue;
+        if(state.calendar.availability.get(k) !== true) continue;
+        const d = parseISO(k);
+        if(preferredDays.includes(d.getDay())) return k;
+      }
+      // fallback: any available
+      for(const k of keys){
+        if(k < todayKey) continue;
+        if(state.calendar.availability.get(k) === true) return k;
+      }
+      return null;
+    }
+
+    function statusPriority(baseStatus){
+      // lower is higher priority
+      if(baseStatus === "overdue") return 0;
+      if(baseStatus === "due") return 1;
+      if(baseStatus === "neutral") return 2;
+      return 3; // cleaned
+    }
+
+    function autoPlanSelection(){
+      const prefs = getAutoPlanPrefs();
+
+      // 1) Date
+      const date = pickSmartDate(prefs.preferredDays);
+      if(!date){
+        toast("No available date found in this window.", "bad");
+        return;
+      }
+      state.schedule.date = date;
+      state.calendar.cursor = new Date(parseISO(date).getFullYear(), parseISO(date).getMonth(), 1, 12);
+
+      // 2) Rooms
+      state.schedule.selectedRooms.clear();
+
+      // Build per-floor candidates sorted by priority
+      const floorPlans = hotel.floors.map(f=>{
+        const roomsSorted = [...f.rooms].sort((a,b)=>{
+          const sa = computeBaseStatus(a);
+          const sb = computeBaseStatus(b);
+          return statusPriority(sa) - statusPriority(sb);
+        });
+        // score floor by its best rooms
+        const best = roomsSorted.slice(0, prefs.minPerFloor);
+        const score = best.reduce((sum,r)=> sum + statusPriority(computeBaseStatus(r)), 0) / Math.max(1, best.length);
+        return { floor: f, roomsSorted, score };
+      }).sort((a,b)=> a.score - b.score);
+
+      const target = 10;
+
+      // pick floors in order of urgency; when a floor is used, take minPerFloor rooms to avoid fee
+      for(const fp of floorPlans){
+        if(state.schedule.selectedRooms.size >= target) break;
+        // Only include a floor if it has at least one overdue/due/neutral, or if we still need rooms
+        const remaining = target - state.schedule.selectedRooms.size;
+        const take = Math.max(prefs.minPerFloor, Math.min(prefs.minPerFloor, fp.roomsSorted.length));
+        // If we already have enough rooms, stop
+        if(remaining <= 0) break;
+        // If taking minPerFloor would overshoot a lot, still do it (preference is to avoid fee)
+        fp.roomsSorted.slice(0, take).forEach(r=> state.schedule.selectedRooms.add(r));
+      }
+
+      // If still short (should be rare), fill globally by priority
+      if(state.schedule.selectedRooms.size < target){
+        const all = hotel.floors.flatMap(f=>f.rooms);
+        const remainingRooms = all
+          .filter(r=>!state.schedule.selectedRooms.has(r))
+          .sort((a,b)=> statusPriority(computeBaseStatus(a)) - statusPriority(computeBaseStatus(b)));
+        for(const r of remainingRooms){
+          state.schedule.selectedRooms.add(r);
+          if(state.schedule.selectedRooms.size >= target) break;
+        }
+      }
+
+      toast(`Smart plan generated: ${state.schedule.selectedRooms.size} rooms • ${fmtDate(date)}`, "ok");
+      renderCalendar();
+      renderFloors();
+      renderLiveSummary();
+      renderRulesHint();
+      setStep(2);
+    }
+
+    function escapeHTML(s){
+      return String(s)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#39;");
+    }
+
+    /*******************************
+     * VISITS RENDER
+     *******************************/
+    function renderVisits(){
+      const root = document.getElementById("visitsTimeline");
+      root.innerHTML = "";
+
+      const sorted = [...visits].sort((a,b)=> b.date.localeCompare(a.date));
+      sorted.forEach(v=>{
+        const det = document.createElement("details");
+        det.className = "visit";
+
+        const statusLabel =
+          v.status==="scheduled" ? "Scheduled" :
+          v.status==="progress" ? "In progress" :
+          "Completed";
+
+        det.innerHTML = `
+          <summary>
+            <div class="visitLeft">
+              <strong>${fmtDate(v.date)}</strong>
+              <span>${v.rooms.length} rooms • ${money(v.price)}</span>
+            </div>
+            <div class="statusPill" data-s="${v.status}">
+              <span class="dot"></span>
+              ${statusLabel}
+            </div>
+          </summary>
+          <div class="visitBody">
+            <div style="margin-top:10px;">
+              <strong>Rooms:</strong> ${v.rooms.join(", ")}
+            </div>
+            <div style="margin-top:8px; color:rgba(11,18,32,.66); font-size:12px;">
+              After completion, statuses update automatically based on frequency.
+            </div>
+          </div>
+        `;
+        root.appendChild(det);
+      });
+    }
+
+    /*******************************
+     * MODAL (room comments)
+     *******************************/
+    function openModal(roomNo){
+      state.modal.room = roomNo;
+      const back = document.getElementById("modalBack");
+      const title = document.getElementById("modalTitle");
+      const sub = document.getElementById("modalSub");
+      const txt = document.getElementById("modalText");
+
+      title.textContent = `Room ${roomNo} — Notes`;
+      sub.textContent = "Quick checkboxes + optional text. Saves instantly.";
+
+      // restore saved
+      const saved = state.schedule.comments.get(roomNo) || { flags:[], text:"" };
+      txt.value = saved.text || "";
+
+      // set checkboxes
+      back.querySelectorAll(".check input[type=checkbox]").forEach(cb=>{
+        cb.checked = (saved.flags || []).includes(cb.value);
+      });
+
+      back.dataset.open = "true";
+      back.setAttribute("aria-hidden", "false");
+    }
+
+    function closeModal(){
+      const back = document.getElementById("modalBack");
+      back.dataset.open = "false";
+      back.setAttribute("aria-hidden", "true");
+      state.modal.room = null;
+    }
+
+    function saveModal(){
+      const roomNo = state.modal.room;
+      if(!roomNo) return;
+
+      const back = document.getElementById("modalBack");
+      const flags = [];
+      back.querySelectorAll(".check input[type=checkbox]").forEach(cb=>{
+        if(cb.checked) flags.push(cb.value);
+      });
+      const text = document.getElementById("modalText").value.trim();
+
+      if(flags.length===0 && !text){
+        state.schedule.comments.delete(roomNo);
+      } else {
+        state.schedule.comments.set(roomNo, { flags, text });
+      }
+
+      toast(`Saved notes for room ${roomNo}.`, "ok");
+      closeModal();
+      renderFloors();
+      renderReview(); // keeps review updated if open
+    }
+
+    /*******************************
+     * EVENTS
+     *******************************/
+    // Nav buttons
+    document.querySelectorAll(".nav button").forEach(b=>{
+      b.addEventListener("click", ()=> setRoute(b.dataset.route));
+    });
+
+    // CTAs
+    document.getElementById("ctaSchedule").addEventListener("click", ()=>{
+      setRoute("schedule");
+      setStep(1);
+    });
+    document.getElementById("dashCTA").addEventListener("click", ()=>{
+      setRoute("schedule");
+      setStep(1);
+    });
+
+    // Year selector
+    document.getElementById("yearSelect").addEventListener("change", (e)=>{
+      state.year = Number(e.target.value);
+      toast(`Year set to ${state.year}.`, "ok");
+      renderDashboard();
+    });
+
+    // Stepper clicks
+    document.querySelectorAll(".step").forEach(s=>{
+      s.addEventListener("click", ()=> setStep(Number(s.dataset.step)));
+      s.addEventListener("keydown", (e)=>{
+        if(e.key==="Enter" || e.key===" "){
+          e.preventDefault();
+          setStep(Number(s.dataset.step));
+        }
+      });
+    });
+
+    // Calendar navigation
+    document.getElementById("calPrev").addEventListener("click", ()=>{
+      const c = state.calendar.cursor;
+      state.calendar.cursor = new Date(c.getFullYear(), c.getMonth()-1, 1, 12);
+      renderCalendar();
+    });
+    document.getElementById("calNext").addEventListener("click", ()=>{
+      const c = state.calendar.cursor;
+      state.calendar.cursor = new Date(c.getFullYear(), c.getMonth()+1, 1, 12);
+      renderCalendar();
+    });
+
+    // Step 1 -> Step 2
+    document.getElementById("toRoomsBtn").addEventListener("click", ()=>{
+      if(!state.schedule.date){
+        toast("Select an available date first.", "warn");
+        return;
+      }
+      setStep(2);
+    });
+
+    document.getElementById("autoPlanBtn").addEventListener("click", ()=>{
+      autoPlanSelection();
+    });
+
+    // Continue to review (sidebar)
+    document.getElementById("goReviewBtn").addEventListener("click", ()=>{
+      setStep(3);
+    });
+
+    // Reset selection
+    document.getElementById("resetBtn").addEventListener("click", ()=>{
+      state.schedule.selectedRooms.clear();
+      toast("Selection cleared.", "ok");
+      renderFloors();
+      renderLiveSummary();
+      renderRulesHint();
+      // if review open, return to step 2
+      if(state.schedule.step===3) setStep(2);
+    });
+
+    // Review back
+    document.getElementById("backToRoomsBtn").addEventListener("click", ()=> setStep(2));
+
+    // Confirm
+    document.getElementById("confirmBtn").addEventListener("click", ()=>{
+      const ok = rulesOK();
+      if(!ok.ok){
+        toast(ok.message, "warn");
+        setStep(2);
+        return;
+      }
+      toast("Cleaning visit confirmed. (Mock) Rooms will update after completion.", "ok");
+      setRoute("visits");
+    });
+
+    // Filters
+    document.getElementById("filterOver").addEventListener("click", ()=>{
+      // add all overdue (across floors)
+      hotel.floors.flatMap(f=>f.rooms).forEach(r=>{
+        const prev = state.schedule.selectedRooms.has(r);
+        if(prev) return;
+        const base = computeBaseStatus(r);
+        if(base==="overdue") state.schedule.selectedRooms.add(r);
+      });
+      toast("Added overdue rooms.", "ok");
+      renderFloors(); renderLiveSummary(); renderRulesHint();
+    });
+    document.getElementById("filterDue").addEventListener("click", ()=>{
+      hotel.floors.flatMap(f=>f.rooms).forEach(r=>{
+        const prev = state.schedule.selectedRooms.has(r);
+        if(prev) return;
+        const base = computeBaseStatus(r);
+        if(base==="due") state.schedule.selectedRooms.add(r);
+      });
+      toast("Added due soon rooms.", "ok");
+      renderFloors(); renderLiveSummary(); renderRulesHint();
+    });
+    document.getElementById("filterClear").addEventListener("click", ()=>{
+      state.schedule.selectedRooms.clear();
+      toast("Selection cleared.", "ok");
+      renderFloors(); renderLiveSummary(); renderRulesHint();
+    });
+
+    // Auto-plan (Step 1)
+    document.getElementById("autoPlanBtn").addEventListener("click", ()=>{
+      const cycle = Number(document.getElementById("apCycle").value);
+      const minPerFloor = Number(document.getElementById("apMinPerFloor").value);
+      const prefDays = Array.from(document.querySelectorAll(".apDay"))
+        .filter(x=>x.checked)
+        .map(x=>Number(x.value));
+
+      // 1) Pick next available date matching preferred weekdays
+      let d = new Date(TODAY); d.setDate(d.getDate()+1);
+      let chosen = null;
+      for(let i=0;i<140;i++){
+        const key = iso(d);
+        const available = state.calendar.availability.get(key) ?? true;
+        const dayOk = prefDays.length ? prefDays.includes(d.getDay()) : true;
+        if(available && dayOk){ chosen = key; break; }
+        d.setDate(d.getDate()+1);
+      }
+      if(!chosen){
+        // fallback: first available
+        d = new Date(TODAY); d.setDate(d.getDate()+1);
+        for(let i=0;i<140;i++){
+          const key = iso(d);
+          const available = state.calendar.availability.get(key) ?? true;
+          if(available){ chosen = key; break; }
+          d.setDate(d.getDate()+1);
+        }
+      }
+
+      if(!chosen){
+        toast("No available slot found in the next weeks.", "bad");
+        return;
+      }
+
+      state.schedule.date = chosen;
+      state.calendar.cursor = new Date(parseISO(chosen).getFullYear(), parseISO(chosen).getMonth(), 1, 12);
+
+      // 2) Smart room selection: prioritize overdue → due → neutral → cleaned
+      state.schedule.selectedRooms.clear();
+
+      const priority = (roomNo)=>{
+        const base = computeBaseStatus(roomNo);
+        if(base==="overdue") return 3;
+        if(base==="due") return 2;
+        if(base==="neutral") return 1;
+        return 0;
+      };
+
+      // Rank floors by urgency
+      const rankedFloors = [...hotel.floors]
+        .map(f=>{
+          const rooms = [...f.rooms];
+          const score = rooms.reduce((sum,r)=> sum + priority(r), 0);
+          return { f, score };
+        })
+        .sort((a,b)=> b.score - a.score);
+
+      const target = 10;
+      let picked = 0;
+
+      for(const item of rankedFloors){
+        if(picked >= target) break;
+        const f = item.f;
+        const candidates = [...f.rooms]
+          .sort((a,b)=> priority(b) - priority(a) || a.localeCompare(b));
+
+        const need = Math.min(minPerFloor, candidates.length);
+        for(let i=0;i<need;i++){
+          const r = candidates[i];
+          if(!state.schedule.selectedRooms.has(r)){
+            state.schedule.selectedRooms.add(r);
+            picked++;
+          }
+        }
+      }
+
+      // Top-up to minimum total
+      if(picked < target){
+        const all = hotel.floors.flatMap(x=>x.rooms)
+          .sort((a,b)=> priority(b) - priority(a) || a.localeCompare(b));
+        for(const r of all){
+          if(picked >= target) break;
+          if(!state.schedule.selectedRooms.has(r)){
+            state.schedule.selectedRooms.add(r);
+            picked++;
+          }
+        }
+      }
+
+      toast(`Smart plan generated (${cycle}×/year target).`, "ok");
+      renderSchedule();
+      setStep(2);
+    });
+
+    // Modal actions
+    document.getElementById("modalClose").addEventListener("click", closeModal);
+    document.getElementById("modalCancel").addEventListener("click", closeModal);
+    document.getElementById("modalSave").addEventListener("click", saveModal);
+    document.getElementById("modalBack").addEventListener("click", (e)=>{
+      if(e.target.id==="modalBack") closeModal();
+    });
+    document.addEventListener("keydown", (e)=>{
+      if(e.key==="Escape") closeModal();
+    });
+
+    /*******************************
+     * INIT
+     *******************************/
+    function bootstrap(){
+      document.getElementById("hotelName").textContent = hotel.name;
+      // default route renders
+      renderDashboard();
+      renderVisits();
+
+      // scheduler default
+      renderSchedule();
+
+      // Keep dashboard progress bar animated-in
+      requestAnimationFrame(()=> renderDashboard());
+    }
+    bootstrap();
+  </script>
+</body>
+</html>

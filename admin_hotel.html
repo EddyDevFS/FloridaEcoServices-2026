@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Hotel & Contract</title>
+  <link rel="stylesheet" href="styles.css?v=20260115" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body>
+  <div class="app-container">
+    <header class="header admin-header">
+      <div class="logo">
+        <i class="fas fa-hotel"></i>
+        <div>
+          <h1>Admin - Hotel & Contract</h1>
+          <p>Pricing • Offer • Signature</p>
+        </div>
+      </div>
+
+      <nav class="admin-nav">
+        <a class="admin-link" href="admin_config.html"><i class="fas fa-sitemap"></i> Setup</a>
+        <a class="admin-link active" href="admin_hotel.html"><i class="fas fa-file-contract"></i> Hotel & Contract</a>
+        <a class="admin-link" href="admin_planning.html"><i class="fas fa-calendar-check"></i> Planning</a>
+        <a class="admin-link" href="admin_agenda.html"><i class="fas fa-calendar-alt"></i> Agenda</a>
+        <a class="admin-link" href="admin_reports.html"><i class="fas fa-chart-line"></i> Reports</a>
+        <a class="admin-link" href="admin_settings.html"><i class="fas fa-sliders"></i> Settings</a>
+      </nav>
+
+    </header>
+
+    <div class="top-actions">
+      <div class="hotel-switcher">
+        <div class="hotel-switcher-label">Hotel</div>
+        <select id="hotelSelect" class="hotel-select" aria-label="Select hotel"></select>
+        <button class="btn-secondary btn-hotel" onclick="createNewHotel()">
+          <i class="fas fa-plus"></i> New
+        </button>
+        <button class="btn-secondary btn-hotel" onclick="renameActiveHotel()">
+          <i class="fas fa-pen"></i> Rename
+        </button>
+      </div>
+
+      <div class="save-status" id="saveStatus">
+        <i class="fas fa-check-circle"></i>
+        <span>Saved</span>
+      </div>
+    </div>
+
+    <section class="contract-panel" id="contractPanel">
+      <div class="contract-header">
+        <div>
+          <h2><i class="fas fa-file-contract"></i> Contract Builder</h2>
+          <p>Generate a clean contract in a few clicks.</p>
+        </div>
+        <div class="contract-status" id="contractStatus">Draft</div>
+      </div>
+
+      <div class="contract-grid">
+        <div class="contract-card">
+          <h3>Hotel & Contract</h3>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="contractHotelName">Hotel</label>
+              <input id="contractHotelName" type="text" readonly />
+            </div>
+            <div class="form-field">
+              <label for="roomsMinPerSession">Min rooms / session</label>
+              <input id="roomsMinPerSession" type="number" min="1" value="10" />
+            </div>
+            <div class="form-field">
+              <label for="roomsMaxPerSession">Max rooms / session</label>
+              <input id="roomsMaxPerSession" type="number" min="1" value="20" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="contractRoomsPerSession">Rooms per session</label>
+              <input id="contractRoomsPerSession" type="number" min="1" value="15" />
+            </div>
+            <div class="form-field">
+              <label for="contractContactName">Contact name</label>
+              <input id="contractContactName" type="text" placeholder="Jane Smith" />
+            </div>
+            <div class="form-field">
+              <label for="contractContactEmail">Contact email</label>
+              <input id="contractContactEmail" type="email" placeholder="jane@hotel.com" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="contractContactCc">CC</label>
+              <input id="contractContactCc" type="text" placeholder="ops@hotel.com, gm@hotel.com" />
+            </div>
+          </div>
+        </div>
+
+        <div class="contract-card">
+          <h3>Pricing & Frequency</h3>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="contractSurfaceType">Room surface</label>
+              <select id="contractSurfaceType">
+                <option value="CARPET">Carpet</option>
+                <option value="TILE">Tile</option>
+                <option value="BOTH" selected>Both</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="contractFrequency">Frequency per year</label>
+              <select id="contractFrequency">
+                <option value="YEARLY">1x / year</option>
+                <option value="TWICE_YEAR">2x / year</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label for="baseBoth">Base price (Both)</label>
+              <input id="baseBoth" type="number" min="0" step="1" />
+            </div>
+            <div class="form-field">
+              <label for="baseCarpet">Base price (Carpet)</label>
+              <input id="baseCarpet" type="number" min="0" step="1" />
+            </div>
+            <div class="form-field">
+              <label for="baseTile">Base price (Tile)</label>
+              <input id="baseTile" type="number" min="0" step="1" />
+            </div>
+          </div>
+        </div>
+
+        <div class="contract-card">
+          <h3>Penalty (below min)</h3>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="penaltyBoth">Penalty price (Both)</label>
+              <input id="penaltyBoth" type="number" min="0" step="1" />
+            </div>
+            <div class="form-field">
+              <label for="penaltyCarpet">Penalty price (Carpet)</label>
+              <input id="penaltyCarpet" type="number" min="0" step="1" />
+            </div>
+            <div class="form-field">
+              <label for="penaltyTile">Penalty price (Tile)</label>
+              <input id="penaltyTile" type="number" min="0" step="1" />
+            </div>
+          </div>
+        </div>
+
+        <div class="contract-card">
+          <h3>Contract prices</h3>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="contractBoth">Contract price (Both)</label>
+              <input id="contractBoth" type="number" min="0" step="1" />
+            </div>
+            <div class="form-field">
+              <label for="contractCarpet">Contract price (Carpet)</label>
+              <input id="contractCarpet" type="number" min="0" step="1" />
+            </div>
+            <div class="form-field">
+              <label for="contractTile">Contract price (Tile)</label>
+              <input id="contractTile" type="number" min="0" step="1" />
+            </div>
+          </div>
+        </div>
+
+        <div class="contract-card">
+          <h3>Max advantage (>= min)</h3>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="advantageBoth">Advantage price (Both)</label>
+              <input id="advantageBoth" type="number" min="0" step="1" />
+            </div>
+            <div class="form-field">
+              <label for="advantageCarpet">Advantage price (Carpet)</label>
+              <input id="advantageCarpet" type="number" min="0" step="1" />
+            </div>
+            <div class="form-field">
+              <label for="advantageTile">Advantage price (Tile)</label>
+              <input id="advantageTile" type="number" min="0" step="1" />
+            </div>
+          </div>
+        </div>
+
+        <div class="contract-card">
+          <h3>Other Surfaces (sqft)</h3>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="otherSqftCarpet">Other sqft (Carpet)</label>
+              <input id="otherSqftCarpet" type="number" min="0" step="1" placeholder="0" />
+            </div>
+            <div class="form-field">
+              <label for="otherSqftTile">Other sqft (Tile)</label>
+              <input id="otherSqftTile" type="number" min="0" step="1" placeholder="0" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="sqftCarpet">Carpet / sqft</label>
+              <input id="sqftCarpet" type="number" min="0" step="0.01" />
+            </div>
+            <div class="form-field">
+              <label for="sqftTile">Tile / sqft</label>
+              <input id="sqftTile" type="number" min="0" step="0.01" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="priceTier">Applied tier</label>
+              <input id="priceTier" type="text" readonly />
+            </div>
+            <div class="form-field">
+              <label for="appliedPricePerRoom">Applied price / room</label>
+              <input id="appliedPricePerRoom" type="text" readonly />
+            </div>
+            <div class="form-field">
+              <label for="contractTotal">Total / session</label>
+              <input id="contractTotal" type="text" readonly />
+            </div>
+          </div>
+        </div>
+
+        <div class="contract-card">
+          <h3>Send Contract</h3>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="contractNotes">Notes</label>
+              <textarea id="contractNotes" rows="4" placeholder="Terms, special conditions..."></textarea>
+            </div>
+          </div>
+          <div class="contract-actions">
+            <button class="btn-primary" id="generateContractBtn">
+              <i class="fas fa-paper-plane"></i> Generate link
+            </button>
+            <button class="btn-secondary" id="sendContractBtn" disabled>
+              <i class="fas fa-envelope"></i> Send email
+            </button>
+            <button class="btn-secondary" id="openContractBtn" disabled>
+              <i class="fas fa-link"></i> Open
+            </button>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="contractLink">Contract link</label>
+              <input id="contractLink" type="text" readonly />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="app-config.js"></script>
+  <script src="shared/db.js"></script>
+  <script src="script.js?v=20260115"></script>
+</body>
+</html>

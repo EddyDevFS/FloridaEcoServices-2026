@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Staff - Tasks</title>
+  <link rel="stylesheet" href="styles.css?v=20260115" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body>
+  <div class="app-container">
+    <header class="header admin-header">
+      <div class="logo">
+        <i class="fas fa-clipboard-check"></i>
+        <div>
+          <h1>My Tasks</h1>
+          <p id="staffHeaderSubtitle">Staff portal</p>
+        </div>
+      </div>
+
+      <nav class="admin-nav">
+        <a class="admin-link" href="hotel_dashboard.html"><i class="fas fa-home"></i> Hotel</a>
+        <a class="admin-link active" href="staff_tasks.html"><i class="fas fa-clipboard-check"></i> My Tasks</a>
+      </nav>
+    </header>
+
+    <div class="top-actions">
+      <div class="hotel-switcher">
+        <div class="hotel-switcher-label">Signed in as</div>
+        <select id="staffSelect" class="hotel-select" aria-label="Select staff"></select>
+      </div>
+      <div class="hotel-switcher">
+        <div class="hotel-switcher-label">Hotel</div>
+        <select id="hotelSelect" class="hotel-select" aria-label="Select hotel"></select>
+      </div>
+    </div>
+
+    <section class="planning-shell">
+      <div class="planning-card">
+        <h3>Assigned to me</h3>
+        <div class="planning-list" id="staffTaskList"></div>
+      </div>
+
+      <div class="planning-card">
+        <h3>Task history</h3>
+        <div class="planning-list" id="staffTaskHistory"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="app-config.js"></script>
+  <script src="shared/db.js"></script>
+  <script src="shared/demo.js"></script>
+  <script src="script.js?v=20260115"></script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Planning</title>
+  <link rel="stylesheet" href="styles.css?v=20260115" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body>
+  <div class="app-container">
+    <header class="header admin-header">
+      <div class="logo">
+        <i class="fas fa-hotel"></i>
+        <div>
+          <h1>Admin - Planning</h1>
+          <p>Sessions • Roadmaps • Reports</p>
+        </div>
+      </div>
+
+      <nav class="admin-nav">
+        <a class="admin-link" href="admin_config.html"><i class="fas fa-sitemap"></i> Setup</a>
+        <a class="admin-link" href="admin_hotel.html"><i class="fas fa-file-contract"></i> Hotel & Contract</a>
+        <a class="admin-link active" href="admin_planning.html"><i class="fas fa-calendar-check"></i> Planning</a>
+        <a class="admin-link" href="admin_agenda.html"><i class="fas fa-calendar-alt"></i> Agenda</a>
+        <a class="admin-link" href="admin_reports.html"><i class="fas fa-chart-line"></i> Reports</a>
+        <a class="admin-link" href="admin_settings.html"><i class="fas fa-sliders"></i> Settings</a>
+      </nav>
+
+    </header>
+
+    <div class="top-actions">
+      <div class="hotel-switcher">
+        <div class="hotel-switcher-label">Hotel</div>
+        <select id="hotelSelect" class="hotel-select" aria-label="Select hotel"></select>
+        <button class="btn-secondary btn-hotel" onclick="createNewHotel()">
+          <i class="fas fa-plus"></i> New
+        </button>
+        <button class="btn-secondary btn-hotel" onclick="renameActiveHotel()">
+          <i class="fas fa-pen"></i> Rename
+        </button>
+      </div>
+
+      <div class="save-status" id="saveStatus">
+        <i class="fas fa-check-circle"></i>
+        <span>Saved</span>
+      </div>
+    </div>
+
+    <section class="planning-shell">
+      <div class="planning-header">
+        <div>
+          <h2><i class="fas fa-calendar-plus"></i> Plan a Session</h2>
+          <p>Timezone: <span id="planningTimezone">America/New_York</span></p>
+        </div>
+        <div class="planning-actions">
+          <button class="btn-secondary" id="selectDueBtn">
+            <i class="fas fa-exclamation-circle"></i> Due
+          </button>
+          <button class="btn-secondary" id="select30Btn">
+            <i class="fas fa-clock"></i> Under 30d
+          </button>
+          <button class="btn-secondary" id="select60Btn">
+            <i class="fas fa-clock"></i> Under 60d
+          </button>
+          <button class="btn-secondary" id="select90Btn">
+            <i class="fas fa-clock"></i> Under 90d
+          </button>
+          <button class="btn-primary" id="createSessionBtn">
+            <i class="fas fa-check"></i> Create Session
+          </button>
+        </div>
+      </div>
+
+      <div class="planning-toolbar">
+        <button class="btn-primary" id="openReservationWizard">
+          <i class="fas fa-calendar-plus"></i> Plan next cleaning
+        </button>
+        <div class="planning-summary" id="planningSummary"></div>
+        <div class="planning-week-nav">
+          <button class="btn-secondary" id="prevWeekBtn"><i class="fas fa-chevron-left"></i> Prev</button>
+          <button class="btn-secondary" id="nextWeekBtn">Next <i class="fas fa-chevron-right"></i></button>
+        </div>
+      </div>
+
+      <div class="planning-card">
+        <h3>Session details</h3>
+        <div class="form-row">
+          <div class="form-field">
+            <label for="sessionDate">Date</label>
+            <input id="sessionDate" type="date" />
+          </div>
+          <div class="form-field">
+            <label for="sessionStart">Start</label>
+            <select id="sessionStart"></select>
+          </div>
+          <div class="form-field">
+            <label for="sessionEnd">End</label>
+            <select id="sessionEnd"></select>
+          </div>
+          <div class="form-field">
+            <label for="sessionTech">Technician</label>
+            <select id="sessionTech"></select>
+          </div>
+        </div>
+        <div class="planning-list" id="roomList"></div>
+      </div>
+
+      <div class="planning-card">
+        <h3>Pending reservations</h3>
+        <div class="planning-list" id="pendingReservations"></div>
+      </div>
+
+      <div class="planning-card">
+        <h3>Agenda (30 min slots)</h3>
+        <div id="agendaGrid" class="agenda-grid"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-overlay" id="reservationWizard" style="display: none;">
+    <div class="modal" style="max-width: 900px;">
+      <div class="modal-header">
+        <h3><i class="fas fa-calendar-plus"></i> Reservation Wizard</h3>
+        <button class="modal-close" id="closeReservationWizard">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="wizard-steps">
+          <div class="wizard-step active" data-step="1">1. Select Rooms</div>
+          <div class="wizard-step" data-step="2">2. Date & Notes</div>
+          <div class="wizard-step" data-step="3">3. Confirm</div>
+        </div>
+
+        <div class="wizard-panel" data-panel="1">
+          <div class="planning-actions">
+            <button class="btn-secondary" id="wizardDueNow">Due now (-15 / +15)</button>
+            <button class="btn-secondary" id="wizardPast15">Past due +15</button>
+            <button class="btn-secondary" id="wizardPast30">Past due +30</button>
+            <button class="btn-secondary" id="wizardComing30">Coming in 30d</button>
+            <button class="btn-secondary" id="wizardComing60">Coming in 60d</button>
+          </div>
+          <div class="form-row" style="margin-top: 10px;">
+            <div class="form-field">
+              <label for="wizardSurfaceDefault">Cleaning type (default)</label>
+              <select id="wizardSurfaceDefault">
+                <option value="BOTH">Carpet & Tile</option>
+                <option value="CARPET">Carpet only</option>
+                <option value="TILE">Tile only</option>
+              </select>
+              <div class="hint">You can override per room via the 💬 button.</div>
+            </div>
+          </div>
+          <div class="planning-list" id="wizardRoomList"></div>
+          <div class="planning-card" style="margin-top: 14px;">
+            <h3 style="margin-top:0;">Room notes (this cleaning)</h3>
+            <div class="planning-list" id="wizardCommentRecap"></div>
+          </div>
+          <div class="form-row" style="margin-top: 16px;">
+            <div class="form-field">
+              <label for="wizardGlobalNotes">Global cleaning notes</label>
+              <textarea id="wizardGlobalNotes" rows="3" placeholder="Notes for the whole cleaning session..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="wizard-panel" data-panel="2" style="display: none;">
+          <div class="form-row">
+            <div class="form-field">
+              <label for="wizardDate">Date</label>
+              <input id="wizardDate" type="date" />
+            </div>
+            <div class="form-field">
+              <label for="wizardStart">Start time</label>
+              <select id="wizardStart"></select>
+            </div>
+            <div class="form-field">
+              <label for="wizardDuration">Estimated duration</label>
+              <input id="wizardDuration" type="text" readonly />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="wizardOrgNotes">Organization notes</label>
+              <textarea id="wizardOrgNotes" rows="3" placeholder="Start on floor 3, focus on corridor first..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="wizard-panel" data-panel="3" style="display: none;">
+          <div class="planning-list" id="wizardSummary"></div>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="wizardLink">Reservation link</label>
+              <input id="wizardLink" type="text" readonly />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="wizardBackBtn">Back</button>
+        <button class="btn-primary" id="wizardNextBtn">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="app-config.js"></script>
+  <script src="shared/db.js"></script>
+  <script src="script.js?v=20260115"></script>
+</body>
+</html>

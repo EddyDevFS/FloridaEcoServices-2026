@@ -1,0 +1,460 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  HOTEL_ADMIN
+  MANAGER
+  STAFF
+}
+
+enum ContractStatus {
+  SENT
+  ACCEPTED
+}
+
+enum ContractFrequency {
+  YEARLY
+  TWICE_YEAR
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users User[]
+  hotels Hotel[]
+  reservations Reservation[]
+  blockedSlots BlockedSlot[]
+  technicians Technician[]
+  sessions Session[]
+  contracts Contract[]
+  pricingDefaults PricingDefaults?
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  passwordHash   String
+  role           Role     @default(SUPER_ADMIN)
+  organizationId String
+  activeHotelId  String?
+  hotelScopeId   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  refreshTokens RefreshToken[]
+  activeHotel   Hotel? @relation("UserActiveHotel", fields: [activeHotelId], references: [id], onDelete: SetNull)
+  hotelScope    Hotel? @relation("UserHotelScope", fields: [hotelScopeId], references: [id], onDelete: SetNull)
+}
+
+model Hotel {
+  id             String   @id @default(cuid())
+  name           String
+  organizationId String
+  legacyId       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  buildings Building[]
+  tasks     Task[]
+  staff     StaffMember[]
+  reservations Reservation[]
+  sessions Session[]
+  contracts Contract[]
+  activeUsers User[] @relation("UserActiveHotel")
+  scopedUsers User[] @relation("UserHotelScope")
+
+  @@unique([organizationId, legacyId])
+}
+
+model Building {
+  id        String   @id @default(cuid())
+  hotelId   String
+  name      String
+  legacyId  String?
+  notes     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  hotel  Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  floors Floor[]
+
+  @@index([hotelId])
+  @@unique([hotelId, legacyId])
+}
+
+model Floor {
+  id           String   @id @default(cuid())
+  buildingId   String
+  nameOrNumber String
+  legacyId     String?
+  sortOrder    Int?
+  notes        String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  building Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  rooms    Room[]
+  spaces   Space[]
+
+  @@index([buildingId])
+  @@unique([buildingId, legacyId])
+}
+
+enum SurfaceType {
+  CARPET
+  TILE
+  BOTH
+}
+
+model Room {
+  id           String      @id @default(cuid())
+  floorId      String
+  roomNumber   String
+  legacyId     String?
+  active       Boolean     @default(true)
+  surface      SurfaceType @default(BOTH)
+  sqft         Int?
+  cleaningFrequencyDays Int?
+  lastCleanedAt DateTime?
+  notes        String      @default("")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  floor Floor @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  taskLocations TaskLocation[]
+
+  @@index([floorId])
+  @@index([roomNumber])
+  @@unique([floorId, legacyId])
+}
+
+model Space {
+  id        String   @id @default(cuid())
+  floorId   String
+  name      String
+  legacyId  String?
+  type      String   @default("CORRIDOR")
+  active    Boolean  @default(true)
+  sqft      Int?
+  cleaningFrequencyDays Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  floor Floor @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  taskLocations TaskLocation[]
+
+  @@index([floorId])
+  @@unique([floorId, legacyId])
+}
+
+model PricingDefaults {
+  id                 String   @id @default(cuid())
+  organizationId     String   @unique
+  roomsMinPerSession Int      @default(10)
+  roomsMaxPerSession Int      @default(20)
+  basePrices         Json     @default("{}")
+  penaltyPrices      Json     @default("{}")
+  contractPrices     Json     @default("{}")
+  advantagePrices    Json     @default("{}")
+  sqftPrices         Json     @default("{}")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model Contract {
+  id                  String            @id @default(cuid())
+  organizationId      String
+  hotelId             String
+  token               String            @unique
+  legacyId            String?
+  status              ContractStatus    @default(SENT)
+  hotelName           String            @default("")
+  contact             Json              @default("{}")
+  pricing             Json              @default("{}")
+  roomsMinPerSession  Int               @default(0)
+  roomsMaxPerSession  Int               @default(0)
+  roomsPerSession     Int               @default(0)
+  frequency           ContractFrequency @default(YEARLY)
+  surfaceType         SurfaceType       @default(BOTH)
+  appliedTier         String            @default("")
+  appliedPricePerRoom Float             @default(0)
+  otherSurfaces       Json              @default("{}")
+  totalPerSession     Float             @default(0)
+  notes               String            @default("")
+  sentAt              DateTime          @default(now())
+  signedBy            String            @default("")
+  acceptedAt          DateTime?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  hotel        Hotel        @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([hotelId])
+  @@index([status])
+  @@unique([organizationId, legacyId])
+}
+
+enum ReservationStatus {
+  PROPOSED
+  PENDING
+  APPROVED
+  CANCELLED
+}
+
+model Reservation {
+  id                    String            @id @default(cuid())
+  organizationId        String
+  hotelId               String
+  token                 String            @unique
+  statusAdmin           ReservationStatus @default(PROPOSED)
+  statusHotel           ReservationStatus @default(PENDING)
+  roomIds               Json              @default("[]")
+  spaceIds              Json              @default("[]")
+  roomNotes             Json              @default("{}")
+  spaceNotes            Json              @default("{}")
+  surfaceDefault        SurfaceType       @default(BOTH)
+  roomSurfaceOverrides  Json              @default("{}")
+  notesGlobal           String            @default("")
+  notesOrg              String            @default("")
+  durationMinutes       Int               @default(0)
+  proposedDate          String            @default("")
+  proposedStart         String            @default("")
+  confirmedAt           DateTime?
+  requiresAdminApproval Boolean           @default(false)
+  cancelledAt           DateTime?
+  cancelledBy           String            @default("")
+  cancelReason          String            @default("")
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  hotel        Hotel        @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([hotelId])
+  @@index([proposedDate])
+}
+
+model BlockedSlot {
+  id             String   @id @default(cuid())
+  organizationId String
+  legacyId       String?
+  date           String
+  start          String
+  end            String
+  note           String   @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([date])
+  @@unique([organizationId, legacyId])
+}
+
+model Technician {
+  id             String   @id @default(cuid())
+  organizationId String
+  legacyId       String?
+  name           String
+  phone          String   @default("")
+  notes          String   @default("")
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  sessions      Session[]
+
+  @@index([organizationId])
+  @@index([active])
+  @@unique([organizationId, legacyId])
+}
+
+enum SessionStatus {
+  SCHEDULED
+  CANCELLED
+  DONE
+}
+
+model Session {
+  id             String        @id @default(cuid())
+  organizationId String
+  hotelId        String
+  legacyId       String?
+  status         SessionStatus @default(SCHEDULED)
+  roomIds        Json          @default("[]")
+  date           String        @default("")
+  start          String        @default("")
+  end            String        @default("")
+  technicianId   String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  hotel        Hotel        @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  technician   Technician? @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([hotelId])
+  @@index([date])
+  @@unique([organizationId, legacyId])
+}
+
+enum TaskCategory {
+  TASK
+  INCIDENT
+}
+
+enum TaskStatus {
+  OPEN
+  IN_PROGRESS
+  BLOCKED
+  DONE
+  CANCELLED
+}
+
+enum TaskPriority {
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model Task {
+  id              String       @id @default(cuid())
+  organizationId  String
+  hotelId         String
+  legacyId        String?
+  category        TaskCategory @default(TASK)
+  status          TaskStatus   @default(OPEN)
+  type            String       @default("OTHER")
+  priority        TaskPriority @default(NORMAL)
+  description     String       @default("")
+  assignedStaffId String?
+  schedule        Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  hotel        Hotel          @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  assignedStaff StaffMember?  @relation("TaskAssignedStaff", fields: [assignedStaffId], references: [id], onDelete: SetNull)
+  locations    TaskLocation[]
+  events       TaskEvent[]
+  attachments  TaskAttachment[]
+
+  @@index([organizationId])
+  @@index([hotelId])
+  @@index([status])
+  @@index([priority])
+  @@unique([organizationId, legacyId])
+}
+
+model StaffMember {
+  id             String   @id @default(cuid())
+  organizationId String
+  hotelId        String
+  token          String   @unique
+  legacyId       String?
+  firstName      String
+  lastName       String
+  phone          String   @default("")
+  notes          String   @default("")
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  hotel Hotel @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  assignedTasks Task[] @relation("TaskAssignedStaff")
+
+  @@index([organizationId])
+  @@index([hotelId])
+  @@unique([organizationId, legacyId])
+}
+
+model TaskLocation {
+  id        String  @id @default(cuid())
+  taskId    String
+  label     String
+  roomId    String?
+  spaceId   String?
+
+  task  Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  room  Room? @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  space Space? @relation(fields: [spaceId], references: [id], onDelete: SetNull)
+
+  @@index([taskId])
+  @@index([roomId])
+  @@index([spaceId])
+}
+
+model TaskEvent {
+  id           String   @id @default(cuid())
+  taskId       String
+  at           DateTime @default(now())
+  action       String
+  actorRole    String   @default("hotel_manager")
+  actorStaffId String?
+  note         String   @default("")
+  patch        Json?
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([at])
+}
+
+model TaskAttachment {
+  id           String   @id @default(cuid())
+  taskId       String
+  at           DateTime @default(now())
+  name         String   @default("photo")
+  mime         String   @default("image/*")
+  // Legacy (localStorage). Backend V1 uses `storagePath`.
+  dataUrl      String?
+  // Backend V1 file storage (relative path under UPLOADS_DIR)
+  storagePath  String?
+  sizeBytes    Int?
+  width        Int?
+  height       Int?
+  actorRole    String   @default("hotel_staff")
+  actorStaffId String?
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([at])
+}
+
+model RefreshToken {
+  id          String   @id @default(cuid())
+  userId      String
+  tokenHash   String
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+  revokedAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}

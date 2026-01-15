@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Business - Hotel Maintenance Pro</title>
+    <link rel="stylesheet" href="../CORE/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation injected automatically -->
+    
+    <div class="main-container">
+        <!-- Header -->
+        <div class="card-header" style="margin-bottom: 2rem;">
+            <h1 class="card-title">
+                <i class="fas fa-chart-line"></i>
+                My Business - Dashboard
+            </h1>
+            <div class="header-actions">
+                <div class="date-selector">
+                    <select id="periodSelect" onchange="updateDashboardPeriod()" class="form-select" style="width: 150px;">
+                        <option value="month">This month</option>
+                        <option value="quarter">This quarter</option>
+                        <option value="year">This year</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main stats cards -->
+        <div class="main-stats-grid" id="mainStats">
+            <!-- Filled by JavaScript -->
+        </div>
+        
+        <!-- Two columns -->
+        <div class="dashboard-columns">
+            <!-- Left column -->
+            <div class="dashboard-column">
+                <!-- Urgent sessions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-exclamation-triangle text-danger"></i>
+                            Urgent Sessions
+                        </h2>
+                        <span class="badge badge-danger" id="urgentCount">0</span>
+                    </div>
+                    <div class="urgent-sessions" id="urgentSessions">
+                        <!-- Filled by JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Reported issues -->
+                <div class="card mt-6">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-flag"></i>
+                            Reported Issues
+                        </h2>
+                        <button class="btn btn-secondary btn-small" onclick="viewAllIssues()">
+                            View all
+                        </button>
+                    </div>
+                    <div class="reported-issues" id="reportedIssues">
+                        <!-- Filled by JavaScript -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right column -->
+            <div class="dashboard-column">
+                <!-- Upcoming sessions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-calendar-alt"></i>
+                            Upcoming Sessions
+                        </h2>
+                        <button class="btn btn-primary btn-small" onclick="viewCalendar()">
+                            <i class="fas fa-calendar-plus"></i> Schedule
+                        </button>
+                    </div>
+                    <div class="upcoming-sessions" id="upcomingSessions">
+                        <!-- Filled by JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Active clients -->
+                <div class="card mt-6">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-users"></i>
+                            Active Clients
+                        </h2>
+                        <span class="badge badge-success" id="activeClientsCount">0</span>
+                    </div>
+                    <div class="active-clients" id="activeClients">
+                        <!-- Filled by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Revenue chart -->
+        <div class="card mt-6">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-dollar-sign"></i>
+                    Revenue - Last 12 months
+                </h2>
+            </div>
+            <div class="revenue-chart" id="revenueChart">
+                <!-- Simple chart -->
+                <div class="chart-container">
+                    <canvas id="revenueChartCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick actions -->
+        <div class="card mt-6">
+            <h2 class="card-title">
+                <i class="fas fa-bolt"></i>
+                Quick Actions
+            </h2>
+            <div class="quick-actions-grid">
+                <button class="quick-action-btn" onclick="location.href='contracts.html'">
+                    <i class="fas fa-file-contract"></i>
+                    <span>New Contract</span>
+                </button>
+                
+                <button class="quick-action-btn" onclick="planSession()">
+                    <i class="fas fa-calendar-plus"></i>
+                    <span>Schedule Session</span>
+                </button>
+                
+                <button class="quick-action-btn" onclick="generateInvoice()">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    <span>Generate Invoice</span>
+                </button>
+                
+                <button class="quick-action-btn" onclick="viewReports()">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>View Reports</span>
+                </button>
+                
+                <button class="quick-action-btn" onclick="checkMaintenanceIssues()">
+                    <i class="fas fa-tools"></i>
+                    <span>Check Issues</span>
+                </button>
+                
+                <button class="quick-action-btn" onclick="sendReminders()">
+                    <i class="fas fa-bell"></i>
+                    <span>Send Reminders</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Issue details modal -->
+    <div class="modal-overlay" id="issueDetailModal" style="display: none;">
+        <div class="modal">
+            <!-- Filled by JavaScript -->
+        </div>
+    </div>
+    
+    <link rel="stylesheet" href="dashboard-pro.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="../CORE/database.js"></script>
+    <script src="../CORE/navigation.js"></script>
+    <script src="dashboard-pro.js"></script>
+</body>
+</html>

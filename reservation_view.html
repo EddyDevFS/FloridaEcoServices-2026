@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reservation Confirmation</title>
+  <link rel="stylesheet" href="styles.css?v=20260115" />
+  <style>
+    body { background: #f8fafc; }
+    .reservation-page {
+      max-width: 820px;
+      margin: 40px auto;
+      background: white;
+      border-radius: 20px;
+      padding: 28px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+    }
+  </style>
+</head>
+<body>
+  <header class="header admin-header">
+    <div class="logo">
+      <i class="fas fa-hotel"></i>
+      <div>
+        <h1>Hotel Maintenance Pro</h1>
+        <p>Reservation detail</p>
+      </div>
+    </div>
+    <nav class="admin-nav"></nav>
+  </header>
+
+  <div class="top-actions">
+    <button class="btn-secondary" id="backToDashboard">
+      <i class="fas fa-arrow-left"></i> Back
+    </button>
+  </div>
+
+  <div class="reservation-page">
+    <h1>Reservation Confirmation</h1>
+    <div class="field-hint" id="reservationRoleHint" style="margin-top:-6px; margin-bottom:10px;"></div>
+    <div id="reservationSummary" class="planning-list"></div>
+
+    <div class="contract-card" style="margin-top: 16px;">
+      <h3>Proposed Date & Time</h3>
+      <div class="form-row">
+        <div class="form-field">
+          <label for="resDate">Date</label>
+          <input id="resDate" type="date" />
+        </div>
+        <div class="form-field">
+          <label for="resStart">Start time</label>
+          <select id="resStart"></select>
+        </div>
+        <div class="form-field">
+          <label for="resNotes">Notes</label>
+          <input id="resNotes" type="text" placeholder="Optional comments" />
+        </div>
+      </div>
+      <div class="contract-actions">
+        <button class="btn-primary" id="approveBtn"><i class="fas fa-check"></i> Approve</button>
+        <button class="btn-secondary" id="proposeBtn"><i class="fas fa-pen"></i> Propose change</button>
+      </div>
+      <div class="field-hint" id="reservationStatus"></div>
+    </div>
+  </div>
+
+  <script src="app-config.js"></script>
+  <script src="shared/db.js"></script>
+  <script src="shared/demo.js"></script>
+  <script src="script.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const role = params.get('role') || 'hotel';
+    const backBtn = document.getElementById('backToDashboard');
+    const summary = document.getElementById('reservationSummary');
+    const statusEl = document.getElementById('reservationStatus');
+    const roleHint = document.getElementById('reservationRoleHint');
+    const approveBtn = document.getElementById('approveBtn');
+    const proposeBtn = document.getElementById('proposeBtn');
+    const resDate = document.getElementById('resDate');
+    const resStart = document.getElementById('resStart');
+    const resNotes = document.getElementById('resNotes');
+
+    function getHalfHourSlots(start, end) {
+      const slots = [];
+      const [startH, startM] = start.split(':').map(Number);
+      const [endH, endM] = end.split(':').map(Number);
+      let minutes = startH * 60 + startM;
+      const endMinutes = endH * 60 + endM;
+      while (minutes <= endMinutes) {
+        const h = String(Math.floor(minutes / 60)).padStart(2, '0');
+        const m = String(minutes % 60).padStart(2, '0');
+        slots.push(`${h}:${m}`);
+        minutes += 30;
+      }
+      return slots;
+    }
+
+    function formatAmPm(time) {
+      const [h, m] = time.split(':').map(Number);
+      const period = h >= 12 ? 'PM' : 'AM';
+      const hour = ((h + 11) % 12 + 1);
+      return `${hour}:${String(m).padStart(2, '0')} ${period}`;
+    }
+
+    function populateTimeSelect() {
+      const slots = getHalfHourSlots('06:00', '20:00');
+      resStart.innerHTML = slots
+        .map(value => `<option value="${value}">${formatAmPm(value)}</option>`)
+        .join('');
+    }
+
+    function getHotelContext(hotelId) {
+      const hotel = window.HMP_DB.getHotel(hotelId);
+      if (!hotel) return { rooms: {}, spaces: {}, roomMeta: {}, spaceMeta: {} };
+      const rooms = {};
+      const spaces = {};
+      const roomMeta = {};
+      const spaceMeta = {};
+      let order = 0;
+
+      (hotel.buildings || []).forEach(building => {
+        const buildingName = building.name || 'Building';
+        (building.floors || []).forEach(floor => {
+          const floorName = `Floor ${floor.nameOrNumber || ''}`.trim();
+
+          (floor.rooms || []).forEach(room => {
+            const label = `Room ${room.roomNumber}`;
+            rooms[room.id] = `${label} (${buildingName} / ${floorName})`;
+            roomMeta[room.id] = {
+              id: room.id,
+              buildingName,
+              floorName,
+              label,
+              order: order++
+            };
+          });
+
+          (floor.spaces || []).forEach(space => {
+            const sqft = space.sqft ? ` (${space.sqft} sqft)` : '';
+            const label = `${space.name}${sqft}`;
+            spaces[space.id] = `${label} (${buildingName} / ${floorName})`;
+            spaceMeta[space.id] = {
+              id: space.id,
+              buildingName,
+              floorName,
+              label,
+              order: order++
+            };
+          });
+        });
+      });
+      return { rooms, spaces, roomMeta, spaceMeta };
+    }
+
+    function isDateBlocked(date, reservationId) {
+      const approved = window.HMP_DB.listReservations().filter(resv =>
+        resv.statusAdmin === 'APPROVED' &&
+        resv.statusHotel === 'APPROVED' &&
+        resv.statusAdmin !== 'CANCELLED' &&
+        resv.statusHotel !== 'CANCELLED' &&
+        !resv.cancelledAt &&
+        resv.id !== reservationId
+      );
+      const blocked = window.HMP_DB.listBlockedSlots();
+      const anyReservation = window.HMP_DB.listReservations().filter(resv =>
+        resv.id !== reservationId &&
+        resv.proposedDate === date &&
+        resv.statusAdmin !== 'CANCELLED' &&
+        resv.statusHotel !== 'CANCELLED' &&
+        !resv.cancelledAt
+      );
+      const hasReservation = approved.some(resv => resv.proposedDate === date);
+      const hasAny = anyReservation.length > 0;
+      const hasBlock = blocked.some(slot => slot.date === date);
+      return hasReservation || hasBlock || hasAny;
+    }
+
+    function escapeHtml(value) {
+      return (value || '').toString()
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function renderGroupedTargets(ids, metaById, fallbackLabelFn) {
+      const items = (ids || []).map(id => {
+        const meta = metaById?.[id];
+        if (meta) return meta;
+        return {
+          id,
+          buildingName: 'Other',
+          floorName: '',
+          label: fallbackLabelFn ? fallbackLabelFn(id) : id,
+          order: 10_000_000
+        };
+      });
+
+      items.sort((a, b) => (a.order - b.order) || (a.buildingName || '').localeCompare(b.buildingName || '') || (a.floorName || '').localeCompare(b.floorName || '') || (a.label || '').localeCompare(b.label || ''));
+
+      const out = [];
+      let currentBuilding = null;
+      let currentFloor = null;
+
+      items.forEach(item => {
+        const building = item.buildingName || 'Building';
+        const floor = item.floorName || '';
+        if (building !== currentBuilding) {
+          currentBuilding = building;
+          currentFloor = null;
+          out.push(`<div style="margin-top:10px;"><strong>${escapeHtml(building)}</strong></div>`);
+        }
+        if (floor && floor !== currentFloor) {
+          currentFloor = floor;
+          out.push(`<div style="margin-top:6px; opacity:.85;"><strong>${escapeHtml(floor)}</strong></div>`);
+        }
+        out.push(`<div style="margin-top:4px;">${escapeHtml(item.label)}</div>`);
+      });
+
+      return out.join('');
+    }
+
+    function normalizeSurface(surface) {
+      if (surface === 'CARPET' || surface === 'TILE' || surface === 'BOTH') return surface;
+      return 'BOTH';
+    }
+
+    function surfaceLabel(surface) {
+      if (surface === 'CARPET') return 'Carpet only';
+      if (surface === 'TILE') return 'Tile only';
+      return 'Carpet & Tile';
+    }
+
+    function roomNumberFromLabel(label) {
+      const m = (label || '').match(/Room\\s+(.+)/i);
+      return m ? m[1].trim() : (label || '');
+    }
+
+    function renderRoomsBySurface(reservation, context) {
+      const defaultSurface = normalizeSurface(reservation.surfaceDefault || 'BOTH');
+      const overrides = reservation.roomSurfaceOverrides || {};
+
+      const roomIds = reservation.roomIds || [];
+      const items = roomIds.map(id => {
+        const meta = context.roomMeta?.[id];
+        const buildingName = meta?.buildingName || 'Building';
+        const floorName = meta?.floorName || '';
+        const roomLabel = meta?.label || (context.rooms?.[id] || id);
+        const roomNo = roomNumberFromLabel(roomLabel);
+        const surface = normalizeSurface(overrides[id] || defaultSurface);
+        const note = (reservation.roomNotes || {})[id] || '';
+        return { id, buildingName, floorName, roomNo, surface, note, order: meta?.order ?? 10_000_000 };
+      });
+
+      items.sort((a, b) => (a.order - b.order) || a.buildingName.localeCompare(b.buildingName) || a.floorName.localeCompare(b.floorName) || a.roomNo.localeCompare(b.roomNo));
+
+      const out = [];
+      let currentBuilding = null;
+      let currentFloor = null;
+
+      const flushFloor = (floorItems) => {
+        if (!floorItems.length) return;
+        const bySurface = { BOTH: [], CARPET: [], TILE: [] };
+        floorItems.forEach(it => { bySurface[it.surface].push(it); });
+        ['BOTH', 'CARPET', 'TILE'].forEach(s => {
+          const list = bySurface[s];
+          if (!list.length) return;
+          out.push(`<div style="margin-top:6px;"><strong>${escapeHtml(surfaceLabel(s))}</strong><br>Room: ${escapeHtml(list.map(i => i.roomNo).join(', '))}</div>`);
+        });
+
+        const notes = floorItems.filter(it => (it.note || '').trim());
+        if (notes.length) {
+          out.push('<div style="margin-top:10px;"><strong>Notes</strong></div>');
+          notes.forEach(n => {
+            out.push(`<div style="margin-top:4px;">Room ${escapeHtml(n.roomNo)}: ${escapeHtml(n.note)}</div>`);
+          });
+        }
+      };
+
+      let buffer = [];
+      items.forEach(item => {
+        if (item.buildingName !== currentBuilding) {
+          if (buffer.length) flushFloor(buffer);
+          buffer = [];
+          currentBuilding = item.buildingName;
+          currentFloor = null;
+          out.push(`<div style="margin-top:10px;"><strong>${escapeHtml(currentBuilding)}</strong></div>`);
+        }
+        if (item.floorName !== currentFloor) {
+          if (buffer.length) flushFloor(buffer);
+          buffer = [];
+          currentFloor = item.floorName;
+          out.push(`<div style="margin-top:6px; opacity:.85;"><strong>${escapeHtml(currentFloor || 'Floor')}</strong></div>`);
+        }
+        buffer.push(item);
+      });
+      if (buffer.length) flushFloor(buffer);
+
+      if (!out.length) return '';
+      return out.join('');
+    }
+
+    function renderReservation(reservation) {
+      const context = getHotelContext(reservation.hotelId);
+      const roomNotes = reservation.roomNotes || {};
+      const spaceNotes = reservation.spaceNotes || {};
+      const roomNotesLines = (reservation.roomIds || [])
+        .filter(id => roomNotes[id])
+        .map(id => `${escapeHtml(context.rooms[id] || id)}<br><em>💬 ${escapeHtml(roomNotes[id])}</em>`);
+      const spaceNotesLines = (reservation.spaceIds || [])
+        .filter(id => spaceNotes[id])
+        .map(id => `${escapeHtml(context.spaces[id] || id)}<br><em>💬 ${escapeHtml(spaceNotes[id])}</em>`);
+
+      const roomDetailsGrouped = renderRoomsBySurface(reservation, context);
+      const spaceDetailsGrouped = renderGroupedTargets(
+        reservation.spaceIds || [],
+        context.spaceMeta || {},
+        (id) => context.spaces?.[id] || id
+      );
+
+      summary.innerHTML = `
+        <div class="planning-item"><strong>Hotel</strong><small>${escapeHtml(reservation.hotelId)}</small></div>
+        <div class="planning-item"><strong>Rooms</strong><small>${reservation.roomIds?.length || 0}</small></div>
+        <div class="planning-item"><strong>Spaces</strong><small>${reservation.spaceIds?.length || 0}</small></div>
+        <div class="planning-item"><strong>Duration</strong><small>${Math.round((reservation.durationMinutes || 0) / 60 * 100) / 100}h</small></div>
+        ${(reservation.statusAdmin === 'CANCELLED' || reservation.statusHotel === 'CANCELLED' || reservation.cancelledAt) ? `<div class="planning-item"><strong>Status</strong><small>CANCELLED</small></div>` : ''}
+        ${(reservation.roomIds || []).length ? `<div class="planning-item"><strong>Room details</strong><small>${roomDetailsGrouped}</small></div>` : ''}
+        ${(reservation.spaceIds || []).length ? `<div class="planning-item"><strong>Area details</strong><small>${spaceDetailsGrouped}</small></div>` : ''}
+        ${roomNotesLines.length ? `<div class="planning-item"><strong>Room notes</strong><small>${roomNotesLines.join('<br><br>')}</small></div>` : ''}
+        ${spaceNotesLines.length ? `<div class="planning-item"><strong>Area notes</strong><small>${spaceNotesLines.join('<br><br>')}</small></div>` : ''}
+        ${reservation.notesGlobal ? `<div class="planning-item"><strong>Global notes</strong><small>${escapeHtml(reservation.notesGlobal)}</small></div>` : ''}
+      `;
+      resDate.value = reservation.proposedDate || '';
+      resStart.value = reservation.proposedStart || '';
+      resNotes.value = reservation.notesOrg || '';
+      statusEl.textContent = `Admin: ${reservation.statusAdmin} · Hotel: ${reservation.statusHotel}`;
+    }
+
+    if (backBtn) {
+      backBtn.addEventListener('click', () => {
+        const fallback = role === 'admin' ? 'admin_planning.html' : 'index.html';
+        if (document.referrer) {
+          window.history.back();
+        } else {
+          window.location.href = fallback;
+        }
+      });
+    }
+
+    if (!token) {
+      summary.innerHTML = '<div class="planning-item">Missing reservation token.</div>';
+    } else {
+      populateTimeSelect();
+      if (roleHint) roleHint.textContent = role === 'admin' ? 'Viewing as: Admin (company)' : 'Viewing as: Hotel';
+      const reservation = window.HMP_DB.getReservationByToken(token);
+      if (!reservation) {
+        summary.innerHTML = '<div class="planning-item">Reservation not found.</div>';
+      } else {
+        renderReservation(reservation);
+
+        // Some browsers (especially when opened as a popup/tab) can end up
+        // visually blank after printing; re-render after print to restore UI.
+        window.addEventListener('afterprint', () => {
+          const fresh = window.HMP_DB.getReservationByToken(token);
+          if (fresh) renderReservation(fresh);
+        });
+
+        const isCancelled = reservation.statusAdmin === 'CANCELLED' || reservation.statusHotel === 'CANCELLED' || reservation.cancelledAt;
+        if (isCancelled) {
+          approveBtn.disabled = true;
+          proposeBtn.disabled = true;
+          statusEl.textContent = 'This reservation is cancelled.';
+        }
+
+        approveBtn.addEventListener('click', () => {
+          const current = window.HMP_DB.getReservationByToken(token);
+          if (current && (current.statusAdmin === 'CANCELLED' || current.statusHotel === 'CANCELLED' || current.cancelledAt)) return;
+          const patch = role === 'admin'
+            ? { statusAdmin: 'APPROVED' }
+            : { statusHotel: 'APPROVED' };
+          window.HMP_DB.updateReservation(reservation.id, {
+            ...patch,
+            confirmedAt: new Date().toISOString(),
+            notesOrg: resNotes.value
+          });
+          // Persist to API so it survives navigation/refresh.
+          (async () => {
+            try {
+              if (role === 'admin') {
+                const r1 = await window.HMP_DB.apiPatchReservation?.(reservation.id, { ...patch, notesOrg: resNotes.value });
+                if (r1?.status === 401) {
+                  await fecoEnsureLogin();
+                  await window.HMP_DB.apiPatchReservation?.(reservation.id, { ...patch, notesOrg: resNotes.value });
+                } else if (r1?.status === 404) {
+                  await window.HMP_DB.apiPushLocalStorage?.().catch(() => {});
+                  await window.HMP_DB.apiPatchReservation?.(reservation.id, { ...patch, notesOrg: resNotes.value });
+                }
+              } else {
+                const r1 = await window.HMP_DB.apiPatchReservationByToken?.(token, { ...patch, notesOrg: resNotes.value });
+                if (!r1?.ok) throw new Error(r1?.error || `HTTP ${r1?.status || '?'}`);
+              }
+              showToast?.('Saved to server', 'success');
+            } catch {}
+          })();
+          renderReservation(window.HMP_DB.getReservationByToken(token));
+        });
+
+        proposeBtn.addEventListener('click', () => {
+          const current = window.HMP_DB.getReservationByToken(token);
+          if (current && (current.statusAdmin === 'CANCELLED' || current.statusHotel === 'CANCELLED' || current.cancelledAt)) return;
+          const nextDate = resDate.value;
+          const nextStart = resStart.value;
+          if (!nextDate || !nextStart) return;
+          if (isDateBlocked(nextDate, reservation.id)) {
+            statusEl.textContent = 'Selected date is already booked. Please choose another date.';
+            return;
+          }
+          const changed = nextDate !== reservation.proposedDate || nextStart !== reservation.proposedStart;
+          const statusPatch = role === 'admin'
+            ? {
+                statusAdmin: changed ? 'PROPOSED' : 'APPROVED',
+                statusHotel: changed ? 'PENDING' : reservation.statusHotel
+              }
+            : {
+                statusHotel: changed ? 'PROPOSED' : 'APPROVED',
+                statusAdmin: changed ? 'PENDING' : reservation.statusAdmin
+              };
+          window.HMP_DB.updateReservation(reservation.id, {
+            proposedDate: nextDate,
+            proposedStart: nextStart,
+            notesOrg: resNotes.value,
+            requiresAdminApproval: changed,
+            ...statusPatch
+          });
+          // Persist to API so it survives navigation/refresh.
+          (async () => {
+            try {
+              if (role === 'admin') {
+                const r1 = await window.HMP_DB.apiPatchReservation?.(reservation.id, {
+                  proposedDate: nextDate,
+                  proposedStart: nextStart,
+                  notesOrg: resNotes.value,
+                  requiresAdminApproval: changed,
+                  ...statusPatch
+                });
+                if (r1?.status === 401) {
+                  await fecoEnsureLogin();
+                  await window.HMP_DB.apiPatchReservation?.(reservation.id, {
+                    proposedDate: nextDate,
+                    proposedStart: nextStart,
+                    notesOrg: resNotes.value,
+                    requiresAdminApproval: changed,
+                    ...statusPatch
+                  });
+                } else if (r1?.status === 404) {
+                  await window.HMP_DB.apiPushLocalStorage?.().catch(() => {});
+                  await window.HMP_DB.apiPatchReservation?.(reservation.id, {
+                    proposedDate: nextDate,
+                    proposedStart: nextStart,
+                    notesOrg: resNotes.value,
+                    requiresAdminApproval: changed,
+                    ...statusPatch
+                  });
+                }
+              } else {
+                await window.HMP_DB.apiPatchReservationByToken?.(token, {
+                  proposedDate: nextDate,
+                  proposedStart: nextStart,
+                  notesOrg: resNotes.value,
+                  requiresAdminApproval: changed,
+                  statusHotel: statusPatch.statusHotel
+                });
+              }
+            } catch {}
+          })();
+          renderReservation(window.HMP_DB.getReservationByToken(token));
+        });
+
+        const printBtn = document.createElement('button');
+        printBtn.className = 'btn-secondary';
+        printBtn.innerHTML = '<i class="fas fa-print"></i> Print work sheet';
+        printBtn.addEventListener('click', () => {
+          // Let the click handler finish before entering print mode.
+          setTimeout(() => window.print(), 0);
+        });
+        const actions = document.querySelector('.contract-actions');
+        if (actions && !actions.querySelector('.btn-print')) {
+          printBtn.classList.add('btn-print');
+          actions.appendChild(printBtn);
+        }
+
+        // Admin controls: cancel (keeps history) and delete (permanent).
+        if (role === 'admin' && actions) {
+          const cancelBtn = document.createElement('button');
+          cancelBtn.className = 'btn-secondary';
+          cancelBtn.innerHTML = '<i class="fas fa-ban"></i> Cancel';
+          cancelBtn.addEventListener('click', () => {
+            const current = window.HMP_DB.getReservationByToken(token);
+            if (!current) return;
+            const ok = confirm('Cancel this reservation? It will no longer block scheduling.');
+            if (!ok) return;
+            window.HMP_DB.cancelReservation(current.id, { by: 'admin' });
+            (async () => {
+              try {
+                const r1 = await window.HMP_DB.apiCancelReservation?.(current.id, { by: 'admin' });
+                if (r1?.status === 401) {
+                  await fecoEnsureLogin();
+                  await window.HMP_DB.apiCancelReservation?.(current.id, { by: 'admin' });
+                }
+              } catch {}
+            })();
+            renderReservation(window.HMP_DB.getReservationByToken(token));
+            statusEl.textContent = 'Reservation cancelled.';
+            approveBtn.disabled = true;
+            proposeBtn.disabled = true;
+          });
+          actions.appendChild(cancelBtn);
+
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'btn-secondary danger';
+          deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+          deleteBtn.addEventListener('click', () => {
+            const current = window.HMP_DB.getReservationByToken(token);
+            if (!current) return;
+            const ok = confirm('Delete this reservation permanently?');
+            if (!ok) return;
+            window.HMP_DB.deleteReservation(current.id);
+            (async () => {
+              try {
+                const r1 = await window.HMP_DB.apiDeleteReservation?.(current.id);
+                if (r1?.status === 401) {
+                  await fecoEnsureLogin();
+                  await window.HMP_DB.apiDeleteReservation?.(current.id);
+                }
+              } catch {}
+            })();
+            window.location.href = 'admin_planning.html';
+          });
+          actions.appendChild(deleteBtn);
+        }
+      }
+    }
+  </script>
+</body>
+</html>

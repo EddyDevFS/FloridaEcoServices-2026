@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Hotel Setup</title>
+  <link rel="stylesheet" href="styles.css?v=20260115" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body>
+  <div class="app-container">
+    <header class="header admin-header">
+      <div class="logo">
+        <i class="fas fa-hotel"></i>
+        <div>
+          <h1>Admin - Setup</h1>
+          <p>Buildings • Floors • Rooms • Spaces</p>
+        </div>
+      </div>
+
+      <nav class="admin-nav">
+        <a class="admin-link active" href="admin_config.html"><i class="fas fa-sitemap"></i> Setup</a>
+        <a class="admin-link" href="admin_hotel.html"><i class="fas fa-file-contract"></i> Hotel & Contract</a>
+        <a class="admin-link" href="admin_planning.html"><i class="fas fa-calendar-check"></i> Planning</a>
+        <a class="admin-link" href="admin_agenda.html"><i class="fas fa-calendar-alt"></i> Agenda</a>
+        <a class="admin-link" href="admin_reports.html"><i class="fas fa-chart-line"></i> Reports</a>
+        <a class="admin-link" href="admin_settings.html"><i class="fas fa-sliders"></i> Settings</a>
+      </nav>
+
+    </header>
+
+    <div class="top-actions">
+      <div class="hotel-switcher">
+        <div class="hotel-switcher-label">Hotel</div>
+        <select id="hotelSelect" class="hotel-select" aria-label="Select hotel"></select>
+        <button class="btn-secondary btn-hotel" onclick="createNewHotel()">
+          <i class="fas fa-plus"></i> New
+        </button>
+        <button class="btn-secondary btn-hotel" onclick="renameActiveHotel()">
+          <i class="fas fa-pen"></i> Rename
+        </button>
+      </div>
+
+      <div class="save-status" id="saveStatus">
+        <i class="fas fa-check-circle"></i>
+        <span>Saved</span>
+      </div>
+
+      <div class="selection-mode" id="selectionMode" style="display: none;">
+        <i class="fas fa-check-square"></i>
+        <span id="selectedCount">0 selected</span>
+        <div class="selection-actions">
+          <button class="btn-action" onclick="batchAction('status','active')">Active</button>
+          <button class="btn-action" onclick="batchAction('status','inactive')">Inactive</button>
+          <button class="btn-action danger" onclick="exitSelectionMode()">Clear</button>
+        </div>
+      </div>
+
+      <button class="btn-secondary" id="toggleSelectionBtn" onclick="toggleSelectionMode()">
+        <i class="fas fa-check-square"></i> Multi-select
+      </button>
+    </div>
+
+    <section class="quick-actions">
+      <div class="actions-left">
+        <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
+        <p>Build or edit your hotel structure</p>
+      </div>
+      <div class="actions-right">
+        <button class="btn-primary" onclick="addBuilding()">
+          <i class="fas fa-plus-circle"></i> Add Building
+        </button>
+        <button class="btn-secondary" onclick="toggleQuickSetup()">
+          <i class="fas fa-magic"></i> Quick Setup
+        </button>
+        <button class="btn-export" onclick="exportData()">
+          <i class="fas fa-file-export"></i> Export JSON
+        </button>
+      </div>
+    </section>
+
+    <section class="quick-setup-panel" id="quickSetupPanel">
+      <div class="setup-header">
+        <h3><i class="fas fa-wand-magic-sparkles"></i> Quick Setup</h3>
+        <button class="btn-close" onclick="toggleQuickSetup()">×</button>
+      </div>
+
+      <div class="setup-grid">
+        <div class="setup-item">
+          <label><i class="fas fa-building"></i> Buildings</label>
+          <div class="number-control">
+            <button onclick="adjustSetupValue('buildings', -1)" aria-label="Decrease buildings">−</button>
+            <input id="setupBuildings" type="number" min="1" value="1" />
+            <button onclick="adjustSetupValue('buildings', 1)" aria-label="Increase buildings">+</button>
+          </div>
+        </div>
+
+        <div class="setup-item">
+          <label><i class="fas fa-layer-group"></i> Floors / Building</label>
+          <div class="number-control">
+            <button onclick="adjustSetupValue('floorsPerBuilding', -1)" aria-label="Decrease floors">−</button>
+            <input id="setupFloorsPerBuilding" type="number" min="1" value="1" />
+            <button onclick="adjustSetupValue('floorsPerBuilding', 1)" aria-label="Increase floors">+</button>
+          </div>
+        </div>
+
+        <div class="setup-item">
+          <label><i class="fas fa-door-closed"></i> Rooms / Floor</label>
+          <div class="number-control">
+            <button onclick="adjustSetupValue('roomsPerFloor', -1)" aria-label="Decrease rooms">−</button>
+            <input id="setupRoomsPerFloor" type="number" min="1" value="10" />
+            <button onclick="adjustSetupValue('roomsPerFloor', 1)" aria-label="Increase rooms">+</button>
+          </div>
+        </div>
+
+        <div class="setup-item">
+          <label><i class="fas fa-hashtag"></i> Start Room</label>
+          <input id="setupStartRoom" type="text" placeholder="101" value="101" />
+        </div>
+      </div>
+
+      <div class="setup-section">
+        <h4><i class="fas fa-vector-square"></i> Surface Types</h4>
+        <div class="surface-options">
+          <label class="checkbox-label">
+            <input id="setupCarpet" type="checkbox" checked />
+            <span class="checkmark carpet"></span>
+            Carpet
+          </label>
+          <label class="checkbox-label">
+            <input id="setupTile" type="checkbox" checked />
+            <span class="checkmark tile"></span>
+            Tile
+          </label>
+          <label class="checkbox-label">
+            <input id="setupOther" type="checkbox" />
+            <span class="checkmark other"></span>
+            Other
+          </label>
+        </div>
+        <div class="hint">Selected: <strong id="surfacePreview">Mix</strong></div>
+      </div>
+
+      <div class="setup-section">
+        <h4><i class="fas fa-broom"></i> Cleaning Frequency</h4>
+        <div class="frequency-options">
+          <label class="radio-label">
+            <input type="radio" name="frequency" value="30" />
+            <span class="radiomark"></span>
+            Monthly (30 days)
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="frequency" value="90" />
+            <span class="radiomark"></span>
+            Quarterly (90 days)
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="frequency" value="183" checked />
+            <span class="radiomark"></span>
+            Every 6 months (183 days)
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="frequency" value="365" />
+            <span class="radiomark"></span>
+            Yearly (365 days)
+          </label>
+        </div>
+      </div>
+
+      <div class="setup-preview">
+        <div id="setupPreview"></div>
+        <div class="preview-details" id="setupDetails"></div>
+      </div>
+
+      <div class="setup-actions">
+        <button class="btn-secondary" onclick="toggleQuickSetup()">Cancel</button>
+        <button class="btn-primary" onclick="generateStructure()">
+          <i class="fas fa-gears"></i> Generate Structure
+        </button>
+      </div>
+    </section>
+
+    <main class="buildings-container" id="buildingsContainer"></main>
+
+    <footer class="footer">
+      <div class="stats">
+        <span id="statsBuildings">0 buildings</span>
+        <span id="statsFloors">0 floors</span>
+        <span id="statsRooms">0 rooms</span>
+        <span id="statsSpaces">0 spaces</span>
+        <span id="statsSelected" style="display: none;">Selected: <strong id="selectedRoomsCount">0</strong></span>
+      </div>
+      <div class="instructions">
+        <i class="fas fa-lightbulb"></i>
+        Click building / floor names to edit. Click a room to open details.
+      </div>
+    </footer>
+  </div>
+
+  <div class="modal-overlay" id="bulkModal" style="display: none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><i class="fas fa-clone"></i> Add Multiple Rooms</h3>
+        <button class="modal-close" onclick="closeBulkModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="bulkStartRoom">Start room number</label>
+          <input id="bulkStartRoom" type="text" placeholder="101 or A101" />
+          <div class="hint">Must end with digits. Example: <code>101</code> or <code>A101</code>.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="bulkCount">Count</label>
+          <div class="number-control">
+            <button onclick="adjustBulkCount(-1)" aria-label="Decrease count">−</button>
+            <input id="bulkCount" type="number" min="1" max="100" value="20" />
+            <button onclick="adjustBulkCount(1)" aria-label="Increase count">+</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="bulkSurface">Surface</label>
+          <select id="bulkSurface">
+            <option value="CARPET">Carpet</option>
+            <option value="TILE" selected>Tile</option>
+            <option value="BOTH">Both</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="bulkFrequency">Cleaning frequency (days)</label>
+          <input id="bulkFrequency" type="number" min="1" value="183" />
+        </div>
+
+        <div class="preview-card" id="bulkPreview"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeBulkModal()">Cancel</button>
+        <button class="btn-primary" onclick="createBulkRooms()">
+          <i class="fas fa-plus-circle"></i> Create Rooms
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="app-config.js"></script>
+  <script src="shared/db.js"></script>
+  <script src="script.js?v=20260115"></script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task</title>
+  <link rel="stylesheet" href="styles.css?v=20260115" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body>
+  <div class="app-container">
+    <header class="header admin-header">
+      <div class="logo">
+        <i class="fas fa-clipboard-check"></i>
+        <div>
+          <h1 id="taskTitle">Task</h1>
+          <p id="taskSubtitle">—</p>
+        </div>
+      </div>
+
+      <nav class="admin-nav">
+        <a class="admin-link" href="hotel_tasks.html"><i class="fas fa-clipboard-list"></i> Tasks</a>
+        <a class="admin-link" href="staff_tasks.html"><i class="fas fa-user-check"></i> Staff</a>
+      </nav>
+    </header>
+
+    <div class="top-actions">
+      <a class="btn-secondary" href="hotel_tasks.html"><i class="fas fa-arrow-left"></i> Back</a>
+      <button class="btn-secondary" id="taskPrintBtn" type="button"><i class="fas fa-print"></i> Print</button>
+      <div class="hotel-switcher">
+        <div class="hotel-switcher-label">Hotel</div>
+        <select id="hotelSelect" class="hotel-select" aria-label="Select hotel"></select>
+      </div>
+    </div>
+
+    <section class="planning-shell">
+      <div class="planning-card">
+        <h3>Details</h3>
+        <div class="task-meta" id="taskMeta"></div>
+        <div class="form-row" style="margin-top: 12px;">
+          <div class="form-field">
+            <label for="taskStatus">Status</label>
+            <select id="taskStatus">
+              <option value="OPEN">Open</option>
+              <option value="IN_PROGRESS">In progress</option>
+              <option value="DONE">Done</option>
+              <option value="BLOCKED">Blocked</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="taskAssigneeDetail">Assign to</label>
+            <select id="taskAssigneeDetail"></select>
+          </div>
+          <div class="form-field">
+            <label for="taskActorStaff">Signed in as (staff)</label>
+            <select id="taskActorStaff"></select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="taskNote">Add note</label>
+            <input id="taskNote" type="text" placeholder="Short note..." />
+          </div>
+          <div class="form-field">
+            <label>&nbsp;</label>
+            <button class="btn-secondary" id="addTaskNoteBtn"><i class="fas fa-comment"></i> Add note</button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="taskPhoto">Add photo</label>
+            <input id="taskPhoto" type="file" accept="image/*" />
+          </div>
+        </div>
+      </div>
+
+      <div class="planning-card">
+        <h3>Timeline</h3>
+        <div class="task-timeline" id="taskTimeline"></div>
+      </div>
+
+      <div class="planning-card">
+        <h3>Photos</h3>
+        <div class="task-attachments" id="taskAttachments"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="app-config.js"></script>
+  <script src="shared/db.js"></script>
+  <script src="shared/demo.js"></script>
+  <script src="script.js?v=20260115"></script>
+</body>
+</html>

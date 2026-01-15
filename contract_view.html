@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contract - Hotel Maintenance Pro</title>
+  <link rel="stylesheet" href="styles.css?v=20260115" />
+  <style>
+    body { background: #f8fafc; }
+    .contract-page {
+      max-width: 880px;
+      margin: 40px auto;
+      background: white;
+      border-radius: 20px;
+      padding: 32px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+    }
+    .contract-meta {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+      color: #64748b;
+      font-size: 14px;
+    }
+    .contract-section {
+      margin-top: 20px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 20px;
+    }
+    .contract-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .contract-kv {
+      background: #f8fafc;
+      border-radius: 14px;
+      padding: 12px 14px;
+      border: 1px solid #e2e8f0;
+      font-size: 14px;
+    }
+    .contract-kv strong {
+      display: block;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+    .signature-box {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="contract-page">
+    <h1>Hotel Maintenance Pro - Contract</h1>
+    <div class="contract-meta" id="contractMeta"></div>
+    <div id="contractContent"></div>
+
+    <div class="contract-section">
+      <h3>Signature</h3>
+      <p>Sign to accept this contract.</p>
+      <div class="signature-box">
+        <input id="signatureName" type="text" placeholder="Full name" />
+        <button class="btn-primary" id="acceptContractBtn">Accept Contract</button>
+      </div>
+      <div class="field-hint" id="signatureStatus"></div>
+    </div>
+  </div>
+
+  <script src="app-config.js"></script>
+  <script src="shared/db.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const content = document.getElementById('contractContent');
+    const meta = document.getElementById('contractMeta');
+    const statusEl = document.getElementById('signatureStatus');
+    const acceptBtn = document.getElementById('acceptContractBtn');
+    const nameInput = document.getElementById('signatureName');
+
+    function formatCurrency(value) {
+      return `$${Number(value || 0).toFixed(2)}`;
+    }
+
+    function setBusy(isBusy) {
+      acceptBtn.disabled = !!isBusy;
+      if (nameInput) nameInput.disabled = !!isBusy;
+    }
+
+    function renderContract(contract) {
+      const pricing = contract.pricing || {};
+      const surface = contract.surfaceType || 'BOTH';
+      const freqLabel = contract.frequency === 'TWICE_YEAR' ? '2x / year' : '1x / year';
+      const basePrice = pricing.basePrices?.[surface] || 0;
+      const contractPrice = pricing.contractPrices?.[surface] || 0;
+      const advantagePrice = pricing.advantagePrices?.[surface] || 0;
+      const penaltyPrice = pricing.penaltyPrices?.[surface] || 0;
+
+      meta.innerHTML = `
+        <div><strong>Status:</strong> ${contract.status}</div>
+        <div><strong>Hotel:</strong> ${contract.hotelName || '-'}</div>
+        <div><strong>Sent:</strong> ${new Date(contract.sentAt || contract.createdAt).toLocaleDateString()}</div>
+      `;
+
+      content.innerHTML = `
+        <div class="contract-section">
+          <h3>Contact</h3>
+          <div class="contract-grid">
+            <div class="contract-kv"><strong>Contact</strong>${contract.contact?.name || '-'}</div>
+            <div class="contract-kv"><strong>Email</strong>${contract.contact?.email || '-'}</div>
+            <div class="contract-kv"><strong>CC</strong>${(contract.contact?.cc || []).join(', ') || '-'}</div>
+          </div>
+        </div>
+
+        <div class="contract-section">
+          <h3>Pricing</h3>
+          <div class="contract-grid">
+            <div class="contract-kv"><strong>Surface</strong>${surface}</div>
+            <div class="contract-kv"><strong>Frequency</strong>${freqLabel}</div>
+            <div class="contract-kv"><strong>Rooms / session</strong>${contract.roomsPerSession || 0}</div>
+            <div class="contract-kv"><strong>Min / max</strong>${contract.roomsMinPerSession || 0} / ${contract.roomsMaxPerSession || 0}</div>
+            <div class="contract-kv"><strong>Base price</strong>${formatCurrency(basePrice)}</div>
+            <div class="contract-kv"><strong>Contract price</strong>${formatCurrency(contractPrice)}</div>
+            <div class="contract-kv"><strong>Advantage price</strong>${formatCurrency(advantagePrice)}</div>
+            <div class="contract-kv"><strong>Penalty price</strong>${formatCurrency(penaltyPrice)}</div>
+            <div class="contract-kv"><strong>Applied tier</strong>${contract.appliedTier || '-'}</div>
+            <div class="contract-kv"><strong>Applied / room</strong>${formatCurrency(contract.appliedPricePerRoom)}</div>
+            <div class="contract-kv"><strong>Total / session</strong>${formatCurrency(contract.totalPerSession)}</div>
+          </div>
+        </div>
+
+        <div class="contract-section">
+          <h3>Notes</h3>
+          <p>${contract.notes || '-'}</p>
+        </div>
+      `;
+
+      if (contract.status === 'ACCEPTED') {
+        statusEl.textContent = `Accepted by ${contract.signedBy || 'client'} on ${new Date(contract.acceptedAt).toLocaleDateString()}.`;
+        acceptBtn.disabled = true;
+      }
+    }
+
+    async function loadContract() {
+      if (!token) return null;
+      // Try DB-backed token endpoint first (public), fallback to local.
+      try {
+        if (window.HMP_DB?.apiGetContractByToken) {
+          const r = await window.HMP_DB.apiGetContractByToken(token);
+          if (r?.ok && r?.contract) return r.contract;
+        }
+      } catch {}
+      try {
+        return window.HMP_DB?.getContractByToken ? window.HMP_DB.getContractByToken(token) : null;
+      } catch {
+        return null;
+      }
+    }
+
+    async function acceptContract(currentContract, signedBy) {
+      // Prefer DB-backed accept (public), fallback to local storage update.
+      try {
+        if (window.HMP_DB?.apiAcceptContractByToken) {
+          const r = await window.HMP_DB.apiAcceptContractByToken(token, signedBy);
+          if (r?.ok && r?.contract) {
+            // Mirror in local storage if present.
+            try {
+              const local = window.HMP_DB.getContractByToken?.(token);
+              if (local?.id) window.HMP_DB.updateContract(local.id, r.contract);
+            } catch {}
+            return r.contract;
+          }
+          if (r && !r.ok) throw new Error(r.error || `accept failed (status ${r.status || '?'})`);
+        }
+      } catch (e) {
+        // show error but still allow local fallback below
+        if (statusEl) statusEl.textContent = String(e?.message || e);
+      }
+
+      // Local fallback
+      if (currentContract?.id && window.HMP_DB?.updateContract) {
+        window.HMP_DB.updateContract(currentContract.id, {
+          status: 'ACCEPTED',
+          signedBy,
+          acceptedAt: new Date().toISOString()
+        });
+        return window.HMP_DB.getContractByToken(token);
+      }
+      return null;
+    }
+
+    if (!token) {
+      content.innerHTML = '<p>Missing contract token.</p>';
+      acceptBtn.disabled = true;
+    } else {
+      (async () => {
+        setBusy(true);
+        const contract = await loadContract();
+        if (!contract) {
+          content.innerHTML = '<p>Contract not found.</p>';
+          acceptBtn.disabled = true;
+          setBusy(false);
+          return;
+        }
+
+        renderContract(contract);
+        setBusy(false);
+
+        acceptBtn.addEventListener('click', async () => {
+          const name = (nameInput?.value || '').trim();
+          if (!name) {
+            statusEl.textContent = 'Please enter a name to sign.';
+            return;
+          }
+          setBusy(true);
+          const updated = await acceptContract(contract, name);
+          if (updated) renderContract(updated);
+          setBusy(false);
+        });
+      })();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Agenda</title>
+  <link rel="stylesheet" href="styles.css?v=20260115" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body>
+  <div class="app-container">
+    <header class="header admin-header">
+      <div class="logo">
+        <i class="fas fa-hotel"></i>
+        <div>
+          <h1>Admin - Agenda</h1>
+          <p>All hotels • Validated reservations only</p>
+        </div>
+      </div>
+
+      <nav class="admin-nav">
+        <a class="admin-link" href="admin_config.html"><i class="fas fa-sitemap"></i> Setup</a>
+        <a class="admin-link" href="admin_hotel.html"><i class="fas fa-file-contract"></i> Hotel & Contract</a>
+        <a class="admin-link" href="admin_planning.html"><i class="fas fa-calendar-check"></i> Planning</a>
+        <a class="admin-link active" href="admin_agenda.html"><i class="fas fa-calendar-alt"></i> Agenda</a>
+        <a class="admin-link" href="admin_reports.html"><i class="fas fa-chart-line"></i> Reports</a>
+        <a class="admin-link" href="admin_settings.html"><i class="fas fa-sliders"></i> Settings</a>
+      </nav>
+
+    </header>
+
+    <div class="top-actions">
+      <div class="planning-week-nav">
+        <button class="btn-secondary" id="agendaPrevWeek"><i class="fas fa-chevron-left"></i> Prev</button>
+        <button class="btn-secondary" id="agendaNextWeek">Next <i class="fas fa-chevron-right"></i></button>
+      </div>
+      <div class="save-status" id="saveStatus">
+        <i class="fas fa-check-circle"></i>
+        <span>Saved</span>
+      </div>
+    </div>
+
+    <section class="planning-shell">
+      <div class="planning-toolbar">
+        <div class="planning-filters">
+          <label>
+            Hotel
+            <select id="agendaHotelFilter"></select>
+          </label>
+          <label>
+            Status
+            <select id="agendaStatusFilter">
+              <option value="APPROVED" selected>Approved only</option>
+              <option value="ALL">All</option>
+            </select>
+          </label>
+        </div>
+        <div class="planning-actions">
+          <button class="btn-secondary" id="agendaExportBtn">
+            <i class="fas fa-file-export"></i> Export CSV
+          </button>
+        </div>
+      </div>
+
+      <div class="planning-card">
+        <h3>Agenda</h3>
+        <div id="agendaFullGrid" class="agenda-grid"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="app-config.js"></script>
+  <script src="shared/db.js"></script>
+  <script src="script.js?v=20260115"></script>
+</body>
+</html>

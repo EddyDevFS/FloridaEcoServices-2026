@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Florida Eco Services — Platform Tour</title>
+  <meta name="description" content="A marketing-first guided tour of the Florida Eco hotel platform: onboarding, planning, tasks, proof, and reports.">
+  <meta name="theme-color" content="#0b6b55">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="demo_platform.css">
+</head>
+<body>
+  <header class="demo-topbar" role="banner">
+    <div class="container topbar-inner">
+      <a class="brand" href="hotel.html" aria-label="Back to Hotel Platform">
+        <span class="brand-badge" aria-hidden="true"><i class="fa-solid fa-hotel"></i></span>
+        <span>
+          <span class="brand-name">Florida Eco <strong>Services</strong></span>
+          <span class="brand-sub">Guided Tour • Marketing demo</span>
+        </span>
+      </a>
+
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" id="btnExit" type="button">
+          <i class="fa-solid fa-xmark"></i> Exit
+        </button>
+        <a class="btn btn-primary" href="hotel.html#contact">
+          <i class="fa-solid fa-envelope"></i> Request access
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="demo-shell">
+    <div class="container">
+      <div class="demo-header">
+        <div>
+          <h1 class="demo-title">The hotel platform — in 60 seconds.</h1>
+          <p class="demo-sub">A guided, non-interactive walkthrough of the real screens: setup → planning → daily execution → tasks → reports.</p>
+        </div>
+        <div class="demo-progress" aria-label="Demo progress">
+          <div id="demoDots" style="display:flex;gap:8px;align-items:center;"></div>
+          <div class="demo-step-label" id="demoStepLabel">Step</div>
+        </div>
+      </div>
+
+      <section class="demo-grid" aria-label="Guided tour">
+        <div class="panel" aria-label="Explanation">
+          <div class="panel-inner">
+            <div class="kicker" id="demoKicker"><i class="fa-solid fa-bolt"></i><span>Tour</span></div>
+            <h2 class="h2" id="demoTitle"></h2>
+            <p class="p" id="demoSubtitle"></p>
+            <ul class="bullets" id="demoBullets"></ul>
+
+            <div class="cta-card">
+              <i class="fa-solid fa-circle-info" style="color:var(--demo-brand);margin-top:2px;"></i>
+              <div>
+                <b>Hotel is always free to choose.</b>
+                <small>They can keep their internal workflow — or use the platform to plan faster, track tasks, and keep proof/history.</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="demo-nav">
+            <div class="demo-nav-left">
+              <button class="btn" id="btnPrev" type="button"><i class="fa-solid fa-arrow-left"></i> Back</button>
+              <button class="btn btn-ghost" id="btnSkip" type="button">Skip</button>
+            </div>
+            <div class="demo-nav-right">
+              <button class="btn btn-primary" id="btnNext" type="button">Next <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel screen" aria-label="Screen preview">
+          <div class="screen-top">
+            <div class="screen-title" id="screenTitle">Preview</div>
+            <div class="screen-pill" id="screenPill">Tour</div>
+          </div>
+          <div class="screen-body" id="screenBody"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="demo_platform.js"></script>
+ </body>
+ </html>
+

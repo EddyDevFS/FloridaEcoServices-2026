@@ -1,0 +1,432 @@
+/* ============================================
+   STYLES DASHBOARD PRESTATAIRE
+   ============================================ */
+
+/* Main stats grid */
+.main-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-6);
+}
+
+.main-stat-card {
+    background: white;
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-5);
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s;
+}
+
+.main-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+}
+
+.main-stat-card.revenue::before { background: linear-gradient(90deg, var(--color-success), #22c55e); }
+.main-stat-card.contracts::before { background: linear-gradient(90deg, var(--color-primary), #8b5cf6); }
+.main-stat-card.sessions::before { background: linear-gradient(90deg, var(--color-warning), #f97316); }
+.main-stat-card.issues::before { background: linear-gradient(90deg, var(--color-danger), #ef4444); }
+
+.main-stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.main-stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--border-radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: var(--spacing-3);
+}
+
+.main-stat-card.revenue .main-stat-icon { background: rgba(16, 185, 129, 0.1); color: var(--color-success); }
+.main-stat-card.contracts .main-stat-icon { background: rgba(45, 90, 241, 0.1); color: var(--color-primary); }
+.main-stat-card.sessions .main-stat-icon { background: rgba(245, 158, 11, 0.1); color: var(--color-warning); }
+.main-stat-card.issues .main-stat-icon { background: rgba(239, 68, 68, 0.1); color: var(--color-danger); }
+
+.main-stat-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--color-gray-800);
+    line-height: 1;
+    margin-bottom: var(--spacing-1);
+}
+
+.main-stat-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-600);
+    margin-bottom: var(--spacing-2);
+}
+
+.main-stat-change {
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-1);
+}
+
+.main-stat-change.positive {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--color-success);
+}
+
+.main-stat-change.negative {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--color-danger);
+}
+
+/* Dashboard columns */
+.dashboard-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-6);
+}
+
+@media (max-width: 1024px) {
+    .dashboard-columns {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Urgent sessions */
+.urgent-sessions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.urgent-session-item {
+    background: rgba(239, 68, 68, 0.05);
+    border: 2px solid rgba(239, 68, 68, 0.2);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.urgent-session-item:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: var(--color-danger);
+}
+
+.urgent-session-info h4 {
+    font-size: var(--font-size-base);
+    font-weight: 700;
+    color: var(--color-gray-800);
+    margin-bottom: var(--spacing-1);
+}
+
+.urgent-session-details {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-600);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+}
+
+.urgent-session-details .badge {
+    font-size: 10px;
+    padding: 2px 6px;
+}
+
+/* Reported issues */
+.reported-issues {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.issue-item {
+    background: var(--color-gray-50);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-3);
+    border-left: 4px solid var(--color-warning);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.issue-item:hover {
+    background: white;
+    box-shadow: var(--shadow-sm);
+}
+
+.issue-item.urgent { border-left-color: var(--color-danger); }
+.issue-item.normal { border-left-color: var(--color-warning); }
+.issue-item.low { border-left-color: var(--color-success); }
+
+.issue-info h4 {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--color-gray-800);
+    margin-bottom: var(--spacing-1);
+}
+
+.issue-details {
+    font-size: var(--font-size-xs);
+    color: var(--color-gray-600);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+}
+
+.issue-actions {
+    display: flex;
+    gap: var(--spacing-2);
+}
+
+/* Upcoming sessions */
+.upcoming-sessions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.session-card {
+    background: var(--color-gray-50);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-3);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    transition: all 0.2s;
+}
+
+.session-card:hover {
+    background: white;
+    box-shadow: var(--shadow-sm);
+}
+
+.session-date {
+    background: var(--color-primary);
+    color: white;
+    width: 56px;
+    height: 56px;
+    border-radius: var(--border-radius-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    text-align: center;
+    line-height: 1;
+}
+
+.session-day {
+    font-size: 20px;
+}
+
+.session-month {
+    font-size: 11px;
+    text-transform: uppercase;
+    opacity: 0.9;
+}
+
+.session-content {
+    flex: 1;
+}
+
+.session-content h4 {
+    font-size: var(--font-size-base);
+    font-weight: 700;
+    color: var(--color-gray-800);
+    margin-bottom: var(--spacing-1);
+}
+
+.session-details {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-600);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+}
+
+.session-actions {
+    display: flex;
+    gap: var(--spacing-2);
+}
+
+/* Active clients */
+.active-clients {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.client-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-3);
+    background: var(--color-gray-50);
+    border-radius: var(--border-radius-md);
+    transition: all 0.2s;
+}
+
+.client-item:hover {
+    background: white;
+    box-shadow: var(--shadow-sm);
+}
+
+.client-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--border-radius-md);
+    background: var(--color-primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.client-info h4 {
+    font-size: var(--font-size-base);
+    font-weight: 700;
+    color: var(--color-gray-800);
+    margin-bottom: var(--spacing-1);
+}
+
+.client-details {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-600);
+}
+
+.client-revenue {
+    margin-left: auto;
+    font-weight: 700;
+    color: var(--color-success);
+    font-size: var(--font-size-lg);
+}
+
+/* Revenue chart */
+.chart-container {
+    height: 300px;
+    margin-top: var(--spacing-4);
+    position: relative;
+}
+
+/* Quick actions */
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--spacing-4);
+    margin-top: var(--spacing-4);
+}
+
+.quick-action-btn {
+    background: white;
+    border: 2px solid var(--color-gray-200);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-2);
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+    color: inherit;
+}
+
+.quick-action-btn:hover {
+    border-color: var(--color-primary);
+    background: var(--color-gray-50);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+}
+
+.quick-action-btn i {
+    font-size: 32px;
+    color: var(--color-primary);
+}
+
+.quick-action-btn span {
+    font-weight: 600;
+    color: var(--color-gray-700);
+    text-align: center;
+}
+
+/* Issue details modal */
+.issue-detail-content {
+    display: grid;
+    gap: var(--spacing-4);
+}
+
+.issue-detail-row {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: var(--spacing-3);
+    align-items: center;
+}
+
+.issue-detail-label {
+    font-weight: 700;
+    color: var(--color-gray-600);
+    font-size: var(--font-size-sm);
+}
+
+.issue-detail-value {
+    padding: var(--spacing-2) var(--spacing-3);
+    background: var(--color-gray-50);
+    border-radius: var(--border-radius-md);
+    font-weight: 600;
+}
+
+.issue-description {
+    background: var(--color-gray-50);
+    padding: var(--spacing-4);
+    border-radius: var(--border-radius-md);
+    margin: var(--spacing-4) 0;
+}
+
+.status-selector {
+    display: flex;
+    gap: var(--spacing-2);
+    margin: var(--spacing-4) 0;
+}
+
+.status-option {
+    flex: 1;
+    padding: var(--spacing-2);
+    border: 2px solid var(--color-gray-300);
+    border-radius: var(--border-radius-md);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.status-option:hover {
+    border-color: var(--color-primary);
+}
+
+.status-option.selected {
+    border-color: var(--color-primary);
+    background: rgba(45, 90, 241, 0.1);
+    font-weight: 700;
+}
+
+.status-option.pending { border-color: var(--color-warning); }
+.status-option.in-progress { border-color: var(--color-info); }
+.status-option.resolved { border-color: var(--color-success); }
+.status-option.selected.pending { background: rgba(245, 158, 11, 0.1); }
+.status-option.selected.in-progress { background: rgba(59, 130, 246, 0.1); }
+.status-option.selected.resolved { background: rgba(16, 185, 129, 0.1); }

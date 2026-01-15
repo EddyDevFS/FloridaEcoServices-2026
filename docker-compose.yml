@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: floridaeco
+      POSTGRES_USER: floridaeco
+      POSTGRES_PASSWORD: floridaeco_dev_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: ./backend
+    environment:
+      NODE_ENV: "development"
+      PORT: "3001"
+      DATABASE_URL: "postgresql://floridaeco:floridaeco_dev_password@db:5432/floridaeco?schema=public"
+      CORS_ORIGIN: "http://localhost:8000"
+      JWT_ACCESS_SECRET: "dev_access_secret_change_me"
+      JWT_REFRESH_SECRET: "dev_refresh_secret_change_me"
+      JWT_ACCESS_TTL_SECONDS: "900"
+      JWT_REFRESH_TTL_DAYS: "14"
+      COOKIE_SECURE: "0"
+      UPLOADS_DIR: "/app/uploads"
+    depends_on:
+      - db
+    ports:
+      - "3001:3001"
+    volumes:
+      - uploads_data:/app/uploads
+
+volumes:
+  postgres_data:
+  uploads_data:

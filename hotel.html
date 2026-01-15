@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Florida Eco Services — Hotel Platform</title>
+  <meta name="description" content="A modern hotel platform to plan, track, and prove cleaning & maintenance. Built for busy managers: fast setup, clear reporting, and mobile-ready execution.">
+  <meta name="theme-color" content="#0b6b55">
+
+  <link rel="stylesheet" href="hotel.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="header" role="banner">
+    <div class="container nav-container">
+      <a class="brand" href="index.html" aria-label="Back to Florida Eco Services">
+        <span class="brand-badge" aria-hidden="true"><i class="fa-solid fa-hotel"></i></span>
+        <span class="brand-text">
+          <span class="brand-name">Florida Eco <strong>Services</strong></span>
+          <span class="brand-sub">Hotel Platform • Manager-ready</span>
+        </span>
+      </a>
+
+      <nav class="nav-links" aria-label="Primary navigation" id="primaryNav">
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#demo" class="nav-link">Demo</a>
+        <a href="#pricing" class="nav-link">Pricing</a>
+        <a href="#contact" class="nav-link">Contact</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a class="btn-text" href="index.html"><i class="fa-solid fa-arrow-left"></i> Main site</a>
+        <a class="btn-text" href="hotel_dashboard.html" id="portalLoginBtn">
+          <i class="fa-solid fa-right-to-bracket"></i> Staff login
+        </a>
+        <a class="btn-primary" id="startInteractiveDemoBtn" href="demo_platform.html">
+          <i class="fa-solid fa-play"></i>
+          Watch the tour
+        </a>
+        <button class="mobile-menu-btn" type="button" aria-label="Open menu" aria-controls="primaryNav" aria-expanded="false">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-label="Hero">
+      <div class="container hero-container">
+        <div class="hero-card reveal">
+          <div class="badge">
+            <i class="fa-solid fa-bolt"></i>
+            <span>Plan • Track • Prove</span>
+          </div>
+          <h1 class="hero-title">
+            Hotel operations,<br>
+            <span class="gradient-text">finally simple.</span>
+          </h1>
+          <p class="hero-subtitle">
+            A clean, fast platform to organize buildings, floors, rooms, and shared areas.
+            Designed for iPad speed: fewer mistakes, clearer accountability, and easy reporting.
+          </p>
+
+        <div class="hero-actions">
+            <a class="btn-primary" id="heroDemoBtn" href="demo_platform.html">
+              <i class="fa-solid fa-play-circle"></i>
+              See the platform tour
+            </a>
+            <a class="btn-ghost" href="hotel_dashboard.html" id="heroLoginBtn">
+              <i class="fa-solid fa-right-to-bracket"></i>
+              Staff login
+            </a>
+            <a class="btn-ghost" href="#features">
+              <i class="fa-solid fa-arrow-right"></i>
+              Explore features
+            </a>
+          </div>
+
+          <div class="hero-stats" aria-label="Highlights">
+            <div class="stat">
+              <i class="fa-solid fa-sitemap"></i>
+              <div>
+                <div class="stat-number">∞</div>
+                <div class="stat-label">Buildings / floors / rooms</div>
+              </div>
+            </div>
+            <div class="stat">
+              <i class="fa-solid fa-list-check"></i>
+              <div>
+                <div class="stat-number">Fast</div>
+                <div class="stat-label">Room planning</div>
+              </div>
+            </div>
+            <div class="stat">
+              <i class="fa-solid fa-shield"></i>
+              <div>
+                <div class="stat-number">Clear</div>
+                <div class="stat-label">Accountability</div>
+              </div>
+            </div>
+            <div class="stat">
+              <i class="fa-solid fa-mobile-screen"></i>
+              <div>
+                <div class="stat-number">Mobile</div>
+                <div class="stat-label">Ready</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-visual reveal" aria-label="Platform preview">
+          <div class="visual-card">
+            <div class="visual-top">
+              <div class="dots" aria-hidden="true">
+                <span class="dot red"></span>
+                <span class="dot yellow"></span>
+                <span class="dot green"></span>
+              </div>
+              <div class="visual-title">Hotel Dashboard</div>
+            </div>
+
+            <div class="visual-body">
+              <div class="preview-grid">
+                <div class="mini-panel">
+                  <h4>Today</h4>
+                  <div class="mini-kpis">
+                    <div class="kpi">
+                      <b>14</b>
+                      <span>Rooms scheduled</span>
+                    </div>
+                    <div class="kpi">
+                      <b>3</b>
+                      <span>Overdue</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="mini-panel">
+                  <h4>Status</h4>
+                  <div class="mini-kpis">
+                    <div class="kpi">
+                      <b>28m</b>
+                      <span>Avg per room</span>
+                    </div>
+                    <div class="kpi">
+                      <b>1 tap</b>
+                      <span>Proof logs</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="list" aria-label="Sample list">
+                <div class="row">
+                  <div><b>Building A • Floor 2</b><div style="font-size:12px;color:rgba(11,18,32,.60);font-weight:850">Rooms 201–210</div></div>
+                  <span class="pill good">On track</span>
+                </div>
+                <div class="row">
+                  <div><b>Corridors</b><div style="font-size:12px;color:rgba(11,18,32,.60);font-weight:850">Lobby + main hallway</div></div>
+                  <span class="pill soon">Due soon</span>
+                </div>
+                <div class="row">
+                  <div><b>Building B • Floor 1</b><div style="font-size:12px;color:rgba(11,18,32,.60);font-weight:850">High-traffic rooms</div></div>
+                  <span class="pill over">Overdue</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="float-card card-1" aria-hidden="true">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span>Fast setup</span>
+          </div>
+          <div class="float-card card-2" aria-hidden="true">
+            <i class="fa-solid fa-clipboard-check"></i>
+            <span>Proof & logs</span>
+          </div>
+          <div class="float-card card-3" aria-hidden="true">
+            <i class="fa-solid fa-chart-line"></i>
+            <span>Simple reporting</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="features" aria-label="Features">
+      <div class="container">
+        <header class="section-header reveal">
+          <h2 class="section-title">Everything managers need</h2>
+          <p class="section-subtitle">Built to reduce mistakes, speed up decisions, and keep standards consistent.</p>
+        </header>
+
+        <div class="features-grid">
+          <article class="feature-card reveal">
+            <div class="feature-icon primary"><i class="fa-solid fa-sitemap"></i></div>
+            <h3>Hotel structure</h3>
+            <p>Buildings, floors, rooms, shared areas—organized in a clean hierarchy.</p>
+            <ul class="feature-list">
+              <li><i class="fa-solid fa-check"></i> Flexible setup</li>
+              <li><i class="fa-solid fa-check"></i> Bulk generation</li>
+              <li><i class="fa-solid fa-check"></i> Visual navigation</li>
+            </ul>
+          </article>
+
+          <article class="feature-card reveal">
+            <div class="feature-icon success"><i class="fa-solid fa-broom"></i></div>
+            <h3>Cleaning planning</h3>
+            <p>Plan rooms in minutes and keep teams aligned on priorities.</p>
+            <ul class="feature-list">
+              <li><i class="fa-solid fa-check"></i> Room selection</li>
+              <li><i class="fa-solid fa-check"></i> Frequency rules</li>
+              <li><i class="fa-solid fa-check"></i> Notes & incidents</li>
+            </ul>
+          </article>
+
+          <article class="feature-card reveal">
+            <div class="feature-icon warning"><i class="fa-solid fa-bolt"></i></div>
+            <h3>Fast execution</h3>
+            <p>Mobile-ready flows designed for speed during operations.</p>
+            <ul class="feature-list">
+              <li><i class="fa-solid fa-check"></i> Minimal clicks</li>
+              <li><i class="fa-solid fa-check"></i> Clear statuses</li>
+              <li><i class="fa-solid fa-check"></i> Quick updates</li>
+            </ul>
+          </article>
+
+          <article class="feature-card reveal">
+            <div class="feature-icon info"><i class="fa-solid fa-file-lines"></i></div>
+            <h3>Proof & history</h3>
+            <p>Room history, timestamps, and clarity for accountability.</p>
+            <ul class="feature-list">
+              <li><i class="fa-solid fa-check"></i> Room logs</li>
+              <li><i class="fa-solid fa-check"></i> Skipped reasons</li>
+              <li><i class="fa-solid fa-check"></i> Audit-friendly</li>
+            </ul>
+          </article>
+
+          <article class="feature-card reveal">
+            <div class="feature-icon purple"><i class="fa-solid fa-people-group"></i></div>
+            <h3>Staff management</h3>
+            <p>Keep staff lists, assignments, and workflows organized.</p>
+            <ul class="feature-list">
+              <li><i class="fa-solid fa-check"></i> Roles & tasks</li>
+              <li><i class="fa-solid fa-check"></i> Simple views</li>
+              <li><i class="fa-solid fa-check"></i> Operational clarity</li>
+            </ul>
+          </article>
+
+          <article class="feature-card reveal">
+            <div class="feature-icon danger"><i class="fa-solid fa-shield-halved"></i></div>
+            <h3>Reliable & secure</h3>
+            <p>A clean foundation that scales to multi-property operations.</p>
+            <ul class="feature-list">
+              <li><i class="fa-solid fa-check"></i> Structured data</li>
+              <li><i class="fa-solid fa-check"></i> Consistent UX</li>
+              <li><i class="fa-solid fa-check"></i> Easy onboarding</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt" id="demo" aria-label="Demo">
+      <div class="container">
+        <header class="section-header reveal">
+          <h2 class="section-title">See it in 30 seconds</h2>
+          <p class="section-subtitle">A quick flow from setup → planning → proof.</p>
+        </header>
+
+        <div class="demo-grid">
+          <div class="demo-card reveal">
+            <h3 style="margin:0 0 8px;letter-spacing:-.02em;">Guided tour (marketing)</h3>
+            <p style="margin:0;color:rgba(11,18,32,.68);">Non-interactive, crystal-clear walkthrough of the real screens — made for prospects.</p>
+            <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+              <a class="btn-primary" href="demo_platform.html">
+                <i class="fa-solid fa-play"></i> Watch the tour
+              </a>
+              <a class="btn-ghost" href="#contact"><i class="fa-solid fa-envelope"></i> Request access</a>
+            </div>
+          </div>
+
+          <div class="demo-card reveal">
+            <h3 style="margin:0 0 8px;letter-spacing:-.02em;">Staff login</h3>
+            <p style="margin:0;color:rgba(11,18,32,.68);">Access your hotel portal (for real usage & testing). A login prompt will appear.</p>
+            <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+              <a class="btn-primary" href="hotel_dashboard.html">
+                <i class="fa-solid fa-right-to-bracket"></i> Open portal
+              </a>
+              <a class="btn-ghost" href="#contact"><i class="fa-solid fa-envelope"></i> Request access</a>
+            </div>
+          </div>
+
+          <div class="demo-card reveal">
+            <h3 style="margin:0 0 8px;letter-spacing:-.02em;">How it works</h3>
+            <div class="demo-steps">
+              <div class="step">
+                <div class="num">1</div>
+                <div><b>Structure</b><span>Build the hotel in minutes.</span></div>
+              </div>
+              <div class="step">
+                <div class="num">2</div>
+                <div><b>Plan</b><span>Select rooms and schedule.</span></div>
+              </div>
+              <div class="step">
+                <div class="num">3</div>
+                <div><b>Prove</b><span>Logs and history for clarity.</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="pricing" aria-label="Pricing">
+      <div class="container">
+        <header class="section-header reveal">
+          <h2 class="section-title">Simple pricing</h2>
+          <p class="section-subtitle">Choose what matches your property size and reporting needs.</p>
+        </header>
+
+        <div class="pricing-grid">
+          <article class="price-card reveal">
+            <div class="price-top">
+              <div>
+                <h3 style="margin:0;letter-spacing:-.02em;">Starter</h3>
+                <div style="color:rgba(11,18,32,.62);font-weight:850;font-size:12px;">Single property</div>
+              </div>
+              <span class="tag">Basic</span>
+            </div>
+            <div class="price">$0 <small>/ demo</small></div>
+            <ul class="price-list">
+              <li><i class="fa-solid fa-check"></i> Try the platform</li>
+              <li><i class="fa-solid fa-check"></i> Demo data</li>
+              <li><i class="fa-solid fa-check"></i> Core screens</li>
+            </ul>
+            <button class="btn-ghost" type="button" onclick="document.getElementById('startInteractiveDemoBtn')?.click()">Watch the tour</button>
+          </article>
+
+          <article class="price-card reveal">
+            <div class="price-top">
+              <div>
+                <h3 style="margin:0;letter-spacing:-.02em;">Pro</h3>
+                <div style="color:rgba(11,18,32,.62);font-weight:850;font-size:12px;">One hotel, full ops</div>
+              </div>
+              <span class="tag best">Best value</span>
+            </div>
+            <div class="price">Custom <small>/ month</small></div>
+            <ul class="price-list">
+              <li><i class="fa-solid fa-check"></i> Planning & reporting</li>
+              <li><i class="fa-solid fa-check"></i> Staff management</li>
+              <li><i class="fa-solid fa-check"></i> Support & onboarding</li>
+            </ul>
+            <a class="btn-primary" href="#contact"><i class="fa-solid fa-envelope"></i> Get pricing</a>
+          </article>
+
+          <article class="price-card reveal">
+            <div class="price-top">
+              <div>
+                <h3 style="margin:0;letter-spacing:-.02em;">Enterprise</h3>
+                <div style="color:rgba(11,18,32,.62);font-weight:850;font-size:12px;">Multi-property</div>
+              </div>
+              <span class="tag">Scale</span>
+            </div>
+            <div class="price">Custom <small>/ month</small></div>
+            <ul class="price-list">
+              <li><i class="fa-solid fa-check"></i> Multi-hotel operations</li>
+              <li><i class="fa-solid fa-check"></i> Advanced reporting</li>
+              <li><i class="fa-solid fa-check"></i> Dedicated rollout</li>
+            </ul>
+            <a class="btn-ghost" href="#contact"><i class="fa-solid fa-message"></i> Talk enterprise</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt" id="contact" aria-label="Contact">
+      <div class="container">
+        <div class="cta reveal">
+          <div>
+            <h3>Want access for your hotel?</h3>
+            <p>Call/text <a class="nav-link" style="padding:0" href="tel:+17867574703">+1 (786) 757‑4703</a> or email <a class="nav-link" style="padding:0" href="mailto:support@floridaecoservices.com">support@floridaecoservices.com</a>.</p>
+          </div>
+          <div class="cta-actions">
+            <button class="btn-primary" type="button" onclick="document.getElementById('startInteractiveDemoBtn')?.click()"><i class="fa-solid fa-play"></i> Watch the tour</button>
+            <a class="btn-ghost" href="mailto:support@floridaecoservices.com?subject=Hotel%20Platform%20Access"><i class="fa-solid fa-envelope"></i> Email</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+          <span class="brand-badge" aria-hidden="true" style="width:36px;height:36px;border-radius:14px;"><i class="fa-solid fa-hotel"></i></span>
+          <div>
+            <strong>Florida Eco Services</strong>
+            <div style="color:rgba(11,18,32,.62);font-weight:850;font-size:12px;">Hotel Platform</div>
+          </div>
+        </div>
+        <div style="color:rgba(11,18,32,.62);">© <span id="year"></span> Florida Eco Services. All rights reserved.</div>
+      </div>
+      <div class="footer-right">
+        <a href="index.html">Main site</a>
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="shared/db.js?v=20260115"></script>
+  <script src="shared/demo.js?v=20260115"></script>
+  <script src="hotel.js?v=20260115"></script>
+</body>
+</html>

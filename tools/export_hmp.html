@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Florida Eco — Export localStorage (hmp.v1)</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#f8fafc; color:#0f172a; }
+      .card { max-width: 840px; margin: 40px auto; background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 12px 40px rgba(0,0,0,0.06); }
+      code { background:#f1f5f9; padding: 2px 6px; border-radius: 6px; }
+      button { background:#0ea5e9; color:white; border:0; padding: 10px 14px; border-radius: 10px; font-weight: 600; cursor:pointer; }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      .muted { color:#64748b; font-size: 14px; }
+      pre { background:#0b1220; color:#e2e8f0; padding: 12px; border-radius: 12px; overflow:auto; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Export local data</h1>
+      <p class="muted">
+        Exports the current browser <code>localStorage</code> dataset used by the legacy frontend (<code>hmp.v1</code>) into a JSON file.
+      </p>
+      <button id="btn">Download JSON export</button>
+      <p class="muted" id="status"></p>
+      <h3>Next</h3>
+      <p class="muted">
+        Use the downloaded file with the backend import script (documented in <code>docs/EXPORT_IMPORT.md</code>).
+      </p>
+      <pre>File → Import → Backend</pre>
+    </div>
+
+    <script src="../shared/db.js"></script>
+    <script>
+      const btn = document.getElementById('btn');
+      const status = document.getElementById('status');
+
+      function downloadJson(filename, obj) {
+        const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      btn.addEventListener('click', () => {
+        try {
+          if (!window.HMP_DB) throw new Error('HMP_DB not loaded');
+          const data = window.HMP_DB.getData();
+          const ts = new Date().toISOString().replace(/[:.]/g, '-');
+          const filename = `hmp-v1-export-${ts}.json`;
+          downloadJson(filename, data);
+          status.textContent = `Downloaded: ${filename}`;
+        } catch (e) {
+          status.textContent = `Export failed: ${e?.message || e}`;
+        }
+      });
+    </script>
+  </body>
+</html>
+

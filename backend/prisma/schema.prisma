@@ -38,6 +38,7 @@ model Organization {
   sessions Session[]
   contracts Contract[]
   pricingDefaults PricingDefaults?
+  videos Video[]
 }
 
 model User {
@@ -55,6 +56,7 @@ model User {
   refreshTokens RefreshToken[]
   activeHotel   Hotel? @relation("UserActiveHotel", fields: [activeHotelId], references: [id], onDelete: SetNull)
   hotelScope    Hotel? @relation("UserHotelScope", fields: [hotelScopeId], references: [id], onDelete: SetNull)
+  uploadedVideos Video[] @relation("UserUploadedVideos")
 }
 
 model Hotel {
@@ -211,6 +213,28 @@ model Contract {
   @@index([hotelId])
   @@index([status])
   @@unique([organizationId, legacyId])
+}
+
+model Video {
+  id               String   @id @default(cuid())
+  organizationId   String
+  uploadedByUserId String?
+  title            String   @default("")
+  description      String   @default("")
+  originalName     String   @default("")
+  mime             String   @default("")
+  storagePath      String   @unique
+  sizeBytes        Int      @default(0)
+  published        Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  uploadedByUser User?        @relation("UserUploadedVideos", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([published])
+  @@index([createdAt])
 }
 
 enum ReservationStatus {

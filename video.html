@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Florida Eco Services — Video Library</title>
+  <meta name="description" content="Video library">
+  <meta name="theme-color" content="#0b6b55">
+  <link rel="stylesheet" href="styles.css?v=20260115">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background:#f7fafc; }
+    .video-shell { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+    .video-header { display:flex; align-items:flex-start; gap: 14px; flex-wrap:wrap; }
+    .video-title { display:flex; gap:12px; align-items:center; }
+    .video-title h1 { margin:0; font-size: 26px; letter-spacing:-0.02em; }
+    .video-title p { margin:4px 0 0; color:#64748b; font-weight:650; }
+    .video-actions { margin-left:auto; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .video-grid { margin-top: 16px; display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+    .video-card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:14px; box-shadow:0 10px 30px rgba(0,0,0,0.06); cursor:pointer; transition: transform .12s ease, box-shadow .12s ease; }
+    .video-card:hover { transform: translateY(-2px); box-shadow:0 14px 36px rgba(0,0,0,0.10); }
+    .video-card h3 { margin:0; font-size: 16px; letter-spacing:-0.01em; }
+    .video-card p { margin:8px 0 0; color:#64748b; font-size: 13px; font-weight:650; line-height:1.35; }
+    .video-meta { margin-top:10px; display:flex; gap:8px; align-items:center; color:#94a3b8; font-size:12px; font-weight:700; }
+    .pill { display:inline-flex; gap:6px; align-items:center; padding:6px 10px; border-radius:999px; background: rgba(11,107,85,0.10); border:1px solid rgba(11,107,85,0.14); color:#0b6b55; font-weight:850; font-size:12px; }
+    .modal { position: fixed; inset: 0; background: rgba(2,8,23,0.64); display:none; align-items:center; justify-content:center; padding: 18px; z-index: 10000; }
+    .modal-card { width: min(980px, 100%); background:#0b1220; border-radius: 18px; overflow:hidden; border:1px solid rgba(255,255,255,0.08); box-shadow: 0 24px 80px rgba(0,0,0,0.40); }
+    .modal-top { display:flex; justify-content:space-between; align-items:center; padding: 12px 14px; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.92); }
+    .modal-top strong { font-weight: 900; letter-spacing:-0.01em; }
+    .modal-close { border:0; background: rgba(255,255,255,0.10); color:#fff; width:34px; height:34px; border-radius: 12px; display:grid; place-items:center; cursor:pointer; }
+    .modal-body { padding: 12px; }
+    .player { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 14px; overflow:hidden; }
+    .player video { width:100%; height:100%; background:#000; }
+    .upload-card { margin-top: 14px; background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:14px; display:none; }
+    .upload-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .upload-grid .form-field { margin:0; }
+    @media (max-width: 720px) {
+      .upload-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="video-shell">
+    <div class="video-header">
+      <div class="video-title">
+        <div class="brand-badge" style="width:44px;height:44px;border-radius:16px;display:grid;place-items:center;background:rgba(11,107,85,0.12);border:1px solid rgba(11,107,85,0.16);color:#0b6b55;">
+          <i class="fa-solid fa-film"></i>
+        </div>
+        <div>
+          <h1>Video Library</h1>
+          <p>Tap a video to play. (Public page — link-only)</p>
+        </div>
+      </div>
+
+      <div class="video-actions">
+        <a class="btn-secondary" href="index.html" style="text-decoration:none;"><i class="fa-solid fa-arrow-left"></i> Home</a>
+        <button class="btn-secondary" id="loginBtn" type="button"><i class="fa-solid fa-right-to-bracket"></i> Admin login</button>
+        <button class="btn-primary" id="refreshBtn" type="button"><i class="fa-solid fa-rotate"></i> Refresh</button>
+      </div>
+    </div>
+
+    <div class="upload-card" id="uploadCard">
+      <div style="display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
+        <div style="font-weight:950; letter-spacing:-0.01em;"><i class="fa-solid fa-upload"></i> Upload a video</div>
+        <div style="color:#64748b; font-weight:700; font-size:12px;">Max 1GB. Stored on server.</div>
+      </div>
+      <div class="upload-grid" style="margin-top:12px;">
+        <div class="form-field">
+          <label for="videoTitle">Title</label>
+          <input id="videoTitle" type="text" placeholder="Title">
+        </div>
+        <div class="form-field">
+          <label for="videoFile">File</label>
+          <input id="videoFile" type="file" accept="video/*">
+        </div>
+        <div class="form-field" style="grid-column:1/-1;">
+          <label for="videoDescription">Description</label>
+          <textarea id="videoDescription" rows="3" placeholder="Short description (optional)"></textarea>
+        </div>
+      </div>
+      <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <button class="btn-primary" id="uploadBtn" type="button"><i class="fa-solid fa-cloud-arrow-up"></i> Upload</button>
+        <div class="field-hint" id="uploadStatus" style="margin:0;"></div>
+      </div>
+    </div>
+
+    <div class="video-grid" id="videoGrid"></div>
+    <div class="planning-item" id="emptyState" style="display:none; margin-top:16px;">No videos yet.</div>
+  </div>
+
+  <div class="modal" id="playerModal" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-top">
+        <div>
+          <strong id="playerTitle">Video</strong>
+          <div style="font-size:12px; opacity:0.78; font-weight:750;" id="playerDesc"></div>
+        </div>
+        <button class="modal-close" id="closeModalBtn" type="button" aria-label="Close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="player">
+          <video id="player" controls playsinline></video>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app-config.js?v=20260115"></script>
+  <script src="shared/db.js?v=20260115"></script>
+  <script src="video.js?v=20260115"></script>
+</body>
+</html>
+

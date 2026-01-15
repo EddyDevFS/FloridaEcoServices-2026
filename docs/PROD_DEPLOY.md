@@ -88,6 +88,7 @@ python3 scripts/api_smoke_test.py
 - Public: `https://floridaecoservices.com/`
 - Platform entry: `https://app.floridaecoservices.com/` (redirects to `hotel.html`)
 - Admin/contract builder: `https://app.floridaecoservices.com/admin_hotel.html`
+- Video library: `https://floridaecoservices.com/video.html` (public) + admin upload button when logged in
 
 ## 7) Backups (recommended)
 
@@ -100,4 +101,3 @@ docker compose -f docker-compose.prod.yml exec -T db \
 
 Uploads backup:
 - Docker volume: `uploads_data`
-

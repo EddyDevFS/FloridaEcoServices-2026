@@ -158,6 +158,56 @@ def main() -> int:
         if body.get("user", {}).get("email") != cfg.email:
             raise RuntimeError(f"me email mismatch: {body}")
 
+    def s2b_videos():
+        # Upload a small "video" (bytes) then list/stream it.
+        mp4 = b"\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42mp41isom"
+        body, ctype = build_multipart(
+            fields={"title": "Smoke video", "description": "Smoke desc"},
+            files=[
+                {
+                    "fieldname": "file",
+                    "filename": "smoke.mp4",
+                    "content_type": "video/mp4",
+                    "data": mp4,
+                }
+            ],
+        )
+        st, rawb, _headers = c.request_raw(
+            "POST",
+            "/api/v1/videos",
+            body=body,
+            content_type=ctype,
+            auth=True,
+        )
+        if st not in (200, 201):
+            raise RuntimeError(f"upload video status={st} body={rawb[:200]}")
+        created = json.loads(rawb.decode("utf-8")).get("video") or {}
+        vid = created.get("id")
+        if not vid:
+            raise RuntimeError(f"missing video.id: {created}")
+
+        st, raw = c.request("GET", "/api/v1/public/videos")
+        if st != 200:
+            raise RuntimeError(f"list public videos status={st} body={raw[:200]}")
+        videos = assert_json(st, raw).get("videos") or []
+        if not any(v.get("id") == vid for v in videos):
+            raise RuntimeError("uploaded video not found in list")
+
+        # Range request should work (206)
+        url = urljoin(cfg.base_url, f"/api/v1/public/videos/{vid}/file".lstrip("/"))
+        headers = {"Range": "bytes=0-7"}
+        req = Request(url, method="GET", headers=headers)
+        try:
+            with c.opener.open(req, timeout=10) as resp:
+                if resp.status != 206:
+                    raise RuntimeError(f"range status={resp.status}")
+                raw = resp.read()
+                if len(raw) != 8:
+                    raise RuntimeError(f"range length != 8: {len(raw)}")
+        except HTTPError as e:
+            raw = e.read().decode("utf-8") if e.fp else ""
+            raise RuntimeError(f"range http error {e.code}: {raw[:200]}")
+
     # 3) refresh (cookie)
     def s3():
         st, raw = c.request("POST", "/api/v1/auth/refresh")
@@ -975,6 +1025,7 @@ def main() -> int:
     step("health", s0)
     step("login", s1)
     step("me", s2)
+    step("videos", s2b_videos)
     step("refresh", s3)
     step("create structure + task flow", s4)
     step("reservations + planning", s5)

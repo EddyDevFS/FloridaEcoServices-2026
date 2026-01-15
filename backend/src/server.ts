@@ -15,6 +15,7 @@ import incidentRoutes from './routes/incidents';
 import migrationRoutes from './routes/migration';
 import userRoutes from './routes/users';
 import reportRoutes from './routes/reports';
+import videoRoutes from './routes/videos';
 
 const env = readEnv();
 const app = express();
@@ -77,6 +78,7 @@ app.use('/api/v1', incidentRoutes);
 app.use('/api/v1', migrationRoutes);
 app.use('/api/v1', userRoutes);
 app.use('/api/v1', reportRoutes);
+app.use('/api/v1', videoRoutes);
 
 app.listen(env.port, () => {
   // eslint-disable-next-line no-console

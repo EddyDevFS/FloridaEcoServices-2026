@@ -20,6 +20,8 @@
 floridaecoservices.com, www.floridaecoservices.com {
   import common
   root * /srv
+  @video path /video
+  redir @video /video.html 302
   file_server
 }
 
@@ -29,6 +31,7 @@ app.floridaecoservices.com {
   # App subdomain should start on the platform landing.
   @root path /
   redir @root /hotel.html 302
+  @video path /video
+  redir @video /video.html 302
   file_server
 }
-

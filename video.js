@@ -304,12 +304,41 @@
   }
 
   async function bootstrap() {
+    let me = null;
     try {
-      const me = await refreshMe();
-      const canUpload = me?.role === 'SUPER_ADMIN';
-      if (uploadCard) uploadCard.style.display = canUpload ? '' : 'none';
-      if (loginBtn) loginBtn.textContent = me ? 'Logged in' : 'Admin login';
+      me = await refreshMe();
     } catch {}
+
+    const role = (me?.role || '').toString();
+    const canUpload = role === 'SUPER_ADMIN';
+
+    // Always show the upload card (public page), but lock it unless SUPER_ADMIN.
+    // This avoids "I'm logged in but I can't see upload" confusion.
+    if (uploadCard) uploadCard.style.display = '';
+
+    const setDisabled = (disabled) => {
+      [titleEl, descEl, fileEl, uploadBtn].forEach((el) => {
+        try {
+          if (!el) return;
+          el.disabled = !!disabled;
+        } catch {}
+      });
+    };
+
+    if (!me) {
+      setDisabled(true);
+      setUploadStatus('Admin upload: login required.', 'info');
+      if (loginBtn) loginBtn.textContent = 'Admin login';
+    } else if (!canUpload) {
+      setDisabled(true);
+      setUploadStatus(`Admin upload: not allowed for role "${role || 'unknown'}".`, 'error');
+      if (loginBtn) loginBtn.textContent = `Logged in (${role || 'user'})`;
+    } else {
+      setDisabled(false);
+      setUploadStatus('', 'info');
+      if (loginBtn) loginBtn.textContent = 'Logged in (admin)';
+    }
+
     await render();
   }
 

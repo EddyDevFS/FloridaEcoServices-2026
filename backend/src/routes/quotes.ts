@@ -45,6 +45,26 @@ function parseEmailList(raw: any): string[] {
   return s.filter((v) => v.includes('@') && !v.includes(' '));
 }
 
+function classifySmtpError(err: any): { code: string; status: number } {
+  const code = String(err?.code || err?.name || err?.responseCode || 'smtp_error').trim();
+  // Map common nodemailer/network failures to a 502 (bad gateway to SMTP).
+  const smtpCodes = new Set([
+    'EAUTH',
+    'ECONNECTION',
+    'ECONNREFUSED',
+    'EHOSTUNREACH',
+    'ENETUNREACH',
+    'ETIMEDOUT',
+    'ESOCKET',
+    'EENVELOPE',
+    'EMESSAGE',
+    'EDNS',
+    'ENOTFOUND'
+  ]);
+  const status = smtpCodes.has(code) ? 502 : 500;
+  return { code, status };
+}
+
 async function createQuoteWithNextNumber(prisma: ReturnType<typeof getPrisma>, organizationId: string, data: any) {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
@@ -275,12 +295,18 @@ router.post(
     const customer = (quote.customer as any) || {};
     const company = String(customer.company || quote.title || '').trim() || 'Customer';
 
-    const pdf = await renderQuotePdf({
-      quoteNumber: quote.number || null,
-      title: quote.title || '',
-      customer,
-      payload: (quote.payload as any) || {}
-    });
+    let pdf: Buffer;
+    try {
+      pdf = await renderQuotePdf({
+        quoteNumber: quote.number || null,
+        title: quote.title || '',
+        customer,
+        payload: (quote.payload as any) || {}
+      });
+    } catch (err) {
+      console.error('[quotes] pdf render failed:', err);
+      return res.status(500).json({ error: 'pdf_failed' });
+    }
 
     const subject = `Quote #${quote.number} — ${company}`;
     const text = `Hello,\n\nPlease find attached Quote #${quote.number}.\n\nFlorida Eco Services`;
@@ -296,8 +322,9 @@ router.post(
     } catch (err: any) {
       const msg = String(err?.message || '');
       if (msg === 'smtp_not_configured') return res.status(400).json({ error: 'smtp_not_configured' });
+      const meta = classifySmtpError(err);
       console.error('[quotes] send failed:', err);
-      return res.status(500).json({ error: 'send_failed' });
+      return res.status(meta.status).json({ error: 'smtp_error', code: meta.code });
     }
 
     const updated = await prisma.quote.update({

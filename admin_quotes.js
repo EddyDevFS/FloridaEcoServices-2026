@@ -753,7 +753,18 @@
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      throw new Error(body?.error || 'send_failed');
+      const err = String(body?.error || 'send_failed');
+      const code = String(body?.code || '').trim();
+      if (err === 'smtp_not_configured') {
+        throw new Error('SMTP is not configured on the server (SMTP_* env vars).');
+      }
+      if (err === 'smtp_error') {
+        throw new Error(`Email send failed (SMTP).${code ? ` Code: ${code}` : ''}`);
+      }
+      if (err === 'pdf_failed') {
+        throw new Error('PDF generation failed on the server.');
+      }
+      throw new Error(err);
     }
     const data = await res.json().catch(() => ({}));
     quoteStatus = data?.quote?.status || quoteStatus;
@@ -906,4 +917,3 @@
 
   init().catch((e) => toast(e.message || 'Init failed', 'error'));
 })();
-

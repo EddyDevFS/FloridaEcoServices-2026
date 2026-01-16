@@ -39,6 +39,9 @@ model Organization {
   contracts Contract[]
   pricingDefaults PricingDefaults?
   videos Video[]
+  prospects Prospect[]
+  clients Client[]
+  quotes Quote[]
 }
 
 model User {
@@ -481,4 +484,76 @@ model RefreshToken {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  DECLINED
+}
+
+enum QuoteCustomerType {
+  PROSPECT
+  CLIENT
+}
+
+model Prospect {
+  id             String   @id @default(cuid())
+  organizationId String
+  company        String   @default("")
+  contact        String   @default("")
+  email          String   @default("")
+  phone          String   @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  quotes       Quote[]
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+model Client {
+  id             String   @id @default(cuid())
+  organizationId String
+  company        String   @default("")
+  contact        String   @default("")
+  email          String   @default("")
+  phone          String   @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  quotes       Quote[]
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+model Quote {
+  id             String            @id @default(cuid())
+  organizationId String
+  number         Int
+  status         QuoteStatus       @default(DRAFT)
+  customerType   QuoteCustomerType @default(PROSPECT)
+  customer       Json              @default("{}")
+  title          String            @default("")
+  payload        Json              @default("{}")
+  currency       String            @default("USD")
+  prospectId     String?
+  clientId       String?
+  sentAt         DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  prospect     Prospect?    @relation(fields: [prospectId], references: [id], onDelete: SetNull)
+  client       Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([updatedAt])
+  @@unique([organizationId, number])
 }

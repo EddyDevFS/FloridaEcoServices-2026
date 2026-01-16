@@ -24,6 +24,11 @@ export async function sendMail(opts: {
   subject: string;
   text: string;
   html?: string;
+  attachments?: Array<{
+    filename: string;
+    content: Buffer;
+    contentType?: string;
+  }>;
 }) {
   const env = readMailEnv();
   if (!env) throw new Error('smtp_not_configured');
@@ -41,6 +46,11 @@ export async function sendMail(opts: {
     cc: (opts.cc || []).filter(Boolean).join(',') || undefined,
     subject: opts.subject,
     text: opts.text,
-    html: opts.html
+    html: opts.html,
+    attachments: (opts.attachments || []).map((a) => ({
+      filename: a.filename,
+      content: a.content,
+      contentType: a.contentType
+    }))
   });
 }

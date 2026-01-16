@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Quotes</title>
+  <link rel="stylesheet" href="styles.css?v=20260115" />
+  <link rel="stylesheet" href="admin_quotes.css?v=20260115" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body>
+  <div class="app-container">
+    <header class="header admin-header">
+      <div class="logo">
+        <i class="fas fa-file-invoice-dollar"></i>
+        <div>
+          <h1>Admin - Quotes</h1>
+          <p>Draft • Client • PDF</p>
+        </div>
+      </div>
+
+      <nav class="admin-nav">
+        <a class="admin-link" href="admin_config.html"><i class="fas fa-sitemap"></i> Setup</a>
+        <a class="admin-link" href="admin_hotel.html"><i class="fas fa-file-contract"></i> Hotel &amp; Contract</a>
+        <a class="admin-link active" href="admin_quotes.html"><i class="fas fa-file-invoice-dollar"></i> Quotes</a>
+        <a class="admin-link" href="admin_planning.html"><i class="fas fa-calendar-check"></i> Planning</a>
+        <a class="admin-link" href="admin_agenda.html"><i class="fas fa-calendar-alt"></i> Agenda</a>
+        <a class="admin-link" href="admin_reports.html"><i class="fas fa-chart-line"></i> Reports</a>
+        <a class="admin-link" href="admin_settings.html"><i class="fas fa-sliders"></i> Settings</a>
+      </nav>
+    </header>
+
+    <section class="quoteApp" id="quoteApp">
+      <div class="quoteTopbar">
+        <div class="quoteTopbarLeft">
+          <div class="quoteTitle">Quote Wizard</div>
+          <div class="quoteMeta" id="quoteMeta">—</div>
+        </div>
+        <div class="quoteTopbarActions">
+          <select id="quoteSelect" class="quoteSelect" aria-label="Select quote"></select>
+          <button class="btn-secondary" id="btnNewQuote" type="button"><i class="fas fa-plus"></i> New</button>
+          <button class="btn-secondary" id="btnReset" type="button"><i class="fas fa-rotate-left"></i> Reset</button>
+          <button class="btn-secondary" id="btnDownloadPdf" type="button"><i class="fas fa-file-pdf"></i> PDF</button>
+          <button class="btn-primary" id="btnSendEmail" type="button"><i class="fas fa-paper-plane"></i> Send</button>
+        </div>
+      </div>
+
+      <div class="qwApp">
+        <div class="panel wizard">
+          <div class="steps" id="steps"></div>
+          <div class="panelBody" id="stepContainer"></div>
+          <div class="foot">
+            <button class="btn" id="btnBack" type="button">← Back</button>
+            <div class="row">
+              <span class="tag brand" id="modeTag">Mode: Quick</span>
+              <button class="btn" id="btnToggleMode" type="button">Switch to Advanced</button>
+              <button class="btn primary" id="btnNext" type="button">Next →</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel sticky">
+          <div class="panelHeader">
+            <div>
+              <h2>Customer</h2>
+              <div class="sub">Link this quote to a prospect or a client.</div>
+            </div>
+            <span class="tag ok" id="summaryStatus">Ready</span>
+          </div>
+          <div class="panelBody">
+            <div class="sumBox" style="margin-bottom:12px;">
+              <div class="sumItem">
+                <div class="k">Company</div>
+                <div class="val"><input class="qwInput" id="custCompany" placeholder="Hotel / Company name" /></div>
+              </div>
+              <div class="sumItem">
+                <div class="k">Contact</div>
+                <div class="val"><input class="qwInput" id="custContact" placeholder="Contact name" /></div>
+              </div>
+              <div class="sumItem">
+                <div class="k">Email</div>
+                <div class="val"><input class="qwInput" id="custEmail" placeholder="contact@company.com" /></div>
+              </div>
+              <div class="sumItem">
+                <div class="k">Phone</div>
+                <div class="val"><input class="qwInput" id="custPhone" placeholder="+1 (xxx) xxx-xxxx" /></div>
+              </div>
+              <div class="sumItem">
+                <div class="k">Link</div>
+                <div class="val">
+                  <select class="qwInput" id="customerType" aria-label="Customer type">
+                    <option value="PROSPECT" selected>Prospect</option>
+                    <option value="CLIENT">Client</option>
+                  </select>
+                </div>
+              </div>
+              <div class="sumItem" id="clientPickerRow" style="display:none;">
+                <div class="k">Client</div>
+                <div class="val">
+                  <select class="qwInput" id="clientSelect" aria-label="Select client"></select>
+                </div>
+              </div>
+              <div class="sumItem">
+                <div class="k">Actions</div>
+                <div class="val" style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+                  <button class="btn" id="btnCreateClient" type="button">Create client</button>
+                  <button class="btn" id="btnConvertProspect" type="button">Convert prospect</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="panelHeader" style="padding:0 0 10px; border:none; background:transparent;">
+              <div>
+                <h2>Quote Summary</h2>
+                <div class="sub">Rooms, corridors, and estimated monthly budget.</div>
+              </div>
+            </div>
+
+            <div class="summaryTop">
+              <div>
+                <div class="sumTitle" id="sumHotelName">—</div>
+                <div class="sumMeta" id="sumHotelMeta">Fill the wizard to build a proposal.</div>
+              </div>
+              <span class="tag" id="sumFreq">Current: —</span>
+            </div>
+
+            <div class="sumBox">
+              <div class="sumItem">
+                <div class="k">Rooms (final)</div>
+                <div class="val">
+                  <div id="sumRooms">—</div>
+                  <span id="sumRoomsHint">calculated + override</span>
+                </div>
+              </div>
+              <div class="sumItem">
+                <div class="k">Corridor sqft (final)</div>
+                <div class="val">
+                  <div id="sumSqft">—</div>
+                  <span id="sumSqftHint">corridors</span>
+                </div>
+              </div>
+              <div class="sumItem">
+                <div class="k">Best value plan (monthly est.)</div>
+                <div class="val">
+                  <div id="sumMonthly">—</div>
+                  <span id="sumMonthlySmall">Total Care Program</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="app-config.js"></script>
+  <script src="shared/db.js"></script>
+  <script src="shared/demo.js"></script>
+  <script src="script.js?v=20260115"></script>
+  <script src="admin_quotes.js?v=20260115"></script>
+</body>
+</html>
+

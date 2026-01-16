@@ -1,0 +1,1838 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Hotel Quote Wizard – Admin Mock</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --panel:#0f1a2e;
+      --panel2:#0c1628;
+      --text:#e9eefc;
+      --muted:#9fb0d6;
+      --muted2:#7f92c2;
+      --line:rgba(255,255,255,.08);
+      --ok:#3ee28b;
+      --warn:#ffcc66;
+      --danger:#ff5b7e;
+      --brand:#7c5cff;
+      --brand2:#39d0ff;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:18px;
+      --radius2:14px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:
+        radial-gradient(900px 400px at 20% 10%, rgba(124,92,255,.20), transparent 60%),
+        radial-gradient(900px 400px at 75% 20%, rgba(57,208,255,.18), transparent 60%),
+        radial-gradient(900px 600px at 55% 85%, rgba(62,226,139,.10), transparent 60%),
+        var(--bg);
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      letter-spacing:.2px;
+    }
+    a{color:inherit}
+    .app{
+      max-width:1240px;
+      margin:0 auto;
+      padding:28px 18px 40px;
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:18px;
+    }
+    @media (max-width: 980px){
+      .app{grid-template-columns:1fr}
+      .sticky{position:static}
+    }
+
+    .topbar{
+      grid-column:1 / -1;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:14px 16px;
+      border:1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      font-weight:700;
+    }
+    .logo{
+      width:34px;height:34px;border-radius:12px;
+      background: linear-gradient(135deg, var(--brand), var(--brand2));
+      box-shadow: 0 10px 18px rgba(124,92,255,.25);
+    }
+    .pill{
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      color:var(--muted);
+    }
+    .actions{display:flex; gap:10px; align-items:center}
+    .btn{
+      cursor:pointer;
+      border:none;
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      background: rgba(255,255,255,.06);
+      border:1px solid var(--line);
+      transition: transform .08s ease, background .15s ease, border-color .15s ease;
+      font-weight:600;
+      font-size:13px;
+      display:inline-flex; gap:8px; align-items:center; justify-content:center;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .btn:hover{background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.14)}
+    .btn:active{transform: translateY(1px)}
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(124,92,255,.95), rgba(57,208,255,.90));
+      border-color: transparent;
+      box-shadow: 0 16px 26px rgba(57,208,255,.18);
+      color:#081224;
+    }
+    .btn.primary:hover{filter: brightness(1.05)}
+    .btn.ghost{
+      background: transparent;
+    }
+    .btn.danger{
+      background: rgba(255,91,126,.10);
+      border-color: rgba(255,91,126,.22);
+      color:#ffd3dc;
+    }
+
+    .panel{
+      border:1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .panelHeader{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      padding:16px 16px 10px;
+      border-bottom:1px solid var(--line);
+      background: rgba(0,0,0,.10);
+    }
+    .panelHeader h2{
+      margin:0;
+      font-size:15px;
+      letter-spacing:.3px;
+    }
+    .sub{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.4;
+      max-width:64ch;
+    }
+    .panelBody{
+      padding:16px;
+    }
+
+    /* Wizard */
+    .wizard{
+      min-height: 520px;
+    }
+    .steps{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      padding:14px 16px;
+      border-bottom:1px solid var(--line);
+      background: rgba(255,255,255,.02);
+    }
+    .step{
+      display:flex; align-items:center; gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      color:var(--muted);
+      font-size:12px;
+      background: rgba(255,255,255,.02);
+    }
+    .step .dot{
+      width:18px;height:18px;border-radius:50%;
+      display:grid;place-items:center;
+      background: rgba(255,255,255,.06);
+      border:1px solid var(--line);
+      font-size:11px;
+      color:var(--muted);
+    }
+    .step.active{
+      color: #0b1220;
+      background: linear-gradient(135deg, rgba(62,226,139,.95), rgba(57,208,255,.80));
+      border-color: transparent;
+    }
+    .step.active .dot{
+      background: rgba(11,18,32,.15);
+      border-color: rgba(11,18,32,.20);
+      color:#0b1220;
+      font-weight:800;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+    @media (max-width: 760px){
+      .grid{grid-template-columns:1fr}
+    }
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:7px;
+    }
+    .label{
+      font-size:12px;
+      color:var(--muted);
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .label .hint{color:var(--muted2); font-size:11px}
+    input, select, textarea{
+      width:100%;
+      background: rgba(255,255,255,.04);
+      border:1px solid var(--line);
+      color:var(--text);
+      border-radius: 12px;
+      padding:11px 12px;
+      outline:none;
+      font-size:13px;
+      transition:border-color .15s ease, background .15s ease;
+    }
+    input:focus, select:focus, textarea:focus{
+      border-color: rgba(57,208,255,.35);
+      background: rgba(255,255,255,.05);
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .kpiRow{
+      display:grid;
+      grid-template-columns: 1.3fr 1fr 1fr;
+      gap:12px;
+      margin-top:12px;
+    }
+    @media (max-width: 760px){
+      .kpiRow{grid-template-columns:1fr}
+    }
+    .kpi{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      border-radius: 16px;
+      padding:12px;
+    }
+    .kpi .t{font-size:12px; color:var(--muted)}
+    .kpi .v{
+      margin-top:6px;
+      font-size:22px;
+      font-weight:800;
+      letter-spacing:.3px;
+    }
+    .kpi .s{
+      margin-top:6px;
+      font-size:12px;
+      color:var(--muted2);
+      line-height:1.4;
+    }
+    .tag{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      color:var(--muted);
+      font-size:12px;
+      white-space:nowrap;
+    }
+    .tag.ok{border-color: rgba(62,226,139,.25); background: rgba(62,226,139,.08); color: #baf7d6}
+    .tag.warn{border-color: rgba(255,204,102,.25); background: rgba(255,204,102,.08); color: #ffe6b5}
+    .tag.brand{border-color: rgba(124,92,255,.25); background: rgba(124,92,255,.10); color: #d9d2ff}
+
+    .divider{
+      height:1px;
+      background: var(--line);
+      margin:14px 0;
+    }
+    .foot{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      padding:14px 16px;
+      border-top:1px solid var(--line);
+      background: rgba(0,0,0,.10);
+    }
+
+    /* Counters */
+    .counter{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+    }
+    .miniBtn{
+      width:28px;height:28px;
+      border-radius:10px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      color:var(--text);
+      cursor:pointer;
+      display:grid;place-items:center;
+      font-weight:900;
+      line-height:0;
+      transition: transform .08s ease, background .15s ease;
+      user-select:none;
+    }
+    .miniBtn:hover{background: rgba(255,255,255,.07)}
+    .miniBtn:active{transform: translateY(1px)}
+    .num{
+      min-width:40px;
+      text-align:center;
+      font-weight:800;
+    }
+
+    /* Buildings table */
+    .table{
+      border:1px solid var(--line);
+      border-radius: 16px;
+      overflow:hidden;
+      background: rgba(255,255,255,.02);
+    }
+    .thead,.tr{
+      display:grid;
+      grid-template-columns: 1.4fr 1fr 1fr 1.2fr;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+    }
+    .thead{
+      background: rgba(0,0,0,.14);
+      color:var(--muted);
+      font-size:12px;
+      border-bottom:1px solid var(--line);
+    }
+    .tr{
+      border-bottom:1px solid var(--line);
+    }
+    .tr:last-child{border-bottom:none}
+    .cellTitle{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .small{font-size:11px; color:var(--muted2)}
+    .inlineInput{
+      width:100%;
+      padding:10px 10px;
+      border-radius:12px;
+      background: rgba(255,255,255,.04);
+      border:1px solid var(--line);
+      color:var(--text);
+      font-size:13px;
+    }
+    .inlineInput[disabled]{
+      opacity:.7;
+    }
+
+    /* Toggle */
+    .toggle{
+      display:inline-flex; align-items:center; gap:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      cursor:pointer;
+      user-select:none;
+    }
+    .switch{
+      width:44px;height:26px;border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      position:relative;
+      transition: background .15s ease, border-color .15s ease;
+    }
+    .switch::after{
+      content:"";
+      width:20px;height:20px;border-radius:50%;
+      background: rgba(255,255,255,.65);
+      position:absolute;
+      top:2px; left:2px;
+      transition: transform .18s ease, background .15s ease;
+    }
+    .toggle.on .switch{
+      background: rgba(62,226,139,.18);
+      border-color: rgba(62,226,139,.28);
+    }
+    .toggle.on .switch::after{
+      transform: translateX(18px);
+      background: rgba(62,226,139,.95);
+    }
+    .toggle .txt{
+      display:flex; flex-direction:column;
+      gap:2px;
+    }
+    .toggle .txt b{font-size:13px}
+    .toggle .txt span{font-size:11px; color:var(--muted2)}
+
+    /* Offer cards */
+    .offers{
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap:12px;
+      margin-top:10px;
+    }
+    @media (max-width: 980px){
+      .offers{grid-template-columns:1fr}
+    }
+    .offer{
+      border:1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,.03);
+      padding:14px;
+      position:relative;
+      overflow:hidden;
+    }
+    .offer.featured{
+      border-color: rgba(62,226,139,.28);
+      box-shadow: 0 18px 40px rgba(62,226,139,.08);
+      background:
+        radial-gradient(260px 260px at 10% 0%, rgba(62,226,139,.18), transparent 60%),
+        rgba(255,255,255,.03);
+    }
+    .offer .badge{
+      position:absolute;
+      top:12px; right:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:800;
+      background: rgba(62,226,139,.18);
+      border:1px solid rgba(62,226,139,.28);
+      color:#c9ffe2;
+    }
+    .offer h3{margin:2px 0 6px; font-size:14px}
+    .offer .desc{color:var(--muted); font-size:12px; line-height:1.45; margin-bottom:12px}
+    .priceBig{
+      font-size:26px;
+      font-weight:900;
+      letter-spacing:.4px;
+      margin:8px 0 4px;
+    }
+    .per{color:var(--muted2); font-size:12px}
+    .bullets{
+      margin:12px 0 0;
+      padding:0;
+      list-style:none;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .bullets li{
+      display:flex; gap:8px; align-items:flex-start;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.4;
+    }
+    .check{
+      width:18px;height:18px;border-radius:6px;
+      background: rgba(62,226,139,.16);
+      border:1px solid rgba(62,226,139,.26);
+      display:grid;place-items:center;
+      color:#c9ffe2;
+      font-weight:900;
+      flex:0 0 auto;
+      margin-top:1px;
+    }
+    .ctaRow{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap}
+    .ctaRow .btn{flex:1 1 auto}
+
+    /* Sidebar summary */
+    .sticky{position:sticky; top:18px}
+    .summaryTop{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:flex-start;
+    }
+    .sumTitle{font-weight:800}
+    .sumMeta{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:4px;
+      line-height:1.35;
+    }
+    .sumBox{
+      margin-top:14px;
+      display:grid;
+      gap:10px;
+    }
+    .sumItem{
+      border:1px solid var(--line);
+      border-radius: 14px;
+      padding:10px 12px;
+      background: rgba(255,255,255,.03);
+    }
+    .sumItem .k{font-size:11px; color:var(--muted)}
+    .sumItem .val{
+      font-size:16px; font-weight:900; margin-top:4px;
+      display:flex; align-items:baseline; justify-content:space-between;
+      gap:8px;
+    }
+    .sumItem .val span{color:var(--muted2); font-weight:600; font-size:12px}
+    .sumDivider{height:1px;background:var(--line); margin:10px 0}
+    .mini{
+      font-size:12px; color:var(--muted); line-height:1.45;
+    }
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+
+    /* Proposal preview */
+    .proposal{
+      border:1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,.02);
+      padding:14px;
+    }
+    .proposalHeader{
+      display:flex; justify-content:space-between; gap:12px; align-items:flex-start;
+      border-bottom:1px solid var(--line);
+      padding-bottom:10px;
+      margin-bottom:10px;
+    }
+    .proposalHeader .left b{font-size:13px}
+    .proposalHeader .left div{color:var(--muted); font-size:12px; margin-top:4px; line-height:1.35}
+    .proposalGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+    @media (max-width: 760px){
+      .proposalGrid{grid-template-columns:1fr}
+    }
+    .proposalCard{
+      border:1px solid var(--line);
+      border-radius: 16px;
+      padding:12px;
+      background: rgba(255,255,255,.03);
+    }
+    .proposalCard .hd{
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+      margin-bottom:6px;
+    }
+    .proposalCard .hd b{font-size:13px}
+    .proposalCard .hd .miniTag{
+      font-size:11px;
+      padding:5px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      color:var(--muted);
+      background: rgba(255,255,255,.02);
+    }
+    .proposalCard .line{
+      display:flex; justify-content:space-between; gap:10px;
+      font-size:12px; color:var(--muted);
+      padding:6px 0;
+      border-bottom:1px dashed rgba(255,255,255,.10);
+    }
+    .proposalCard .line:last-child{border-bottom:none}
+    .proposalCard .line b{color:var(--text)}
+    .muted{color:var(--muted)}
+    .rightAlign{text-align:right}
+    .note{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius: 14px;
+      border:1px solid rgba(57,208,255,.20);
+      background: rgba(57,208,255,.08);
+      color:#cfefff;
+      font-size:12px;
+      line-height:1.45;
+    }
+    .hidden{display:none !important}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div>Admin · Hotel Quote Wizard</div>
+            <span class="pill">Mock HTML (feel & flow)</span>
+          </div>
+          <div class="sub" style="margin:6px 0 0;">
+            A frictionless wizard that feels premium: quick inputs → override → 3 offers → proposal preview → editable pricing.
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn ghost" id="btnDemo">Load demo</button>
+        <button class="btn danger" id="btnReset">Reset</button>
+        <button class="btn primary" id="btnExport">Generate proposal preview</button>
+      </div>
+    </div>
+
+    <!-- Main Wizard -->
+    <div class="panel wizard">
+      <div class="steps" id="steps"></div>
+
+      <div class="panelBody" id="stepContainer">
+        <!-- Step content injected by JS -->
+      </div>
+
+      <div class="foot">
+        <button class="btn" id="btnBack">← Back</button>
+        <div class="row">
+          <span class="tag brand" id="modeTag">Mode: Quick</span>
+          <button class="btn" id="btnToggleMode">Switch to Advanced</button>
+          <button class="btn primary" id="btnNext">Next →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sticky Summary -->
+    <div class="panel sticky">
+      <div class="panelHeader">
+        <div>
+          <h2>Quote Summary (Live)</h2>
+          <div class="sub">What the hotel cares about: rooms, sqft, monthly budget, and why it’s attractive.</div>
+        </div>
+        <span class="tag ok" id="summaryStatus">Ready</span>
+      </div>
+      <div class="panelBody">
+        <div class="summaryTop">
+          <div>
+            <div class="sumTitle" id="sumHotelName">—</div>
+            <div class="sumMeta" id="sumHotelMeta">Fill the wizard to build a proposal.</div>
+          </div>
+          <span class="tag" id="sumFreq">Current: —</span>
+        </div>
+
+        <div class="sumBox">
+          <div class="sumItem">
+            <div class="k">Rooms (final)</div>
+            <div class="val">
+              <div id="sumRooms">—</div>
+              <span id="sumRoomsHint">calculated + override</span>
+            </div>
+          </div>
+          <div class="sumItem">
+            <div class="k">Corridor sqft (final)</div>
+            <div class="val">
+              <div id="sumSqft">—</div>
+              <span id="sumSqftHint">carpet corridors</span>
+            </div>
+          </div>
+
+          <div class="sumItem">
+            <div class="k">Best value plan (monthly est.)</div>
+            <div class="val">
+              <div id="sumMonthly">—</div>
+              <span id="sumMonthlySmall">Total Care Program</span>
+            </div>
+          </div>
+
+          <div class="sumItem">
+            <div class="k">Why it’s attractive</div>
+            <div class="mini" id="sumWhy">
+              Predictable budget, fewer complaints, better reviews, and a cleaner “first impression” every month.
+            </div>
+          </div>
+        </div>
+
+        <div class="sumDivider"></div>
+        <div class="mini">
+          <b>Sales angle:</b> Hotels buy comfort + prevention. You sell <span class="mono">monthly predictability</span> and
+          <span class="mono">priority scheduling</span>, not “carpet cleaning once”.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==============================
+    // State
+    // ==============================
+    const state = {
+      step: 0,
+      mode: "quick", // quick | advanced
+      hotel: { name:"", address:"", tel:"", contact:"", contactPhone:"", email:"", role:"" },
+
+      buildingsCount: 1,
+      buildings: [{ floors: 4, roomsPerFloor: 12 }], // array length = buildingsCount
+
+      roomsCalculated: 0,
+      roomsOverride: null,
+
+      roomMix: { carpet: 0, tile: 0, both: 0 }, // advanced: counts must sum to roomsFinal
+      corridor: { enabled: true, qty: 16, sqftPer: 2000, sqftCalculated: 0, sqftOverride: null },
+
+      currentFrequency: "1/year",
+
+      pricing: {
+        minRooms: 10,
+        // Rooms prices per plan
+        plans: {
+          ondemand: { label:"On-Demand", subtitle:"Best for emergencies & one-off deep cleans", room: { carpet:45, tile:65, both:95 }, corridorSqft: 0.28 },
+          partner:  { label:"Partner Care", subtitle:"Better rates + priority scheduling", room: { carpet:40, tile:60, both:85 }, corridorSqft: 0.25 },
+          total:    { label:"Total Care Program", subtitle:"Monthly plan · annual coverage + best cost", room: { carpet:35, tile:50, both:70 }, corridorSqft: 0.18 }
+        }
+      }
+    };
+
+    const steps = [
+      { title:"Hotel Info", desc:"Optional contact details" },
+      { title:"Structure", desc:"Buildings · floors · rooms" },
+      { title:"Surfaces", desc:"Room mix + corridors" },
+      { title:"Recap", desc:"Override totals (fast)" },
+      { title:"Current Frequency", desc:"Where they are today" },
+      { title:"Offers", desc:"3 plans + projection" },
+      { title:"Pricing Editor", desc:"Adjust your rates" },
+      { title:"Proposal Preview", desc:"Professional output" }
+    ];
+
+    // ==============================
+    // Helpers
+    // ==============================
+    const $ = (id) => document.getElementById(id);
+    const money = (n) => {
+      if (n === null || n === undefined || Number.isNaN(n)) return "—";
+      return new Intl.NumberFormat("en-US", { style:"currency", currency:"USD", maximumFractionDigits:0 }).format(n);
+    };
+    const money2 = (n) => {
+      if (n === null || n === undefined || Number.isNaN(n)) return "—";
+      return new Intl.NumberFormat("en-US", { style:"currency", currency:"USD", minimumFractionDigits:2, maximumFractionDigits:2 }).format(n);
+    };
+    const num = (n) => {
+      if (n === null || n === undefined || Number.isNaN(n)) return "—";
+      return new Intl.NumberFormat("en-US").format(n);
+    };
+
+    function clampInt(v, min, max){
+      let n = parseInt(v, 10);
+      if (Number.isNaN(n)) n = min;
+      return Math.max(min, Math.min(max, n));
+    }
+
+    function ensureBuildings(){
+      const c = state.buildingsCount;
+      while (state.buildings.length < c) state.buildings.push({ floors:4, roomsPerFloor:12 });
+      while (state.buildings.length > c) state.buildings.pop();
+    }
+
+    function calcRooms(){
+      ensureBuildings();
+      let total = 0;
+      for (const b of state.buildings){
+        total += (clampInt(b.floors, 0, 99) * clampInt(b.roomsPerFloor, 0, 200));
+      }
+      state.roomsCalculated = total;
+      return total;
+    }
+
+    function roomsFinal(){
+      const c = calcRooms();
+      const ov = state.roomsOverride;
+      return (ov !== null && ov !== "" && !Number.isNaN(parseInt(ov,10))) ? clampInt(ov, 0, 99999) : c;
+    }
+
+    function calcCorridorSqft(){
+      const enabled = !!state.corridor.enabled;
+      if (!enabled){
+        state.corridor.sqftCalculated = 0;
+        return 0;
+      }
+      const qty = clampInt(state.corridor.qty, 0, 9999);
+      const sqftPer = clampInt(state.corridor.sqftPer, 0, 999999);
+      const total = qty * sqftPer;
+      state.corridor.sqftCalculated = total;
+      return total;
+    }
+
+    function corridorFinalSqft(){
+      const c = calcCorridorSqft();
+      const ov = state.corridor.sqftOverride;
+      if (!state.corridor.enabled) return 0;
+      return (ov !== null && ov !== "" && !Number.isNaN(parseInt(ov,10))) ? clampInt(ov, 0, 999999999) : c;
+    }
+
+    function currentFreqLabel(){
+      const map = {
+        "1/year":"1 time / year",
+        "2/year":"2 times / year",
+        "3/year":"3 times / year",
+        "quarterly":"Quarterly",
+        "monthly":"Monthly program",
+        "unknown":"Not sure"
+      };
+      return map[state.currentFrequency] || "—";
+    }
+
+    function validateMix(){
+      if (state.mode !== "advanced") return true;
+      const total = roomsFinal();
+      const m = state.roomMix;
+      const s = clampInt(m.carpet,0,999999) + clampInt(m.tile,0,999999) + clampInt(m.both,0,999999);
+      return s === total;
+    }
+
+    function defaultMixIfNeeded(){
+      if (state.mode !== "advanced") return;
+      const total = roomsFinal();
+      const m = state.roomMix;
+      const s = clampInt(m.carpet,0,999999) + clampInt(m.tile,0,999999) + clampInt(m.both,0,999999);
+      if (s === 0 && total > 0){
+        // Simple default: assume "both" for all rooms (fastest)
+        state.roomMix.both = total;
+      }
+    }
+
+    function roomCountForPricing(type){
+      // In quick mode, we don't know mix => assume "both" (safe + conservative)
+      if (state.mode === "quick"){
+        if (type === "both") return roomsFinal();
+        return 0;
+      }
+      defaultMixIfNeeded();
+      return clampInt(state.roomMix[type], 0, 999999);
+    }
+
+    function computeAnnualForPlan(planKey){
+      const plan = state.pricing.plans[planKey];
+      const rf = roomsFinal();
+      if (rf <= 0) return { roomsAnnual:0, corridorAnnual:0, totalAnnual:0, monthly:0, avgPerRoom:0 };
+
+      const minRooms = state.pricing.minRooms;
+      const billedRooms = Math.max(rf, minRooms);
+
+      const carpet = roomCountForPricing("carpet");
+      const tile = roomCountForPricing("tile");
+      const both = roomCountForPricing("both");
+
+      // If advanced mode and sums mismatch, still compute with "both = billedRooms"
+      const mixOk = validateMix();
+      let roomsCost = 0;
+
+      if (state.mode === "advanced" && mixOk){
+        roomsCost =
+          carpet * plan.room.carpet +
+          tile   * plan.room.tile +
+          both   * plan.room.both;
+        // If roomsFinal < minRooms, charge minimum at "both" rate (simple business rule)
+        if (billedRooms > rf){
+          roomsCost += (billedRooms - rf) * plan.room.both;
+        }
+      } else {
+        roomsCost = billedRooms * plan.room.both;
+      }
+
+      const corridorSqft = corridorFinalSqft();
+      const corridorCost = corridorSqft * plan.corridorSqft;
+
+      const totalAnnual = roomsCost + corridorCost;
+      const monthly = totalAnnual / 12;
+
+      // Average per room based on billedRooms (more stable for messaging)
+      const avgPerRoom = roomsCost / billedRooms;
+
+      return {
+        roomsAnnual: roomsCost,
+        corridorAnnual: corridorCost,
+        totalAnnual,
+        monthly,
+        avgPerRoom,
+        billedRooms
+      };
+    }
+
+    function savingsVsOnDemand(planKey){
+      const on = computeAnnualForPlan("ondemand").totalAnnual;
+      const v = computeAnnualForPlan(planKey).totalAnnual;
+      const diff = on - v;
+      return diff; // positive means savings
+    }
+
+    function bestValuePlanKey(){
+      // We want to push the monthly program as "best value"
+      return "total";
+    }
+
+    function updateSummary(){
+      // Hotel label
+      const name = state.hotel.name?.trim() || "—";
+      $("sumHotelName").textContent = name;
+
+      const metaParts = [];
+      if (state.hotel.address?.trim()) metaParts.push(state.hotel.address.trim());
+      const c = state.hotel.contact?.trim();
+      if (c) metaParts.push(`Contact: ${c}`);
+      const e = state.hotel.email?.trim();
+      if (e) metaParts.push(e);
+      $("sumHotelMeta").textContent = metaParts.length ? metaParts.join(" · ") : "Fill the wizard to build a proposal.";
+
+      $("sumFreq").textContent = `Current: ${currentFreqLabel()}`;
+
+      const rf = roomsFinal();
+      const cf = corridorFinalSqft();
+
+      $("sumRooms").textContent = rf ? num(rf) : "—";
+      $("sumSqft").textContent = cf ? num(cf) : "—";
+
+      const key = bestValuePlanKey();
+      const total = computeAnnualForPlan(key);
+      $("sumMonthly").textContent = total.monthly ? money(total.monthly) : "—";
+
+      // Attractiveness messaging
+      const diff = savingsVsOnDemand("total");
+      const freq = currentFreqLabel();
+      const msg = [
+        `Predictable monthly budget vs. unpredictable one-offs.`,
+        `Priority scheduling + prevention = fewer guest complaints.`,
+        `Compared to On-Demand pricing, this is ~${diff>0 ? money(diff) : "—"} / year in value (estimate).`,
+        `Current situation: ${freq}.`
+      ].join(" ");
+      $("sumWhy").textContent = msg;
+
+      // Status
+      const ok = rf > 0 && (state.mode === "quick" || validateMix());
+      $("summaryStatus").textContent = ok ? "Ready" : "Needs mix";
+      $("summaryStatus").className = ok ? "tag ok" : "tag warn";
+
+      // Mode tag
+      $("modeTag").textContent = `Mode: ${state.mode === "quick" ? "Quick" : "Advanced"}`;
+      $("btnToggleMode").textContent = state.mode === "quick" ? "Switch to Advanced" : "Switch to Quick";
+    }
+
+    // ==============================
+    // Render Steps
+    // ==============================
+    function renderSteps(){
+      const container = $("steps");
+      container.innerHTML = "";
+      steps.forEach((s, i) => {
+        const el = document.createElement("div");
+        el.className = "step" + (i===state.step ? " active" : "");
+        el.innerHTML = `<div class="dot">${i+1}</div><div><div style="font-weight:800">${s.title}</div><div class="small">${s.desc}</div></div>`;
+        el.style.cursor = "pointer";
+        el.addEventListener("click", () => { state.step = i; render(); });
+        container.appendChild(el);
+      });
+    }
+
+    function headerBlock(title, subtitle, rightHtml=""){
+      return `
+        <div class="panelHeader">
+          <div>
+            <h2>${title}</h2>
+            <div class="sub">${subtitle}</div>
+          </div>
+          ${rightHtml}
+        </div>
+      `;
+    }
+
+    function step0(){
+      return `
+        ${headerBlock("Hotel Info (optional)", "Hotels are demanding — keep it effortless. You can complete details later.", `<span class="tag brand">Fast entry</span>`)}
+        <div class="panelBody">
+          <div class="grid">
+            <div class="field">
+              <div class="label">Hotel name <span class="hint">optional</span></div>
+              <input id="hotel_name" placeholder="e.g., Fairfield Inn Orlando Downtown" value="${escapeHtml(state.hotel.name)}">
+            </div>
+            <div class="field">
+              <div class="label">Address <span class="hint">optional</span></div>
+              <input id="hotel_address" placeholder="Street, City, State" value="${escapeHtml(state.hotel.address)}">
+            </div>
+            <div class="field">
+              <div class="label">Hotel phone <span class="hint">optional</span></div>
+              <input id="hotel_tel" placeholder="(407) 000-0000" value="${escapeHtml(state.hotel.tel)}">
+            </div>
+            <div class="field">
+              <div class="label">Contact person <span class="hint">optional</span></div>
+              <input id="hotel_contact" placeholder="Name" value="${escapeHtml(state.hotel.contact)}">
+            </div>
+            <div class="field">
+              <div class="label">Contact phone <span class="hint">optional</span></div>
+              <input id="hotel_contactPhone" placeholder="Phone" value="${escapeHtml(state.hotel.contactPhone)}">
+            </div>
+            <div class="field">
+              <div class="label">Email <span class="hint">optional</span></div>
+              <input id="hotel_email" placeholder="email@hotel.com" value="${escapeHtml(state.hotel.email)}">
+            </div>
+            <div class="field" style="grid-column:1 / -1">
+              <div class="label">Role <span class="hint">optional</span></div>
+              <input id="hotel_role" placeholder="GM, Ops Manager, Housekeeping Manager…" value="${escapeHtml(state.hotel.role)}">
+            </div>
+          </div>
+
+          <div class="kpiRow">
+            <div class="kpi">
+              <div class="t">Outcome</div>
+              <div class="v">Proposal-ready</div>
+              <div class="s">This wizard outputs a premium quote: rooms + corridors + monthly plans.</div>
+            </div>
+            <div class="kpi">
+              <div class="t">Sales angle</div>
+              <div class="v">Monthly comfort</div>
+              <div class="s">Hotels buy predictability, prevention, and priority scheduling.</div>
+            </div>
+            <div class="kpi">
+              <div class="t">Speed</div>
+              <div class="v">Under 2 minutes</div>
+              <div class="s">Quick mode minimizes friction, advanced mode refines accuracy.</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function step1(){
+      ensureBuildings();
+      const rows = state.buildings.map((b, idx) => `
+        <div class="tr">
+          <div class="cellTitle">
+            <b>Building ${idx+1}</b>
+            <span class="small">Adjust floors and rooms/floor in 2 clicks.</span>
+          </div>
+          <div>
+            <div class="label">Floors</div>
+            <div class="counter">
+              <button class="miniBtn" data-dec-floor="${idx}">−</button>
+              <div class="num" id="floors_${idx}">${clampInt(b.floors,0,99)}</div>
+              <button class="miniBtn" data-inc-floor="${idx}">+</button>
+            </div>
+          </div>
+          <div>
+            <div class="label">Rooms / floor</div>
+            <input class="inlineInput" type="number" min="0" max="200" data-roomsperfloor="${idx}" value="${clampInt(b.roomsPerFloor,0,200)}">
+          </div>
+          <div class="rightAlign">
+            <div class="label">Rooms in building</div>
+            <div style="font-weight:900;font-size:16px;margin-top:6px;">
+              ${num(clampInt(b.floors,0,99)*clampInt(b.roomsPerFloor,0,200))}
+            </div>
+          </div>
+        </div>
+      `).join("");
+
+      const total = calcRooms();
+
+      return `
+        ${headerBlock("Structure", "Enter buildings → floors → rooms per floor. The system calculates rooms instantly.", `<span class="tag ok">Live math</span>`)}
+        <div class="panelBody">
+
+          <div class="row" style="justify-content:space-between;">
+            <div class="field" style="flex:1 1 260px;max-width:360px;">
+              <div class="label">Number of buildings <span class="hint">creates rows automatically</span></div>
+              <div class="counter">
+                <button class="miniBtn" id="buildingsDec">−</button>
+                <div class="num" id="buildingsCount">${state.buildingsCount}</div>
+                <button class="miniBtn" id="buildingsInc">+</button>
+              </div>
+            </div>
+            <span class="tag brand">Tip: keep it simple; override later if needed.</span>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="table">
+            <div class="thead">
+              <div>Building</div>
+              <div>Floors</div>
+              <div>Rooms / floor</div>
+              <div class="rightAlign">Subtotal rooms</div>
+            </div>
+            ${rows}
+          </div>
+
+          <div class="kpiRow">
+            <div class="kpi" style="grid-column:1 / -1">
+              <div class="t">Estimated total rooms (calculated)</div>
+              <div class="v">${num(total)} rooms</div>
+              <div class="s">Next step: surfaces + corridors. You can override the final room count later (special floors, suites, etc.).</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function step2(){
+      const enabled = !!state.corridor.enabled;
+      const corridorTotal = calcCorridorSqft();
+      const rf = roomsFinal();
+
+      // Advanced mix inputs
+      const mix = state.roomMix;
+      const mixOk = validateMix();
+      const mixSum = clampInt(mix.carpet,0,999999)+clampInt(mix.tile,0,999999)+clampInt(mix.both,0,999999);
+      const mixNote = state.mode === "advanced"
+        ? `<span class="tag ${mixOk ? "ok" : "warn"}">Mix: ${mixSum}/${rf} rooms</span>`
+        : `<span class="tag">Quick estimate: assumes “Both” for pricing</span>`;
+
+      return `
+        ${headerBlock("Surfaces", "Quick mode keeps it fast. Advanced mode lets you split rooms for exact pricing.", mixNote)}
+        <div class="panelBody">
+
+          <div class="row" style="justify-content:space-between; gap:12px;">
+            <div class="tag brand">Rooms: carpet / tile / both</div>
+            <div class="mini">Hotels care about clarity. You can keep this simple and still look premium.</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="grid">
+            <div class="panel" style="background:rgba(255,255,255,.02); box-shadow:none;">
+              <div class="panelHeader">
+                <div>
+                  <h2>Rooms mix</h2>
+                  <div class="sub">Advanced = exact mix. Quick = auto-assumes “Both” (conservative).</div>
+                </div>
+                <span class="tag ok">Min friction</span>
+              </div>
+              <div class="panelBody">
+                ${state.mode === "advanced" ? `
+                  <div class="grid">
+                    <div class="field">
+                      <div class="label">Carpet rooms <span class="hint">count</span></div>
+                      <input id="mix_carpet" type="number" min="0" value="${clampInt(mix.carpet,0,999999)}" />
+                    </div>
+                    <div class="field">
+                      <div class="label">Tile rooms <span class="hint">count</span></div>
+                      <input id="mix_tile" type="number" min="0" value="${clampInt(mix.tile,0,999999)}" />
+                    </div>
+                    <div class="field" style="grid-column:1/-1">
+                      <div class="label">Both (carpet + tile) <span class="hint">count</span></div>
+                      <input id="mix_both" type="number" min="0" value="${clampInt(mix.both,0,999999)}" />
+                    </div>
+                  </div>
+                  <div class="note" style="margin-top:12px;">
+                    <b>Validation:</b> Carpet + Tile + Both must equal the final rooms count (<b>${num(rf)}</b>).
+                    If you don't know yet, just set “Both = ${num(rf)}” and move on.
+                  </div>
+                ` : `
+                  <div class="note">
+                    <b>Quick estimate:</b> we’ll price rooms as “Both” by default (safe, conservative).
+                    You can refine the mix later if the hotel wants exact breakdown.
+                  </div>
+                `}
+              </div>
+            </div>
+
+            <div class="panel" style="background:rgba(255,255,255,.02); box-shadow:none;">
+              <div class="panelHeader">
+                <div>
+                  <h2>Corridors</h2>
+                  <div class="sub">If corridors are carpeted, hotels feel the difference immediately.</div>
+                </div>
+                <span class="tag ${enabled ? "ok" : ""}">${enabled ? "Included" : "Off"}</span>
+              </div>
+              <div class="panelBody">
+                <div class="toggle ${enabled ? "on" : ""}" id="toggleCorridor">
+                  <div class="switch"></div>
+                  <div class="txt">
+                    <b>Corridor carpet</b>
+                    <span>${enabled ? "Yes, include corridor sqft" : "No, skip corridors"}</span>
+                  </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="grid ${enabled ? "" : "hidden"}" id="corridorFields">
+                  <div class="field">
+                    <div class="label">Quantity corridors <span class="hint">e.g., 16</span></div>
+                    <input id="corr_qty" type="number" min="0" value="${clampInt(state.corridor.qty,0,9999)}" />
+                  </div>
+                  <div class="field">
+                    <div class="label">Sqft per corridor <span class="hint">e.g., 2000</span></div>
+                    <input id="corr_sqftper" type="number" min="0" value="${clampInt(state.corridor.sqftPer,0,999999)}" />
+                  </div>
+                </div>
+
+                <div class="kpiRow" style="margin-top:12px;">
+                  <div class="kpi" style="grid-column:1 / -1">
+                    <div class="t">Corridor sqft (calculated)</div>
+                    <div class="v">${enabled ? num(corridorTotal) : "0"} sqft</div>
+                    <div class="s">${enabled ? `${num(state.corridor.qty)} × ${num(state.corridor.sqftPer)} sqft` : "Corridors disabled"}</div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function step3(){
+      const roomsCalc = calcRooms();
+      const roomsF = roomsFinal();
+      const corridorsCalc = calcCorridorSqft();
+      const corridorsF = corridorFinalSqft();
+      const note = state.mode === "advanced" && !validateMix()
+        ? `<span class="tag warn">Advanced: mix must match rooms</span>`
+        : `<span class="tag ok">Fast override</span>`;
+
+      return `
+        ${headerBlock("Recap + Override", "Hotels often have special floors/suites. Override totals here instead of redoing structure.", note)}
+        <div class="panelBody">
+
+          <div class="kpiRow">
+            <div class="kpi">
+              <div class="t">Rooms (calculated)</div>
+              <div class="v">${num(roomsCalc)}</div>
+              <div class="s">From buildings × floors × rooms/floor.</div>
+            </div>
+            <div class="kpi">
+              <div class="t">Rooms (final)</div>
+              <div class="v">${num(roomsF)}</div>
+              <div class="s">This number is used for pricing.</div>
+            </div>
+            <div class="kpi">
+              <div class="t">Override rooms</div>
+              <div class="v" style="font-size:16px; margin-top:10px;">
+                <input id="rooms_override" type="number" placeholder="Leave empty to use calculated" value="${state.roomsOverride ?? ""}" />
+              </div>
+              <div class="s">Example: 205 rooms (special floors).</div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="kpiRow">
+            <div class="kpi">
+              <div class="t">Corridors sqft (calculated)</div>
+              <div class="v">${num(corridorsCalc)}</div>
+              <div class="s">${state.corridor.enabled ? "Qty × sqft per corridor" : "Disabled"}</div>
+            </div>
+            <div class="kpi">
+              <div class="t">Corridors sqft (final)</div>
+              <div class="v">${num(corridorsF)}</div>
+              <div class="s">Used for corridor pricing.</div>
+            </div>
+            <div class="kpi">
+              <div class="t">Override corridor sqft</div>
+              <div class="v" style="font-size:16px; margin-top:10px;">
+                <input id="corr_override" type="number" placeholder="Leave empty to use calculated" value="${state.corridor.sqftOverride ?? ""}" ${state.corridor.enabled ? "" : "disabled"} />
+              </div>
+              <div class="s">Some wings/halls differ. Keep it simple.</div>
+            </div>
+          </div>
+
+          <div class="note">
+            <b>Sales trick:</b> This step prevents “analysis paralysis”. If the GM says “205 rooms”, you change one field and keep momentum.
+          </div>
+        </div>
+      `;
+    }
+
+    function step4(){
+      const options = [
+        ["1/year","1 time per year"],
+        ["2/year","2 times per year"],
+        ["3/year","3 times per year"],
+        ["quarterly","Quarterly"],
+        ["monthly","Monthly program"],
+        ["unknown","Not sure"]
+      ].map(([v, t]) => `<option value="${v}" ${state.currentFrequency===v?"selected":""}>${t}</option>`).join("");
+
+      return `
+        ${headerBlock("Current Cleaning Frequency", "We’ll use this to position the upgrade: predictability + prevention + better guest experience.", `<span class="tag brand">Context</span>`)}
+        <div class="panelBody">
+          <div class="grid">
+            <div class="field">
+              <div class="label">Current deep-clean frequency</div>
+              <select id="freq_select">${options}</select>
+            </div>
+            <div class="kpi">
+              <div class="t">Positioning</div>
+              <div class="v">Upgrade path</div>
+              <div class="s">You’ll show 3 plans: On-Demand → Partner → Total Care (monthly).</div>
+            </div>
+          </div>
+          <div class="note">
+            <b>Hotels are demanding:</b> they need to see why it’s attractive. You sell a “program” that protects reviews and reduces complaints.
+          </div>
+        </div>
+      `;
+    }
+
+    function step5(){
+      const rf = roomsFinal();
+      const cf = corridorFinalSqft();
+      const mixOk = validateMix();
+
+      const on = computeAnnualForPlan("ondemand");
+      const pa = computeAnnualForPlan("partner");
+      const to = computeAnnualForPlan("total");
+
+      const onSave = 0;
+      const paSave = savingsVsOnDemand("partner");
+      const toSave = savingsVsOnDemand("total");
+
+      const featured = "total";
+
+      function offerCard(key, data, savings, badge){
+        const plan = state.pricing.plans[key];
+        const isFeatured = key === featured;
+        const priceLine = data.monthly ? money(data.monthly) : "—";
+        const annualLine = data.totalAnnual ? money(Math.round(data.totalAnnual)) : "—";
+        const avgRoom = data.avgPerRoom ? money2(data.avgPerRoom) : "—";
+        const corr = cf ? money2(plan.corridorSqft) : money2(plan.corridorSqft);
+        const savingsLabel = key === "ondemand"
+          ? "Baseline pricing"
+          : (savings > 0 ? `${money(Math.round(savings))}/yr value` : "—");
+
+        const bullets =
+          key === "ondemand"
+            ? [
+                "Great for emergencies & one-time refresh",
+                "Simple invoicing, no commitment",
+                "Higher cost per visit",
+                "Scheduling subject to availability"
+              ]
+            : key === "partner"
+            ? [
+                "Better rates than On-Demand",
+                "Priority scheduling window",
+                "Ideal for routine deep-cleans",
+                "Better budget predictability"
+              ]
+            : [
+                "Monthly predictable budget",
+                "Annual full coverage + best rates",
+                "Priority scheduling + consistency",
+                "Designed to protect guest experience"
+              ];
+
+        return `
+          <div class="offer ${isFeatured ? "featured" : ""}">
+            ${badge ? `<div class="badge">${badge}</div>` : ""}
+            <h3>${plan.label}</h3>
+            <div class="desc">${plan.subtitle}</div>
+
+            <div class="priceBig">${priceLine}</div>
+            <div class="per">Estimated monthly · <span class="muted">Annual: ${annualLine}</span></div>
+
+            <div class="divider"></div>
+
+            <div class="mini">
+              <b>Room rates:</b> Carpet ${money(plan.room.carpet)}, Tile ${money(plan.room.tile)}, Both ${money(plan.room.both)} · <b>Min</b> ${state.pricing.minRooms}<br>
+              <b>Corridors:</b> ${corr}/sqft
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="mini"><b>Avg room cost:</b> ${avgRoom}/room · <b>${savingsLabel}</b></div>
+
+            <ul class="bullets">
+              ${bullets.map(b => `<li><span class="check">✓</span><span>${b}</span></li>`).join("")}
+            </ul>
+
+            <div class="ctaRow">
+              <button class="btn ${isFeatured ? "primary" : ""}" data-select="${key}">${isFeatured ? "Select (Best Value)" : "Select"}</button>
+              <button class="btn" data-copy="${key}">Copy numbers</button>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        ${headerBlock("3 Offers (Professional, Seller)", "We show the hotel the value: monthly predictability + prevention + priority scheduling.", `<span class="tag ok">Premium presentation</span>`)}
+        <div class="panelBody">
+
+          <div class="kpiRow">
+            <div class="kpi">
+              <div class="t">Rooms (final)</div>
+              <div class="v">${rf ? num(rf) : "—"}</div>
+              <div class="s">Min billed rooms: ${state.pricing.minRooms}</div>
+            </div>
+            <div class="kpi">
+              <div class="t">Corridor sqft (final)</div>
+              <div class="v">${cf ? num(cf) : "0"}</div>
+              <div class="s">${state.corridor.enabled ? "Included" : "Disabled"}</div>
+            </div>
+            <div class="kpi">
+              <div class="t">Mix validity</div>
+              <div class="v">${state.mode === "advanced" ? (mixOk ? "OK" : "Fix mix") : "Quick"}</div>
+              <div class="s">${state.mode === "advanced" ? "Carpet + Tile + Both must match rooms" : "Pricing assumes “Both”"}</div>
+            </div>
+          </div>
+
+          <div class="note">
+            <b>Make it feel attractive:</b> We frame the monthly plan as “Total Care” — protecting reviews, reducing complaints, and keeping corridors spotless.
+          </div>
+
+          <div class="offers">
+            ${offerCard("ondemand", on, onSave, "")}
+            ${offerCard("partner", pa, paSave, "Better rates")}
+            ${offerCard("total", to, toSave, "Best Value")}
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="mini">
+            <b>Projection example:</b> rooms annual + corridors annual ÷ 12 = monthly.<br>
+            This is how you turn an “expense” into a <span class="mono">predictable program</span>.
+          </div>
+        </div>
+      `;
+    }
+
+    function step6(){
+      const p = state.pricing.plans;
+      return `
+        ${headerBlock("Pricing Editor (you can modify at the end)", "Adjust your prices before sending the proposal. Hotels will ask — you answer instantly.", `<span class="tag warn">Editable</span>`)}
+        <div class="panelBody">
+
+          <div class="grid">
+            <div class="field">
+              <div class="label">Minimum billed rooms <span class="hint">default 10</span></div>
+              <input id="min_rooms" type="number" min="0" value="${state.pricing.minRooms}" />
+            </div>
+            <div class="kpi">
+              <div class="t">Tip</div>
+              <div class="v">Keep it clean</div>
+              <div class="s">Small, clear numbers beat complex math when presenting to an Ops Manager.</div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          ${pricingBlock("On-Demand", "ondemand")}
+          ${pricingBlock("Partner Care", "partner")}
+          ${pricingBlock("Total Care Program", "total")}
+
+          <div class="note">
+            <b>Goal:</b> Make Total Care the “obvious choice” — best monthly budget + best experience.
+          </div>
+        </div>
+      `;
+
+      function pricingBlock(title, key){
+        const plan = p[key];
+        return `
+          <div class="panel" style="background:rgba(255,255,255,.02); box-shadow:none; margin-bottom:12px;">
+            <div class="panelHeader">
+              <div>
+                <h2>${title}</h2>
+                <div class="sub">${plan.subtitle}</div>
+              </div>
+              <span class="tag brand">${key}</span>
+            </div>
+            <div class="panelBody">
+              <div class="grid">
+                <div class="field">
+                  <div class="label">Room price – Carpet only</div>
+                  <input data-price-room="${key}:carpet" type="number" min="0" value="${plan.room.carpet}" />
+                </div>
+                <div class="field">
+                  <div class="label">Room price – Tile only</div>
+                  <input data-price-room="${key}:tile" type="number" min="0" value="${plan.room.tile}" />
+                </div>
+                <div class="field">
+                  <div class="label">Room price – Both</div>
+                  <input data-price-room="${key}:both" type="number" min="0" value="${plan.room.both}" />
+                </div>
+                <div class="field">
+                  <div class="label">Corridor price – $/sqft</div>
+                  <input data-price-corr="${key}" type="number" step="0.01" min="0" value="${plan.corridorSqft}" />
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function step7(){
+      const rf = roomsFinal();
+      const cf = corridorFinalSqft();
+
+      const on = computeAnnualForPlan("ondemand");
+      const pa = computeAnnualForPlan("partner");
+      const to = computeAnnualForPlan("total");
+
+      const name = state.hotel.name?.trim() || "Hotel Proposal";
+      const addr = state.hotel.address?.trim() || "";
+      const contactLine = [state.hotel.contact?.trim(), state.hotel.role?.trim()].filter(Boolean).join(" · ");
+
+      const today = new Date();
+      const dateStr = today.toLocaleDateString("en-US", { year:"numeric", month:"short", day:"2-digit" });
+
+      const savings = savingsVsOnDemand("total");
+      const mixHint = state.mode === "advanced" ? (validateMix() ? "Exact mix pricing" : "Mix needs adjustment") : "Quick estimate (Both)";
+
+      return `
+        ${headerBlock("Proposal Preview", "This is the “looks expensive / feels trustworthy” output. One click and it’s ready to email.", `<span class="tag ok">Proposal-ready</span>`)}
+        <div class="panelBody">
+          <div class="proposal">
+            <div class="proposalHeader">
+              <div class="left">
+                <b>${escapeHtml(name)}</b>
+                <div>${escapeHtml(addr)}${addr ? "<br>" : ""}${escapeHtml(contactLine)}</div>
+              </div>
+              <div class="rightAlign">
+                <div class="tag brand">Quote · ${dateStr}</div>
+                <div class="sumMeta" style="margin-top:8px;">${mixHint}</div>
+              </div>
+            </div>
+
+            <div class="proposalGrid">
+              <div class="proposalCard">
+                <div class="hd">
+                  <b>Property scope</b>
+                  <span class="miniTag">Quick recap</span>
+                </div>
+                <div class="line"><span>Rooms (final)</span><b>${rf ? num(rf) : "—"}</b></div>
+                <div class="line"><span>Corridor sqft (final)</span><b>${cf ? num(cf) : "0"}</b></div>
+                <div class="line"><span>Current frequency</span><b>${currentFreqLabel()}</b></div>
+                <div class="line"><span>Value focus</span><b>Monthly predictability</b></div>
+              </div>
+
+              <div class="proposalCard" style="border-color:rgba(62,226,139,.24);">
+                <div class="hd">
+                  <b>Total Care Program (Recommended)</b>
+                  <span class="miniTag">Best Value</span>
+                </div>
+                <div class="line"><span>Estimated monthly</span><b>${money(to.monthly)}</b></div>
+                <div class="line"><span>Rooms annual</span><b>${money(Math.round(to.roomsAnnual))}</b></div>
+                <div class="line"><span>Corridors annual</span><b>${money(Math.round(to.corridorAnnual))}</b></div>
+                <div class="line"><span>Estimated annual total</span><b>${money(Math.round(to.totalAnnual))}</b></div>
+              </div>
+            </div>
+
+            <div class="proposalGrid">
+              <div class="proposalCard">
+                <div class="hd"><b>On-Demand</b><span class="miniTag">Baseline</span></div>
+                <div class="line"><span>Estimated monthly</span><b>${money(on.monthly)}</b></div>
+                <div class="line"><span>Annual total</span><b>${money(Math.round(on.totalAnnual))}</b></div>
+                <div class="line"><span>Best for</span><b>One-off refresh</b></div>
+              </div>
+                           <div class="proposalCard">
+                <div class="hd"><b>Partner Care</b><span class="miniTag">Routine</span></div>
+                <div class="line"><span>Estimated monthly</span><b>${money(pa.monthly)}</b></div>
+                <div class="line"><span>Annual total</span><b>${money(Math.round(pa.totalAnnual))}</b></div>
+                <div class="line"><span>Best for</span><b>Regular deep cleans</b></div>
+              </div>
+            </div>
+
+            <div class="note">
+              <b>Why Total Care is attractive:</b>
+              predictable monthly budget, priority scheduling, consistent corridors, and a cleaner “first impression” that helps protect reviews.
+              <br><b>Estimated value vs On-Demand:</b> ${savings > 0 ? money(Math.round(savings)) + " / year" : "—"} (estimate).
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="proposalGrid">
+              <div class="proposalCard">
+                <div class="hd"><b>Included (program mindset)</b><span class="miniTag">Hotel-friendly</span></div>
+                <div class="line"><span>Scheduling</span><b>Priority window</b></div>
+                <div class="line"><span>Budget</span><b>Monthly predictability</b></div>
+                <div class="line"><span>Experience</span><b>Fewer complaints</b></div>
+                <div class="line"><span>Operations</span><b>Less emergency work</b></div>
+              </div>
+              <div class="proposalCard">
+                <div class="hd"><b>Next steps</b><span class="miniTag">1 click</span></div>
+                <div class="line"><span>Option</span><b>Total Care Program</b></div>
+                <div class="line"><span>Start date</span><b>Flexible</b></div>
+                <div class="line"><span>Billing</span><b>Monthly</b></div>
+                <div class="line"><span>Approval</span><b>Email / PDF</b></div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="ctaRow" style="margin-top:14px;">
+            <button class="btn" id="btnPrint">Print (browser)</button>
+            <button class="btn" id="btnCopyProposal">Copy proposal numbers</button>
+            <button class="btn primary" id="btnBackToPricing">Back to Pricing Editor</button>
+          </div>
+
+          <div class="mini" style="margin-top:10px;">
+            <b>Note:</b> In your real app, this becomes “Generate PDF / Email” actions.
+          </div>
+        </div>
+      `;
+    }
+
+    // ==============================
+    // Escape HTML for safe injection
+    // ==============================
+    function escapeHtml(str){
+      if (str === null || str === undefined) return "";
+      return String(str)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    // ==============================
+    // Bind events for each step render
+    // ==============================
+    function bindStepEvents(){
+      // Step 0
+      const hn = $("hotel_name"); if (hn) hn.oninput = (e)=>{ state.hotel.name = e.target.value; updateSummary(); };
+      const ha = $("hotel_address"); if (ha) ha.oninput = (e)=>{ state.hotel.address = e.target.value; updateSummary(); };
+      const ht = $("hotel_tel"); if (ht) ht.oninput = (e)=>{ state.hotel.tel = e.target.value; updateSummary(); };
+      const hc = $("hotel_contact"); if (hc) hc.oninput = (e)=>{ state.hotel.contact = e.target.value; updateSummary(); };
+      const hp = $("hotel_contactPhone"); if (hp) hp.oninput = (e)=>{ state.hotel.contactPhone = e.target.value; updateSummary(); };
+      const he = $("hotel_email"); if (he) he.oninput = (e)=>{ state.hotel.email = e.target.value; updateSummary(); };
+      const hr = $("hotel_role"); if (hr) hr.oninput = (e)=>{ state.hotel.role = e.target.value; updateSummary(); };
+
+      // Step 1 buildings
+      const bDec = $("buildingsDec");
+      const bInc = $("buildingsInc");
+      if (bDec) bDec.onclick = () => { state.buildingsCount = Math.max(1, state.buildingsCount - 1); ensureBuildings(); render(); };
+      if (bInc) bInc.onclick = () => { state.buildingsCount = Math.min(20, state.buildingsCount + 1); ensureBuildings(); render(); };
+
+      document.querySelectorAll("[data-inc-floor]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const idx = parseInt(btn.getAttribute("data-inc-floor"),10);
+          state.buildings[idx].floors = clampInt(state.buildings[idx].floors,0,99) + 1;
+          render();
+        });
+      });
+      document.querySelectorAll("[data-dec-floor]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const idx = parseInt(btn.getAttribute("data-dec-floor"),10);
+          state.buildings[idx].floors = Math.max(0, clampInt(state.buildings[idx].floors,0,99) - 1);
+          render();
+        });
+      });
+      document.querySelectorAll("[data-roomsperfloor]").forEach(inp=>{
+        inp.addEventListener("input", ()=>{
+          const idx = parseInt(inp.getAttribute("data-roomsperfloor"),10);
+          state.buildings[idx].roomsPerFloor = clampInt(inp.value, 0, 200);
+          render();
+        });
+      });
+
+      // Step 2 corridors + mix
+      const toggle = $("toggleCorridor");
+      if (toggle) toggle.onclick = () => { state.corridor.enabled = !state.corridor.enabled; render(); };
+
+      const cq = $("corr_qty");
+      if (cq) cq.oninput = (e)=>{ state.corridor.qty = clampInt(e.target.value,0,9999); updateSummary(); renderStepsAndContainerOnly(); };
+
+      const cs = $("corr_sqftper");
+      if (cs) cs.oninput = (e)=>{ state.corridor.sqftPer = clampInt(e.target.value,0,999999); updateSummary(); renderStepsAndContainerOnly(); };
+
+      const mc = $("mix_carpet");
+      const mt = $("mix_tile");
+      const mb = $("mix_both");
+      if (mc) mc.oninput = (e)=>{ state.roomMix.carpet = clampInt(e.target.value,0,999999); updateSummary(); renderStepsAndContainerOnly(); };
+      if (mt) mt.oninput = (e)=>{ state.roomMix.tile   = clampInt(e.target.value,0,999999); updateSummary(); renderStepsAndContainerOnly(); };
+      if (mb) mb.oninput = (e)=>{ state.roomMix.both   = clampInt(e.target.value,0,999999); updateSummary(); renderStepsAndContainerOnly(); };
+
+      // Step 3 overrides
+      const ro = $("rooms_override");
+      if (ro) ro.oninput = (e)=>{ state.roomsOverride = e.target.value === "" ? null : clampInt(e.target.value,0,99999); updateSummary(); renderStepsAndContainerOnly(); };
+
+      const co = $("corr_override");
+      if (co) co.oninput = (e)=>{ state.corridor.sqftOverride = e.target.value === "" ? null : clampInt(e.target.value,0,999999999); updateSummary(); renderStepsAndContainerOnly(); };
+
+      // Step 4 frequency
+      const fs = $("freq_select");
+      if (fs) fs.onchange = (e)=>{ state.currentFrequency = e.target.value; updateSummary(); };
+
+      // Step 5 offer interactions
+      document.querySelectorAll("[data-select]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const k = btn.getAttribute("data-select");
+          alert(`Selected plan: ${state.pricing.plans[k].label}\n(In real app: save selection + generate proposal/email)`);
+        });
+      });
+      document.querySelectorAll("[data-copy]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const k = btn.getAttribute("data-copy");
+          const d = computeAnnualForPlan(k);
+          const plan = state.pricing.plans[k];
+          const text =
+`Plan: ${plan.label}
+Rooms (final): ${roomsFinal()}
+Corridor sqft (final): ${corridorFinalSqft()}
+Monthly estimate: ${money(d.monthly)}
+Annual total: ${money(Math.round(d.totalAnnual))}
+Rates: Carpet ${plan.room.carpet} | Tile ${plan.room.tile} | Both ${plan.room.both} | Corridor $/sqft ${plan.corridorSqft}`;
+          navigator.clipboard?.writeText(text);
+          alert("Copied plan numbers to clipboard.");
+        });
+      });
+
+      // Step 6 pricing editor
+      const minRooms = $("min_rooms");
+      if (minRooms) minRooms.oninput = (e)=>{ state.pricing.minRooms = clampInt(e.target.value,0,9999); updateSummary(); };
+
+      document.querySelectorAll("[data-price-room]").forEach(inp=>{
+        inp.addEventListener("input", ()=>{
+          const [key, type] = inp.getAttribute("data-price-room").split(":");
+          state.pricing.plans[key].room[type] = clampInt(inp.value, 0, 999999);
+          updateSummary();
+        });
+      });
+      document.querySelectorAll("[data-price-corr]").forEach(inp=>{
+        inp.addEventListener("input", ()=>{
+          const key = inp.getAttribute("data-price-corr");
+          const v = parseFloat(inp.value);
+          state.pricing.plans[key].corridorSqft = Number.isFinite(v) ? Math.max(0, v) : 0;
+          updateSummary();
+        });
+      });
+
+      // Step 7 proposal buttons
+      const pr = $("btnPrint");
+      if (pr) pr.onclick = ()=> window.print();
+
+      const cp = $("btnCopyProposal");
+      if (cp) cp.onclick = ()=>{
+        const on = computeAnnualForPlan("ondemand");
+        const pa = computeAnnualForPlan("partner");
+        const to = computeAnnualForPlan("total");
+        const savings = savingsVsOnDemand("total");
+        const text =
+`PROPOSAL
+Hotel: ${state.hotel.name || "-"}
+Rooms (final): ${roomsFinal()}
+Corridor sqft (final): ${corridorFinalSqft()}
+Current frequency: ${currentFreqLabel()}
+
+On-Demand: monthly ${money(on.monthly)} | annual ${money(Math.round(on.totalAnnual))}
+Partner Care: monthly ${money(pa.monthly)} | annual ${money(Math.round(pa.totalAnnual))}
+Total Care (Recommended): monthly ${money(to.monthly)} | annual ${money(Math.round(to.totalAnnual))}
+Estimated value vs On-Demand: ${savings>0 ? money(Math.round(savings))+"/yr" : "-"}`
+        navigator.clipboard?.writeText(text);
+        alert("Copied proposal numbers.");
+      };
+
+      const backPricing = $("btnBackToPricing");
+      if (backPricing) backPricing.onclick = ()=> { state.step = 6; render(); };
+    }
+
+    // For lightweight updates on input without resetting scroll
+    function renderStepsAndContainerOnly(){
+      // just refresh current step html and summary
+      $("stepContainer").innerHTML = getStepHtml();
+      bindStepEvents();
+      updateSummary();
+    }
+
+    function getStepHtml(){
+      switch(state.step){
+        case 0: return step0();
+        case 1: return step1();
+        case 2: return step2();
+        case 3: return step3();
+        case 4: return step4();
+        case 5: return step5();
+        case 6: return step6();
+        case 7: return step7();
+        default: return step0();
+      }
+    }
+
+    function render(){
+      renderSteps();
+      $("stepContainer").innerHTML = getStepHtml();
+      bindStepEvents();
+      updateSummary();
+      // Back button visibility
+      $("btnBack").style.visibility = state.step === 0 ? "hidden" : "visible";
+      // Next button label on last step
+      $("btnNext").textContent = state.step === steps.length - 1 ? "Done ✓" : "Next →";
+    }
+
+    // ==============================
+    // Global actions
+    // ==============================
+    $("btnBack").onclick = ()=>{
+      state.step = Math.max(0, state.step - 1);
+      render();
+    };
+
+    $("btnNext").onclick = ()=>{
+      // Soft validations
+      if (state.step === 2 && state.mode === "advanced" && !validateMix()){
+        alert(`Advanced mix must match final rooms.\n\nCarpet + Tile + Both must equal ${roomsFinal()}.\nTip: set Both = ${roomsFinal()} to move fast.`);
+        return;
+      }
+      state.step = Math.min(steps.length - 1, state.step + 1);
+      render();
+    };
+
+    $("btnToggleMode").onclick = ()=>{
+      state.mode = (state.mode === "quick") ? "advanced" : "quick";
+      render();
+    };
+
+    $("btnDemo").onclick = ()=>{
+      state.hotel = {
+        name:"Fairfield Inn Orlando Downtown",
+        address:"101 Example Ave, Orlando, FL 32801",
+        tel:"(407) 555-0199",
+        contact:"Jordan Smith",
+        contactPhone:"(407) 555-0101",
+        email:"j.smith@fairfield-example.com",
+        role:"Operations Manager"
+      };
+      state.buildingsCount = 4;
+      state.buildings = [
+        { floors:4, roomsPerFloor:12 },
+        { floors:4, roomsPerFloor:12 },
+        { floors:4, roomsPerFloor:12 },
+        { floors:4, roomsPerFloor:12 }
+      ];
+      state.roomsOverride = 205;
+      state.corridor.enabled = true;
+      state.corridor.qty = 16;
+      state.corridor.sqftPer = 2000;
+      state.corridor.sqftOverride = null;
+      state.currentFrequency = "1/year";
+      state.mode = "quick";
+      render();
+      alert("Demo loaded.");
+    };
+
+    $("btnReset").onclick = ()=>{
+      location.reload();
+    };
+
+    $("btnExport").onclick = ()=>{
+      state.step = 7;
+      render();
+    };
+
+    // ==============================
+    // Init
+    // ==============================
+    render();
+  </script>
+</body>
+</html>

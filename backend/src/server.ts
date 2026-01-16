@@ -16,6 +16,8 @@ import migrationRoutes from './routes/migration';
 import userRoutes from './routes/users';
 import reportRoutes from './routes/reports';
 import videoRoutes from './routes/videos';
+import quoteRoutes from './routes/quotes';
+import clientRoutes from './routes/clients';
 
 const env = readEnv();
 const app = express();
@@ -79,6 +81,8 @@ app.use('/api/v1', migrationRoutes);
 app.use('/api/v1', userRoutes);
 app.use('/api/v1', reportRoutes);
 app.use('/api/v1', videoRoutes);
+app.use('/api/v1', quoteRoutes);
+app.use('/api/v1', clientRoutes);
 
 // Final error handler (ensures JSON for API clients)
 app.use((err: any, req: Request, res: Response, next: any) => {

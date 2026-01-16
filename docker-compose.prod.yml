@@ -12,11 +12,15 @@ services:
   api:
     build:
       context: ./backend
+    ports:
+      # Expose API locally for the system Caddy reverse proxy (no public exposure)
+      - "127.0.0.1:3001:3001"
     environment:
       NODE_ENV: production
       PORT: "3001"
       DATABASE_URL: ${DATABASE_URL:?set in .env}
-      CORS_ORIGIN: ${CORS_ORIGIN:-https://app.floridaecoservices.com}
+      # Allow public site + app subdomain to call the API (login/video upload)
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://floridaecoservices.com,https://www.floridaecoservices.com,https://app.floridaecoservices.com}
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set in .env}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set in .env}
       JWT_ACCESS_TTL_SECONDS: ${JWT_ACCESS_TTL_SECONDS:-900}
@@ -33,20 +37,6 @@ services:
       - db
     volumes:
       - uploads_data:/app/uploads
-    restart: unless-stopped
-
-  web:
-    build:
-      context: .
-      dockerfile: deploy/web/Dockerfile
-    environment:
-      ACME_EMAIL: ${ACME_EMAIL:?set in .env}
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
     restart: unless-stopped
 
 volumes:

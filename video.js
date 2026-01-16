@@ -76,10 +76,35 @@
     try {
       // Prefer Bearer token (localStorage) but fall back to cookie-based auth
       // (Safari/iOS can be flaky with localStorage in some contexts).
-      const res = await fetch(`${apiBase}/api/v1/auth/me`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        credentials: 'include'
-      });
+      const doMe = async (bearer) => {
+        return fetch(`${apiBase}/api/v1/auth/me`, {
+          headers: bearer ? { Authorization: `Bearer ${bearer}` } : {},
+          credentials: 'include'
+        });
+      };
+
+      const refreshAccessToken = async () => {
+        try {
+          const r = await fetch(`${apiBase}/api/v1/auth/refresh`, {
+            method: 'POST',
+            credentials: 'include'
+          });
+          const body = await r.json().catch(() => ({}));
+          if (!r.ok) return null;
+          const next = (body?.accessToken || '').toString().trim();
+          if (next) localStorage.setItem('feco.accessToken', next);
+          return next || null;
+        } catch {
+          return null;
+        }
+      };
+
+      let res = await doMe(token);
+      if (res.status === 401) {
+        // Token can expire quickly; try cookie refresh once and retry /me.
+        const next = await refreshAccessToken();
+        res = await doMe(next || '');
+      }
       if (!res.ok) return null;
       const body = await res.json().catch(() => ({}));
       return body?.user || null;
@@ -238,13 +263,29 @@
       fd.append('title', title);
       fd.append('description', description);
       fd.append('file', file);
-      const res = await fetch(`${apiBase}/api/v1/videos`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        credentials: 'include',
-        body: fd
-      });
-      const body = await res.json().catch(() => ({}));
+      const doUpload = async (bearer) => {
+        const r = await fetch(`${apiBase}/api/v1/videos`, {
+          method: 'POST',
+          headers: bearer ? { Authorization: `Bearer ${bearer}` } : {},
+          credentials: 'include',
+          body: fd
+        });
+        const body = await r.json().catch(() => ({}));
+        return { r, body };
+      };
+
+      let { r: res, body } = await doUpload(token);
+      if (res.status === 401) {
+        // Try cookie refresh once, then retry.
+        try {
+          const rr = await fetch(`${apiBase}/api/v1/auth/refresh`, { method: 'POST', credentials: 'include' });
+          const rb = await rr.json().catch(() => ({}));
+          const next = (rb?.accessToken || '').toString().trim();
+          if (next) localStorage.setItem('feco.accessToken', next);
+          ({ r: res, body } = await doUpload(next));
+        } catch {}
+      }
+
       if (!res.ok) {
         if (res.status === 401) {
           ensureLogin();

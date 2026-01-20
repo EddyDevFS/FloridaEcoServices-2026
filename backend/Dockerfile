@@ -12,6 +12,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json package-lock.json ./
 COPY tsconfig.json ./
+COPY assets ./assets
 COPY prisma ./prisma
 COPY src ./src
 RUN npx prisma generate
@@ -22,6 +23,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/assets ./assets
 COPY prisma ./prisma
 EXPOSE 3001
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]

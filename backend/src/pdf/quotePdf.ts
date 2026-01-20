@@ -3,14 +3,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 function findLogoPath() {
-  const filename = 'logo florida eco services.png';
+  const filename = 'logo-florida-eco-services.png';
   const candidates = [
+    // When running from /backend (docker-compose context or local)
+    path.resolve(process.cwd(), 'assets', filename),
     // When running from repo root
-    path.resolve(process.cwd(), 'media', filename),
-    // When running from /backend
-    path.resolve(process.cwd(), '..', 'media', filename),
-    // When running compiled code from /backend/dist/pdf
-    path.resolve(__dirname, '..', '..', '..', '..', 'media', filename)
+    path.resolve(process.cwd(), 'backend', 'assets', filename),
+    // When running compiled code (dist/pdf) - keep a relative fallback
+    path.resolve(__dirname, '..', '..', 'assets', filename)
   ];
   for (const p of candidates) {
     try {

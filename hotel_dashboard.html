@@ -7,6 +7,19 @@
   <script>
     (function () {
       try {
+        document.documentElement.classList.add('feco-auth-pending');
+        var token = (localStorage.getItem('feco.accessToken') || '').trim();
+        if (!token) document.documentElement.classList.add('feco-locked');
+      } catch {}
+    })();
+  </script>
+  <style>
+    .feco-auth-pending .app-container,
+    .feco-locked .app-container { display: none !important; }
+  </style>
+  <script>
+    (function () {
+      try {
         var params = new URLSearchParams(window.location.search || '');
         if (params.get('demo') === '1') {
           window.location.replace('demo_platform.html');

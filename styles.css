@@ -2407,6 +2407,31 @@ body {
   .app-container {
     padding: 0 16px;
   }
+
+  .top-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .hotel-switcher {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .hotel-select {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+  }
+
+  .planning-shell {
+    padding: 18px;
+  }
+
+  .planning-card {
+    padding: 16px;
+  }
   
   .buildings-container {
     grid-template-columns: 1fr;
@@ -2528,7 +2553,7 @@ body {
 
 .status-overdue { background: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.2); }
 .status-soon { background: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.2); }
--status-ok { background: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.2); }
+.status-ok { background: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.2); }
 
 /* ===== ANIMATIONS ===== */
 @keyframes pulse {

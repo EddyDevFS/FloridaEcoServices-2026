@@ -4,6 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin - Hotel & Contract</title>
+  <script>
+    (function () {
+      try {
+        document.documentElement.classList.add('feco-auth-pending');
+        var token = (localStorage.getItem('feco.accessToken') || '').trim();
+        if (!token) document.documentElement.classList.add('feco-locked');
+      } catch {}
+    })();
+  </script>
+  <style>
+    .feco-auth-pending .app-container,
+    .feco-locked .app-container { display: none !important; }
+  </style>
   <link rel="stylesheet" href="styles.css?v=20260115" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>

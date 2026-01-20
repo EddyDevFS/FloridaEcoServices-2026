@@ -48,13 +48,20 @@
   max-width:1240px;
   margin:0 auto;
   display:grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 1fr 360px;
   gap:18px;
 }
-@media (max-width: 1020px){
+@media (max-width: 1140px){
   .qwApp{grid-template-columns:1fr}
-  .sticky{position:static}
+  .quoteApp .sticky{position:static}
   .quoteSelect{min-width: 180px}
+}
+@media (max-width: 560px){
+  .quoteApp{margin: 10px 0 18px; padding: 10px; border-radius: 14px;}
+  .quoteTopbar{flex-direction:column; align-items:stretch}
+  .quoteTopbarActions{justify-content:flex-start}
+  .quoteSelect{width:100%; min-width:0}
+  .quoteTopbarActions button{width:100%; justify-content:center}
 }
 
 .quoteApp *{box-sizing:border-box}
@@ -210,4 +217,3 @@
 }
 .quoteApp input.qwInput{ text-align:left; }
 .quoteApp select.qwInput{ font-weight:850; }
-

@@ -83,6 +83,43 @@ function deepClone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
+function fecoCurrentPage() {
+  try {
+    return (window.location.pathname.split('/').pop() || '').split('?')[0];
+  } catch {
+    return '';
+  }
+}
+
+function fecoIsProtectedPage() {
+  const page = fecoCurrentPage();
+  // Public pages that may load this script
+  if (!page) return false;
+  if (page === 'reservation_view.html') return false;
+  if (page === 'contract_view.html') return false;
+  if (page === 'demo_platform.html') return false;
+
+  return (
+    page.startsWith('admin_') ||
+    page.startsWith('hotel_') ||
+    page === 'staff_tasks.html'
+  );
+}
+
+function fecoLockUi() {
+  try {
+    document.documentElement.classList.add('feco-auth-pending');
+    document.documentElement.classList.add('feco-locked');
+  } catch {}
+}
+
+function fecoUnlockUi() {
+  try {
+    document.documentElement.classList.remove('feco-locked');
+    document.documentElement.classList.remove('feco-auth-pending');
+  } catch {}
+}
+
 async function ensureAppDataInitialized() {
   if (!window.HMP_DB) {
     console.warn('HMP_DB not loaded');
@@ -132,8 +169,24 @@ async function ensureAppDataInitialized() {
     return;
   }
 
-  window.HMP_DB.saveHotel(deepClone(state.hotel));
-  window.HMP_DB.setActiveHotelId(state.hotel.id);
+  const hotels = window.HMP_DB.getHotels?.() || [];
+  if (hotels.length) {
+    window.HMP_DB.setActiveHotelId(hotels[0].id);
+    state.hotel = deepClone(hotels[0]);
+    return;
+  }
+
+  // No hotels found: don't seed demo content.
+  // Only create an empty hotel on management pages (the public token pages should remain read-only).
+  if (!fecoIsProtectedPage()) return;
+
+  // Create a minimal empty hotel instead of a demo hotel.
+  try {
+    const created = window.HMP_DB.createHotel('New hotel');
+    state.hotel = deepClone(created);
+  } catch (e) {
+    console.warn('Failed to create initial hotel:', e);
+  }
 }
 
 function saveCurrentHotel() {
@@ -5128,6 +5181,27 @@ function exportData() {
 
 // ===== INITIALIZATION =====
 async function init() {
+  // Hard gate: management pages require a login, and must not leak local/demo data behind a modal.
+  if (fecoIsProtectedPage()) {
+    fecoLockUi();
+
+    // Validate token (not just presence) so an expired token can't reveal local content.
+    const token = (localStorage.getItem('feco.accessToken') || '').trim();
+    if (!token) {
+      await fecoEnsureLogin({ force: true });
+      return;
+    }
+
+    const me = await fecoRefreshMe();
+    if (!me) {
+      try { localStorage.removeItem('feco.accessToken'); } catch {}
+      await fecoEnsureLogin({ force: true });
+      return;
+    }
+
+    fecoUnlockUi();
+  }
+
   await ensureAppDataInitialized();
   initSyncStatusUI();
   // Seed demo data if requested
@@ -5314,6 +5388,7 @@ function fecoMountLoginModal() {
 
   const overlay = document.createElement('div');
   overlay.id = 'fecoLoginModal';
+  overlay.dataset.force = '0';
   overlay.style.position = 'fixed';
   overlay.style.inset = '0';
   overlay.style.background = 'rgba(15,23,42,0.55)';
@@ -5353,7 +5428,10 @@ function fecoMountLoginModal() {
   document.body.appendChild(overlay);
 
   const closeBtn = overlay.querySelector('#fecoLoginClose');
-  closeBtn?.addEventListener('click', () => (overlay.style.display = 'none'));
+  closeBtn?.addEventListener('click', () => {
+    if (overlay.dataset.force === '1') return;
+    overlay.style.display = 'none';
+  });
 
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) overlay.style.display = 'none';
@@ -5389,6 +5467,11 @@ function fecoMountLoginModal() {
       localStorage.setItem('feco.lastEmail', email);
       submit.disabled = true;
       await window.HMP_DB.apiLogin(email, password);
+      if (overlay.dataset.force === '1') {
+        // Full reload guarantees no underlying UI is visible before the app is ready.
+        window.location.reload();
+        return;
+      }
       overlay.style.display = 'none';
       // Pull right away after login.
       await window.HMP_DB.apiPullLocalStorage?.();
@@ -5409,9 +5492,17 @@ function fecoMountLoginModal() {
 }
 
 async function fecoEnsureLogin() {
+  let opts = {};
+  if (arguments && arguments[0] && typeof arguments[0] === 'object') opts = arguments[0];
+  const force = !!opts.force;
+
   fecoMountLoginModal();
   const overlay = document.getElementById('fecoLoginModal');
   if (!overlay) return;
+  overlay.dataset.force = force ? '1' : '0';
+  const closeBtn = overlay.querySelector('#fecoLoginClose');
+  if (closeBtn) closeBtn.style.display = force ? 'none' : '';
+
   const email = localStorage.getItem('feco.lastEmail') || '';
   const emailEl = overlay.querySelector('#fecoLoginEmail');
   if (emailEl && !emailEl.value) emailEl.value = email;

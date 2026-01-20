@@ -1,4 +1,24 @@
 import PDFDocument from 'pdfkit';
+import fs from 'node:fs';
+import path from 'node:path';
+
+function findLogoPath() {
+  const filename = 'logo florida eco services.png';
+  const candidates = [
+    // When running from repo root
+    path.resolve(process.cwd(), 'media', filename),
+    // When running from /backend
+    path.resolve(process.cwd(), '..', 'media', filename),
+    // When running compiled code from /backend/dist/pdf
+    path.resolve(__dirname, '..', '..', '..', '..', 'media', filename)
+  ];
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) return p;
+    } catch {}
+  }
+  return null;
+}
 
 function money(n: number) {
   if (!Number.isFinite(n)) return '—';
@@ -134,9 +154,25 @@ export async function renderQuotePdf(opts: {
   const email = String(opts.customer?.email || computed.hotelEmail || '').trim();
   const phone = String(opts.customer?.phone || computed.hotelTel || '').trim();
 
-  doc.fontSize(18).font('Helvetica-Bold').text('Quote', { align: 'right' });
-  doc.fontSize(10).font('Helvetica').fillColor('#374151').text(`${quoteNo} · ${now}`, { align: 'right' });
-  doc.moveDown(0.7);
+  const left = doc.page.margins.left;
+  const top = doc.page.margins.top;
+  const contentW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+
+  const logoPath = findLogoPath();
+  if (logoPath) {
+    try {
+      doc.image(logoPath, left, top, { width: 120 });
+    } catch {}
+  }
+
+  doc.fontSize(18).font('Helvetica-Bold').fillColor('#111827').text('Quote', left, top, { width: contentW, align: 'right' });
+  doc.fontSize(10).font('Helvetica').fillColor('#374151').text(`${quoteNo} · ${now}`, left, top + 22, {
+    width: contentW,
+    align: 'right'
+  });
+
+  // Move content below the header/logo area.
+  doc.y = top + (logoPath ? 76 : 36);
   doc.fillColor('#111827');
 
   doc.fontSize(14).font('Helvetica-Bold').text('Florida Eco Services');
@@ -229,4 +265,3 @@ export async function renderQuotePdf(opts: {
   doc.end();
   return done;
 }
-

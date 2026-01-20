@@ -2,6 +2,16 @@ import PDFDocument from 'pdfkit';
 import fs from 'node:fs';
 import path from 'node:path';
 
+const BRAND = {
+  name: 'Florida Eco Services',
+  address1: '2100 Olympus Blvd, Apt 2315',
+  address2: 'Clermont, FL 34714',
+  contactName: 'Eddy Sallault',
+  contactTitle: 'Business Owner',
+  phone: '(786) 757-4703',
+  email: 'eddy@floridaecoservices.com'
+};
+
 function findLogoPath() {
   const filename = 'logo-florida-eco-services.png';
   const candidates = [
@@ -157,27 +167,56 @@ export async function renderQuotePdf(opts: {
   const left = doc.page.margins.left;
   const top = doc.page.margins.top;
   const contentW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  const rightW = 220;
+  const logoW = 120;
+  const logoH = 64;
+  const gap = 14;
 
   const logoPath = findLogoPath();
+  const hasLogo = !!logoPath;
+
   if (logoPath) {
     try {
-      doc.image(logoPath, left, top, { width: 120 });
+      doc.image(logoPath, left, top, { fit: [logoW, logoH] });
     } catch {}
   }
 
-  doc.fontSize(18).font('Helvetica-Bold').fillColor('#111827').text('Quote', left, top, { width: contentW, align: 'right' });
-  doc.fontSize(10).font('Helvetica').fillColor('#374151').text(`${quoteNo} · ${now}`, left, top + 22, {
-    width: contentW,
-    align: 'right'
+  const leftTextX = left + (hasLogo ? logoW + gap : 0);
+  const leftTextW = contentW - (hasLogo ? logoW + gap : 0) - rightW;
+  const rightX = left + contentW - rightW;
+
+  // Right header: document identity
+  doc.fontSize(22).font('Helvetica-Bold').fillColor('#111827').text('Quote', rightX, top, { width: rightW, align: 'right' });
+  doc.fontSize(10)
+    .font('Helvetica')
+    .fillColor('#374151')
+    .text([quoteNo, now].filter(Boolean).join(' · '), rightX, top + 26, { width: rightW, align: 'right' });
+
+  // Left header: brand + contact
+  doc.fontSize(14).font('Helvetica-Bold').fillColor('#111827').text(BRAND.name, leftTextX, top + 2, {
+    width: leftTextW
   });
+  doc.fontSize(9)
+    .font('Helvetica')
+    .fillColor('#374151')
+    .text(BRAND.address1, leftTextX, top + 20, { width: leftTextW })
+    .text(BRAND.address2, leftTextX, top + 32, { width: leftTextW })
+    .text(`${BRAND.contactName} · ${BRAND.contactTitle}`, leftTextX, top + 44, { width: leftTextW })
+    .text(`${BRAND.phone} · ${BRAND.email}`, leftTextX, top + 56, { width: leftTextW });
 
-  // Move content below the header/logo area.
-  doc.y = top + (logoPath ? 76 : 36);
+  // Divider
+  const headerBottom = top + 84;
+  doc.save();
+  doc
+    .moveTo(left, headerBottom)
+    .lineTo(left + contentW, headerBottom)
+    .lineWidth(1)
+    .strokeColor('#e5e7eb')
+    .stroke();
+  doc.restore();
+
+  doc.y = headerBottom + 16;
   doc.fillColor('#111827');
-
-  doc.fontSize(14).font('Helvetica-Bold').text('Florida Eco Services');
-  doc.fontSize(10).font('Helvetica').fillColor('#374151').text('Carpet, Upholstery & Tile Cleaning · Orlando, FL');
-  doc.fillColor('#111827').moveDown(0.8);
 
   doc.fontSize(11).font('Helvetica-Bold').text('Customer');
   doc.fontSize(10).font('Helvetica');
@@ -189,7 +228,7 @@ export async function renderQuotePdf(opts: {
   doc.moveDown(0.9);
 
   const leftX = doc.x;
-  const rightX = 48 + 310;
+  const rightBoxX = left + 310;
   const boxTop = doc.y;
   const boxW = 240;
   const boxH = 72;
@@ -215,7 +254,7 @@ export async function renderQuotePdf(opts: {
     ['Current frequency', computed.currentFreqLabel]
   ]);
 
-  drawBox(rightX, boxTop, 'Best Value (Total Care)', [
+  drawBox(rightBoxX, boxTop, 'Best Value (Total Care)', [
     ['Monthly est.', money(computed.offers.total.monthly)],
     ['Annual total', money(Math.round(computed.offers.total.totalAnnual))],
     ['Mode', String((opts.payload && opts.payload.mode) || 'quick')]

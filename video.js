@@ -269,7 +269,7 @@
     try {
       if (img) img.style.display = 'none';
       if (overlay) overlay.style.display = 'none';
-      v.style.display = '';
+      v.style.display = 'block';
       v.controls = true;
       if (!v.src) v.src = videoFileUrl(video.id);
       v.currentTime = 0;

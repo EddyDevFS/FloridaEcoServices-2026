@@ -587,6 +587,7 @@ model Quote {
   prospectId     String?
   clientId       String?
   sentAt         DateTime?
+  deletedAt      DateTime?
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
@@ -596,6 +597,7 @@ model Quote {
 
   @@index([organizationId])
   @@index([status])
+  @@index([deletedAt])
   @@index([updatedAt])
   @@unique([organizationId, number])
 }

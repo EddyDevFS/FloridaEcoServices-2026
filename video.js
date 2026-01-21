@@ -20,6 +20,9 @@
   const commentsGrid = document.getElementById('commentsGrid');
   const commentsEmpty = document.getElementById('commentsEmpty');
   const refreshCommentsBtn = document.getElementById('refreshCommentsBtn');
+  const openCommentModalBtn = document.getElementById('openCommentModalBtn');
+  const commentModal = document.getElementById('commentModal');
+  const commentModalClose = document.getElementById('commentModalClose');
   const submitCommentBtn = document.getElementById('submitCommentBtn');
   const commentStatus = document.getElementById('commentStatus');
   const cFirstName = document.getElementById('cFirstName');
@@ -197,6 +200,25 @@
     const emailEl = overlay.querySelector('#fecoLoginEmail');
     if (emailEl && !emailEl.value) emailEl.value = email;
     overlay.style.display = 'flex';
+  }
+
+  function openCommentModal() {
+    if (!commentModal) return;
+    commentModal.style.display = 'flex';
+    commentModal.setAttribute('aria-hidden', 'false');
+    setHint(commentStatus, '', 'info');
+    setTimeout(() => {
+      try {
+        cFirstName?.focus?.();
+      } catch {}
+    }, 10);
+  }
+
+  function closeCommentModal() {
+    if (!commentModal) return;
+    commentModal.style.display = 'none';
+    commentModal.setAttribute('aria-hidden', 'true');
+    setHint(commentStatus, '', 'info');
   }
 
   async function fetchVideos() {
@@ -443,6 +465,7 @@
           if (el) el.value = '';
         } catch {}
       });
+      closeCommentModal();
       await refreshComments();
     } catch (e) {
       setHint(commentStatus, String(e?.message || e), 'error');
@@ -701,6 +724,11 @@
   loginBtn?.addEventListener('click', () => ensureLogin());
   uploadBtn?.addEventListener('click', () => uploadVideo());
   refreshCommentsBtn?.addEventListener('click', () => refreshComments());
+  openCommentModalBtn?.addEventListener('click', () => openCommentModal());
+  commentModalClose?.addEventListener('click', () => closeCommentModal());
+  commentModal?.addEventListener('click', (e) => {
+    if (e.target === commentModal) closeCommentModal();
+  });
   submitCommentBtn?.addEventListener('click', () => submitComment());
   addSeededBtn?.addEventListener('click', () => addSeededComment());
 

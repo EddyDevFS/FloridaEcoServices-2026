@@ -93,9 +93,9 @@
       pricing: {
         minRooms: 10,
         plans: {
-          ondemand: { label: 'On-Demand', subtitle: 'Best for emergencies & one-off deep cleans', room: { carpet: 45, tile: 65, both: 95 }, corridorSqft: 0.28 },
-          partner: { label: 'Partner Care', subtitle: 'Better rates + priority scheduling', room: { carpet: 40, tile: 60, both: 85 }, corridorSqft: 0.25 },
-          total: { label: 'Total Care Program', subtitle: 'Monthly plan · annual coverage + best cost', room: { carpet: 35, tile: 50, both: 70 }, corridorSqft: 0.18 }
+          ondemand: { label: 'On‑Demand', subtitle: 'Perfect for one‑time projects or urgent needs', room: { carpet: 45, tile: 65, both: 95 }, corridorSqft: 0.28 },
+          partner: { label: 'Refresh Plan', subtitle: 'Planned yearly refresh · better per‑room rate', room: { carpet: 40, tile: 60, both: 85 }, corridorSqft: 0.25 },
+          total: { label: 'Total Care', subtitle: 'Full annual coverage · best per‑room value', room: { carpet: 35, tile: 50, both: 70 }, corridorSqft: 0.18 }
         }
       }
     };
@@ -108,6 +108,9 @@
   let customerType = 'PROSPECT';
   let customer = { company: '', contact: '', email: '', phone: '' };
   let state = freshState();
+  let viewTrash = false;
+  let quoteSearchTerm = '';
+  let cachedQuotes = [];
 
   const steps = [
     { title: 'Hotel Info' },
@@ -364,12 +367,12 @@
       <div class="qwCard">
         <h3>Offers</h3>
         <div class="qwOfferGrid">
-          ${renderOfferCard('Normal (On‑Demand)', 'Best for one-time use / urgent needs.', on)}
-          ${renderOfferCard('Better (Partner Care)', 'Better per-room rate + priority scheduling.', pa)}
-          ${renderOfferCard('Optimal (Total Care)', 'Best value: planned program + predictable organization.', to, true)}
+          ${renderOfferCard('On‑Demand', 'One-time use or urgent needs.', on)}
+          ${renderOfferCard('Refresh Plan', 'Great if you target ~50% of rooms yearly.', pa)}
+          ${renderOfferCard('Total Care', 'Full annual coverage + best per-room value.', to, true)}
         </div>
         <div class="qwHint" style="margin-top:10px;">
-          We avoid yearly totals. This proposal focuses on <b>price per room</b> and a clear program cadence.
+          This proposal focuses on <b>price per room</b> (no monthly or yearly totals).
         </div>
       </div>
     `;
@@ -381,7 +384,6 @@
         <div class="qwOfferTitle">${title}</div>
         <div class="qwHint" style="margin-top:6px;">${escapeHtml(subtitle || '')}</div>
         <div class="qwOfferRow"><span>Avg price / room</span><b>${money(calc.avgPerRoom)}</b></div>
-        <div class="qwOfferRow"><span>Monthly est. (optional)</span><b>${money(calc.monthly)}</b></div>
       </div>
     `;
   }
@@ -394,15 +396,15 @@
         ${fieldRow('Minimum rooms billed', `<input class="qwInput" id="minRooms" type="number" min="0" value="${clampInt(state.pricing.minRooms, 0, 99999)}">`)}
       </div>
       <div class="qwCard">
-        <h3>On-Demand</h3>
+        <h3>On‑Demand</h3>
         ${pricingFields('ondemand', p.ondemand)}
       </div>
       <div class="qwCard">
-        <h3>Partner Care</h3>
+        <h3>Refresh Plan</h3>
         ${pricingFields('partner', p.partner)}
       </div>
       <div class="qwCard">
-        <h3>Total Care Program</h3>
+        <h3>Total Care</h3>
         ${pricingFields('total', p.total)}
       </div>
     `;
@@ -445,9 +447,8 @@
               <div class="line"><span>Current frequency</span><b>${escapeHtml(currentFreqLabel())}</b></div>
             </div>
             <div class="proposalCard" style="border-color:rgba(31,157,85,.24);">
-              <div class="hd"><b>Optimal (Total Care)</b><span class="miniTag" style="background:rgba(31,157,85,.10); border-color:rgba(31,157,85,.22); color:rgba(31,157,85,.92);">Best value</span></div>
+              <div class="hd"><b>Total Care</b><span class="miniTag" style="background:rgba(31,157,85,.10); border-color:rgba(31,157,85,.22); color:rgba(31,157,85,.92);">Best value</span></div>
               <div class="line"><span>Avg price / room</span><b>${money(best.avgPerRoom)}</b></div>
-              <div class="line"><span>Monthly est. (optional)</span><b>${money(best.monthly)}</b></div>
             </div>
           </div>
         </div>
@@ -631,8 +632,8 @@
 
     const backBtn = $('btnBack');
     const nextBtn = $('btnNext');
-    if (backBtn) backBtn.disabled = !quoteId;
-    if (nextBtn) nextBtn.disabled = !quoteId;
+    if (backBtn) backBtn.disabled = !quoteId || viewTrash;
+    if (nextBtn) nextBtn.disabled = !quoteId || viewTrash;
 
     const host = $('stepContainer');
     if (!host) return;
@@ -648,6 +649,22 @@
       `);
       updateSummary();
       updateTopMeta();
+      updateTopbarButtons();
+      return;
+    }
+
+    if (viewTrash) {
+      host.innerHTML = wrapCards(`
+        <div class="qwCard">
+          <h3>Trash</h3>
+          <div class="qwHint">
+            This quote is in the trash. You can <b>Restore</b> it, or <b>Delete forever</b>.
+          </div>
+        </div>
+      `);
+      updateSummary();
+      updateTopMeta();
+      updateTopbarButtons();
       return;
     }
 
@@ -673,6 +690,7 @@
     bindStepInputs();
     updateSummary();
     updateTopMeta();
+    updateTopbarButtons();
   }
 
   function wrapCards(inner) {
@@ -682,6 +700,35 @@
   function updateTopMeta() {
     const meta = $('quoteMeta');
     if (meta) meta.textContent = quoteId ? `#${quoteNumber || '—'} · ${quoteStatus}` : '—';
+  }
+
+  function updateTopbarButtons() {
+    const hasSelection = !!quoteId;
+    const trashBtn = $('btnTrashQuote');
+    const restoreBtn = $('btnRestoreQuote');
+    const hardBtn = $('btnDeleteForever');
+    const toggleTrash = $('btnToggleTrash');
+
+    if (toggleTrash) {
+      toggleTrash.classList.toggle('active', viewTrash);
+      toggleTrash.textContent = viewTrash ? 'Trash (view)' : 'Trash';
+      toggleTrash.innerHTML = viewTrash ? `<i class="fas fa-trash"></i> Trash (view)` : `<i class="fas fa-trash"></i> Trash`;
+    }
+
+    if (trashBtn) trashBtn.disabled = !hasSelection || viewTrash;
+    if (restoreBtn) {
+      restoreBtn.style.display = viewTrash ? '' : 'none';
+      restoreBtn.disabled = !hasSelection || !viewTrash;
+    }
+    if (hardBtn) {
+      hardBtn.style.display = viewTrash ? '' : 'none';
+      hardBtn.disabled = !hasSelection || !viewTrash;
+    }
+
+    $('btnNewQuote') && (($('btnNewQuote').disabled = viewTrash));
+    $('btnReset') && (($('btnReset').disabled = viewTrash || !hasSelection));
+    $('btnDownloadPdf') && (($('btnDownloadPdf').disabled = viewTrash || !hasSelection));
+    $('btnSendEmail') && (($('btnSendEmail').disabled = viewTrash || !hasSelection));
   }
 
   async function resetToBlank() {
@@ -697,6 +744,7 @@
     updateUrl();
     await refreshQuoteList({ keepSelection: false });
     render();
+    updateTopbarButtons();
   }
 
   let saveTimer = null;
@@ -733,25 +781,34 @@
     const select = $('quoteSelect');
     if (!select) return;
     const prev = keepSelection ? select.value : '';
-    const res = await apiFetch('/api/v1/quotes?limit=30', { method: 'GET' });
+    const res = await apiFetch(`/api/v1/quotes?limit=200${viewTrash ? '&onlyDeleted=1' : ''}`, { method: 'GET' });
     if (!res.ok) return;
     const data = await res.json().catch(() => ({}));
     const quotes = Array.isArray(data?.quotes) ? data.quotes : [];
+    cachedQuotes = quotes;
+
+    const term = quoteSearchTerm.toLowerCase().trim();
+    const filtered = term
+      ? quotes.filter((q) => {
+          const hay = `#${q.number || ''} ${q.title || ''} ${q.status || ''}`.toLowerCase();
+          return hay.includes(term);
+        })
+      : quotes;
     select.innerHTML =
       `<option value="">— Select a quote —</option>` +
-      quotes
+      filtered
         .map((q) => {
-          const label = `#${q.number || '—'} · ${q.title || 'Untitled'} · ${q.status}`;
+          const label = `#${q.number || '—'} · ${q.title || 'Untitled'} · ${q.status}${q.deletedAt ? ' · TRASH' : ''}`;
           return `<option value="${escapeHtml(q.id)}">${escapeHtml(label)}</option>`;
         })
         .join('');
-    if (prev && quotes.some((q) => q.id === prev)) select.value = prev;
-    else if (quoteId && quotes.some((q) => q.id === quoteId)) select.value = quoteId;
+    if (prev && filtered.some((q) => q.id === prev)) select.value = prev;
+    else if (quoteId && filtered.some((q) => q.id === quoteId)) select.value = quoteId;
     else select.value = '';
 
     const cards = $('quoteCards');
     if (cards) {
-      cards.innerHTML = quotes
+      cards.innerHTML = filtered
         .map((q) => {
           const title = escapeHtml(q.title || 'Untitled');
           const id = escapeHtml(q.id);
@@ -760,11 +817,12 @@
           const status = String(q.status || '').toUpperCase();
           const statusCls = status === 'ACCEPTED' ? 'accepted' : status === 'SENT' ? 'sent' : 'draft';
           const active = quoteId && q.id === quoteId ? 'active' : '';
+          const trashed = q.deletedAt ? ' · TRASH' : '';
           return `
             <button class="quoteCardBtn ${active}" type="button" data-quote-card="${id}">
               <div class="quoteCardTop">
                 <b>${escapeHtml(numTxt)}</b>
-                <span class="quoteCardStatus ${statusCls}">${escapeHtml(status)}</span>
+                <span class="quoteCardStatus ${statusCls}">${escapeHtml(status + trashed)}</span>
               </div>
               <div class="quoteCardMeta">${title}</div>
               <div class="quoteCardMeta">${escapeHtml(date)}</div>
@@ -781,10 +839,12 @@
         });
       });
     }
+
+    updateTopbarButtons();
   }
 
   async function loadQuote(id) {
-    const res = await apiFetch(`/api/v1/quotes/${encodeURIComponent(id)}`, { method: 'GET' });
+    const res = await apiFetch(`/api/v1/quotes/${encodeURIComponent(id)}${viewTrash ? '?includeDeleted=1' : ''}`, { method: 'GET' });
     if (!res.ok) throw new Error('quote_not_found');
     const data = await res.json().catch(() => ({}));
     const q = data?.quote;
@@ -801,6 +861,7 @@
     syncCustomerUiFromState();
     render();
     updateUrl();
+    updateTopbarButtons();
   }
 
   async function createNewQuote() {
@@ -980,6 +1041,115 @@
   }
 
   function bindTopbar() {
+    $('quoteSearch')?.addEventListener('input', (e) => {
+      quoteSearchTerm = String(e.target.value || '');
+      // Re-render from cache (no server round-trip).
+      const quotes = Array.isArray(cachedQuotes) ? cachedQuotes : [];
+      const select = $('quoteSelect');
+      const cards = $('quoteCards');
+      if (!select || !cards) return refreshQuoteList({ keepSelection: true });
+
+      const term = quoteSearchTerm.toLowerCase().trim();
+      const filtered = term
+        ? quotes.filter((q) => {
+            const hay = `#${q.number || ''} ${q.title || ''} ${q.status || ''}`.toLowerCase();
+            return hay.includes(term);
+          })
+        : quotes;
+
+      select.innerHTML =
+        `<option value="">— Select a quote —</option>` +
+        filtered
+          .map((q) => {
+            const label = `#${q.number || '—'} · ${q.title || 'Untitled'} · ${q.status}${q.deletedAt ? ' · TRASH' : ''}`;
+            return `<option value="${escapeHtml(q.id)}">${escapeHtml(label)}</option>`;
+          })
+          .join('');
+      if (quoteId && filtered.some((q) => q.id === quoteId)) select.value = quoteId;
+      else select.value = '';
+
+      cards.innerHTML = filtered
+        .map((q) => {
+          const title = escapeHtml(q.title || 'Untitled');
+          const id = escapeHtml(q.id);
+          const numTxt = q.number ? `#${q.number}` : '#—';
+          const date = q.updatedAt ? new Date(q.updatedAt).toLocaleDateString() : '—';
+          const status = String(q.status || '').toUpperCase();
+          const statusCls = status === 'ACCEPTED' ? 'accepted' : status === 'SENT' ? 'sent' : 'draft';
+          const active = quoteId && q.id === quoteId ? 'active' : '';
+          const trashed = q.deletedAt ? ' · TRASH' : '';
+          return `
+            <button class="quoteCardBtn ${active}" type="button" data-quote-card="${id}">
+              <div class="quoteCardTop">
+                <b>${escapeHtml(numTxt)}</b>
+                <span class="quoteCardStatus ${statusCls}">${escapeHtml(status + trashed)}</span>
+              </div>
+              <div class="quoteCardMeta">${title}</div>
+              <div class="quoteCardMeta">${escapeHtml(date)}</div>
+            </button>
+          `;
+        })
+        .join('');
+
+      cards.querySelectorAll('[data-quote-card]').forEach((el) => {
+        el.addEventListener('click', () => {
+          const id = String(el.getAttribute('data-quote-card') || '').trim();
+          if (!id) return;
+          loadQuote(id).catch((err) => toast(err.message || 'Load failed', 'error'));
+        });
+      });
+
+      updateTopbarButtons();
+    });
+
+    $('btnToggleTrash')?.addEventListener('click', async () => {
+      viewTrash = !viewTrash;
+      quoteSearchTerm = '';
+      try {
+        const search = $('quoteSearch');
+        if (search) search.value = '';
+      } catch {}
+      await resetToBlank();
+    });
+
+    $('btnTrashQuote')?.addEventListener('click', async () => {
+      try {
+        if (!quoteId) return;
+        if (!confirm('Move this quote to trash?')) return;
+        const res = await apiFetch(`/api/v1/quotes/${encodeURIComponent(quoteId)}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('trash_failed');
+        toast('Moved to trash.', 'success');
+        await resetToBlank();
+      } catch (e) {
+        toast(String(e?.message || e), 'error');
+      }
+    });
+
+    $('btnRestoreQuote')?.addEventListener('click', async () => {
+      try {
+        if (!quoteId) return;
+        const res = await apiFetch(`/api/v1/quotes/${encodeURIComponent(quoteId)}/restore`, { method: 'POST' });
+        if (!res.ok) throw new Error('restore_failed');
+        toast('Restored.', 'success');
+        await resetToBlank();
+      } catch (e) {
+        toast(String(e?.message || e), 'error');
+      }
+    });
+
+    $('btnDeleteForever')?.addEventListener('click', async () => {
+      try {
+        if (!quoteId) return;
+        if (!confirm('Delete this quote forever? This cannot be undone.')) return;
+        const res = await apiFetch(`/api/v1/quotes/${encodeURIComponent(quoteId)}/hard`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('hard_delete_failed');
+        toast('Deleted forever.', 'success');
+        await resetToBlank();
+      } catch (e) {
+        toast(String(e?.message || e), 'error');
+      }
+    });
+
     $('btnNewQuote')?.addEventListener('click', () => {
       state = freshState();
       customerType = 'PROSPECT';

@@ -79,22 +79,22 @@
   function offersCopy(planKey) {
     if (planKey === 'ondemand') {
       return {
-        title: 'Normal (On‑Demand)',
-        tagline: 'Best for one-time use or emergencies.',
-        bullets: ['Use ponctuellement', 'Fast scheduling when available', 'Great for refresh / urgent requests']
+        title: 'On‑Demand',
+        tagline: 'Perfect for one-time projects or urgent needs.',
+        bullets: ['One-time service (as needed)', 'Ideal for emergencies / turnovers', 'Great on carpet, tile, and area rugs']
       };
     }
     if (planKey === 'partner') {
       return {
-        title: 'Better (Partner Care)',
-        tagline: 'Better rate + priority scheduling.',
-        bullets: ['Ideal if ~50% of rooms are cleaned yearly', 'Priority scheduling', 'Designed for planned maintenance']
+        title: 'Refresh Plan',
+        tagline: 'Best value for partial yearly coverage + planning.',
+        bullets: ['Great if you target ~50% of rooms yearly', 'Better per-room rate than on-demand', 'Planned maintenance with priority']
       };
     }
     return {
-      title: 'Optimal (Total Care)',
-      tagline: 'Best value: planned program + predictable organization.',
-      bullets: ['All rooms 1×/year', 'At least 1 visit / month (adjusted to room count)', 'Best per-room rate + priority']
+      title: 'Total Care',
+      tagline: 'Full annual coverage + the best per-room value.',
+      bullets: ['All rooms 1×/year', 'Ongoing visits scheduled with you', 'Best per-room rate + priority']
     };
   }
 
@@ -180,7 +180,8 @@
       setStatus('Signed. Confirmation email sent.', 'success');
       if (successEl) {
         successEl.style.display = '';
-        successEl.textContent = 'Signed successfully. A confirmation email with a PDF copy has been sent.';
+        successEl.textContent =
+          'Signed successfully. A confirmation email with a PDF copy has been sent. Eddy Sallault will contact you shortly to confirm dates and organization details.';
       }
     } catch (e) {
       signBtn.disabled = false;
@@ -198,4 +199,3 @@
 
   loadQuote().catch((e) => setStatus(String(e?.message || e), 'error'));
 })();
-

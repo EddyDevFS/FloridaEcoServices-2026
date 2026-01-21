@@ -27,6 +27,23 @@ function brandEmail() {
   return String(process.env.QUOTE_NOTIFY_EMAIL || process.env.SMTP_FROM || 'eddy@floridaecoservices.com').trim();
 }
 
+function planLabel(planKey: string) {
+  const key = String(planKey || '').trim();
+  if (key === 'ondemand') return 'On‑Demand';
+  if (key === 'partner') return 'Refresh Plan';
+  if (key === 'total') return 'Total Care';
+  return key || '—';
+}
+
+function brandBlock() {
+  return {
+    name: 'Florida Eco Services',
+    address: '2100 Olympus Blvd, Apt 2315, Clermont, FL 34714',
+    phone: '(786) 757-4703',
+    email: brandEmail()
+  };
+}
+
 function normalizeText(v: any) {
   return String(v || '').trim();
 }
@@ -116,12 +133,17 @@ router.get('/quotes', requireAuth, async (req: AuthedRequest, res: Response) => 
   const prisma = getPrisma();
   const limitRaw = Number(req.query?.limit || 30);
   const limit = Math.max(1, Math.min(200, Number.isFinite(limitRaw) ? limitRaw : 30));
+  const includeDeleted = String(req.query?.includeDeleted || '') === '1';
+  const onlyDeleted = String(req.query?.onlyDeleted || '') === '1';
 
   const quotes = await prisma.quote.findMany({
-    where: { organizationId: req.auth!.organizationId },
+    where: {
+      organizationId: req.auth!.organizationId,
+      ...(onlyDeleted ? { deletedAt: { not: null } } : includeDeleted ? {} : { deletedAt: null })
+    },
     orderBy: { updatedAt: 'desc' },
     take: limit,
-    select: { id: true, number: true, status: true, title: true, updatedAt: true }
+    select: { id: true, number: true, status: true, title: true, updatedAt: true, deletedAt: true }
   });
   res.json({ quotes });
 });
@@ -168,14 +190,81 @@ router.post(
 router.get('/quotes/:quoteId', requireAuth, async (req: AuthedRequest, res: Response) => {
   const quoteId = String(req.params.quoteId || '').trim();
   if (!quoteId) return res.status(400).json({ error: 'missing_quote_id' });
+  const includeDeleted = String(req.query?.includeDeleted || '') === '1';
 
   const prisma = getPrisma();
   const quote = await prisma.quote.findFirst({
     where: { id: quoteId, organizationId: req.auth!.organizationId }
   });
   if (!quote) return res.status(404).json({ error: 'quote_not_found' });
+  if (quote.deletedAt && !includeDeleted) return res.status(404).json({ error: 'quote_deleted' });
   res.json({ quote });
 });
+
+router.delete(
+  '/quotes/:quoteId',
+  requireAuth,
+  requireRole(['SUPER_ADMIN']),
+  async (req: AuthedRequest, res: Response) => {
+    const quoteId = String(req.params.quoteId || '').trim();
+    if (!quoteId) return res.status(400).json({ error: 'missing_quote_id' });
+
+    const prisma = getPrisma();
+    const quote = await prisma.quote.findFirst({
+      where: { id: quoteId, organizationId: req.auth!.organizationId, deletedAt: null }
+    });
+    if (!quote) return res.status(404).json({ error: 'quote_not_found' });
+    if (quote.deletedAt) return res.json({ ok: true, quote });
+
+    const updated = await prisma.quote.update({
+      where: { id: quote.id },
+      data: { deletedAt: new Date() }
+    });
+    res.json({ ok: true, quote: updated });
+  }
+);
+
+router.post(
+  '/quotes/:quoteId/restore',
+  requireAuth,
+  requireRole(['SUPER_ADMIN']),
+  async (req: AuthedRequest, res: Response) => {
+    const quoteId = String(req.params.quoteId || '').trim();
+    if (!quoteId) return res.status(400).json({ error: 'missing_quote_id' });
+
+    const prisma = getPrisma();
+    const quote = await prisma.quote.findFirst({
+      where: { id: quoteId, organizationId: req.auth!.organizationId }
+    });
+    if (!quote) return res.status(404).json({ error: 'quote_not_found' });
+
+    const updated = await prisma.quote.update({
+      where: { id: quote.id },
+      data: { deletedAt: null }
+    });
+    res.json({ ok: true, quote: updated });
+  }
+);
+
+router.delete(
+  '/quotes/:quoteId/hard',
+  requireAuth,
+  requireRole(['SUPER_ADMIN']),
+  async (req: AuthedRequest, res: Response) => {
+    const quoteId = String(req.params.quoteId || '').trim();
+    if (!quoteId) return res.status(400).json({ error: 'missing_quote_id' });
+
+    const prisma = getPrisma();
+    const quote = await prisma.quote.findFirst({
+      where: { id: quoteId, organizationId: req.auth!.organizationId }
+    });
+    if (!quote) return res.status(404).json({ error: 'quote_not_found' });
+    if (!quote.deletedAt) return res.status(400).json({ error: 'not_in_trash' });
+
+    await prisma.quote.delete({ where: { id: quote.id } });
+    res.json({ ok: true });
+  }
+);
 
 router.patch(
   '/quotes/:quoteId',
@@ -187,7 +276,7 @@ router.patch(
 
     const prisma = getPrisma();
     const existing = await prisma.quote.findFirst({
-      where: { id: quoteId, organizationId: req.auth!.organizationId }
+      where: { id: quoteId, organizationId: req.auth!.organizationId, deletedAt: null }
     });
     if (!existing) return res.status(404).json({ error: 'quote_not_found' });
 
@@ -282,7 +371,7 @@ router.get('/quotes/:quoteId/pdf', requireAuth, async (req: AuthedRequest, res: 
 
   const prisma = getPrisma();
   const quote = await prisma.quote.findFirst({
-    where: { id: quoteId, organizationId: req.auth!.organizationId }
+    where: { id: quoteId, organizationId: req.auth!.organizationId, deletedAt: null }
   });
   if (!quote) return res.status(404).json({ error: 'quote_not_found' });
 
@@ -306,7 +395,7 @@ router.get('/public/quotes/by-token/:token', async (req, res: Response) => {
 
   const prisma = getPrisma();
   const quote = await prisma.quote.findFirst({
-    where: { token },
+    where: { token, deletedAt: null },
     select: {
       id: true,
       number: true,
@@ -328,7 +417,7 @@ router.get('/public/quotes/by-token/:token/pdf', async (req, res: Response) => {
 
   const prisma = getPrisma();
   const quote = await prisma.quote.findFirst({
-    where: { token },
+    where: { token, deletedAt: null },
     select: {
       id: true,
       number: true,
@@ -381,7 +470,7 @@ router.post('/public/quotes/by-token/:token/accept', async (req, res: Response) 
   if (!signedByEmail || !signedByEmail.includes('@')) return res.status(400).json({ error: 'missing_email' });
 
   const prisma = getPrisma();
-  const quote = await prisma.quote.findFirst({ where: { token } });
+  const quote = await prisma.quote.findFirst({ where: { token, deletedAt: null } });
   if (!quote) return res.status(404).json({ error: 'quote_not_found' });
 
   if (quote.status === 'ACCEPTED') return res.json({ ok: true, quote });
@@ -400,6 +489,49 @@ router.post('/public/quotes/by-token/:token/accept', async (req, res: Response) 
       signedByUserAgent: String(req.headers?.['user-agent'] || '').slice(0, 400)
     }
   });
+
+  // Auto-create / link a Client from the signed info (so you can follow up quickly).
+  try {
+    const customer = (quote.customer as any) || {};
+    const company = String(customer.company || quote.title || '').trim();
+    const email = signedByEmail || String(customer.email || '').trim().toLowerCase();
+    const phone = String(customer.phone || '').trim();
+
+    if (company || email) {
+      const existingClient = email
+        ? await prisma.client.findFirst({ where: { organizationId: quote.organizationId, email } })
+        : null;
+
+      const client =
+        existingClient ||
+        (await prisma.client.create({
+          data: {
+            organizationId: quote.organizationId,
+            company: company || 'Client',
+            contact: signedByName || String(customer.contact || '').trim(),
+            email: email || '',
+            phone: phone || ''
+          }
+        }));
+
+      await prisma.quote.update({
+        where: { id: quote.id },
+        data: {
+          customerType: 'CLIENT',
+          client: { connect: { id: client.id } },
+          prospect: { disconnect: true },
+          customer: {
+            company: client.company || '',
+            contact: client.contact || '',
+            email: client.email || '',
+            phone: client.phone || ''
+          } as any
+        }
+      });
+    }
+  } catch (err) {
+    console.error('[quotes] accept client create/link failed:', err);
+  }
 
   let pdf: Buffer | null = null;
   try {
@@ -422,25 +554,29 @@ router.post('/public/quotes/by-token/:token/accept', async (req, res: Response) 
 
   const link = quoteSignLink(token);
   const subject = `Florida Eco Services — Quote #${updated.number} accepted`;
+  const selectedLabel = planLabel(acceptedPlanKey);
+  const brand = brandBlock();
   const text =
-    `Thank you.\n\n` +
+    `Thank you for your trust.\n\n` +
     `We received your acceptance for Quote #${updated.number}.\n\n` +
-    `Selected offer: ${acceptedPlanKey}\n` +
+    `Selected offer: ${selectedLabel}\n` +
     `Signed by: ${signedByName} (${signedByTitle})\n` +
-    `Timestamp: ${acceptedAt.toISOString()}\n\n` +
+    `Timestamp (UTC): ${acceptedAt.toISOString()}\n\n` +
+    `Next step: Eddy Sallault will contact you shortly to confirm dates and organization details.\n\n` +
     `Quote link: ${link}\n\n` +
-    `Florida Eco Services`;
+    `${brand.name}\n${brand.address}\n${brand.phone}\n${brand.email}`;
 
   const html =
-    `<p>Thank you.</p>` +
+    `<p><b>Thank you for your trust.</b></p>` +
     `<p>We received your acceptance for <b>Quote #${updated.number}</b>.</p>` +
     `<ul>` +
-    `<li><b>Selected offer:</b> ${acceptedPlanKey}</li>` +
+    `<li><b>Selected offer:</b> ${selectedLabel}</li>` +
     `<li><b>Signed by:</b> ${signedByName} (${signedByTitle})</li>` +
-    `<li><b>Timestamp:</b> ${acceptedAt.toISOString()}</li>` +
+    `<li><b>Timestamp (UTC):</b> ${acceptedAt.toISOString()}</li>` +
     `</ul>` +
+    `<p><b>Next step:</b> Eddy Sallault will contact you shortly to confirm dates and organization details.</p>` +
     `<p>Quote link: <a href="${link}">${link}</a></p>` +
-    `<p>Florida Eco Services</p>`;
+    `<p style="margin-top:14px;"><b>${brand.name}</b><br>${brand.address}<br>${brand.phone}<br><a href="mailto:${brand.email}">${brand.email}</a></p>`;
 
   try {
     await sendMail({
@@ -472,7 +608,7 @@ router.post(
 
     const prisma = getPrisma();
     const quote = await prisma.quote.findFirst({
-      where: { id: quoteId, organizationId: req.auth!.organizationId }
+      where: { id: quoteId, organizationId: req.auth!.organizationId, deletedAt: null }
     });
     if (!quote) return res.status(404).json({ error: 'quote_not_found' });
 
@@ -508,17 +644,18 @@ router.post(
     const link = quoteSignLink(token);
 
     const subject = `Quote #${quote.number} — ${company}`;
+    const brand = brandBlock();
     const text =
       `Hello,\n\n` +
       `Please find attached Quote #${quote.number}.\n\n` +
       `To choose an offer and sign digitally, use this secure link:\n${link}\n\n` +
-      `Florida Eco Services`;
+      `${brand.name}\n${brand.address}\n${brand.phone}\n${brand.email}`;
     const html =
       `<p>Hello,</p>` +
       `<p>Please find attached <b>Quote #${quote.number}</b>.</p>` +
       `<p>To choose an offer and sign digitally, use this secure link:</p>` +
       `<p><a href="${link}">${link}</a></p>` +
-      `<p>Florida Eco Services</p>`;
+      `<p style="margin-top:14px;"><b>${brand.name}</b><br>${brand.address}<br>${brand.phone}<br><a href="mailto:${brand.email}">${brand.email}</a></p>`;
 
     try {
       await sendMail({

@@ -43,6 +43,14 @@
   font-weight:750;
   min-width: 240px;
 }
+.quoteSearch{
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid rgba(8,20,26,.14);
+  background:rgba(255,255,255,.9);
+  font-weight:750;
+  min-width: 240px;
+}
 
 .quoteCards{
   display:grid;
@@ -89,12 +97,14 @@
   .qwApp{grid-template-columns:1fr}
   .quoteApp .sticky{position:static}
   .quoteSelect{min-width: 180px}
+  .quoteSearch{min-width: 180px}
 }
 @media (max-width: 560px){
   .quoteApp{margin: 10px 0 18px; padding: 10px; border-radius: 14px;}
   .quoteTopbar{flex-direction:column; align-items:stretch}
   .quoteTopbarActions{justify-content:flex-start}
   .quoteSelect{width:100%; min-width:0}
+  .quoteSearch{width:100%; min-width:0}
   .quoteTopbarActions button{width:100%; justify-content:center}
 }
 

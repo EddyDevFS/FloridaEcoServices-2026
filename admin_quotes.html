@@ -51,6 +51,11 @@
         </div>
         <div class="quoteTopbarActions">
           <select id="quoteSelect" class="quoteSelect" aria-label="Select quote"></select>
+          <input id="quoteSearch" class="quoteSearch" type="search" placeholder="Search quotes…" aria-label="Search quotes" />
+          <button class="btn-secondary" id="btnToggleTrash" type="button"><i class="fas fa-trash"></i> Trash</button>
+          <button class="btn-secondary" id="btnTrashQuote" type="button" disabled><i class="fas fa-trash-can"></i> Move to trash</button>
+          <button class="btn-secondary" id="btnRestoreQuote" type="button" style="display:none;"><i class="fas fa-rotate-left"></i> Restore</button>
+          <button class="btn-secondary" id="btnDeleteForever" type="button" style="display:none;"><i class="fas fa-skull-crossbones"></i> Delete forever</button>
           <button class="btn-secondary" id="btnNewQuote" type="button"><i class="fas fa-plus"></i> New</button>
           <button class="btn-secondary" id="btnReset" type="button"><i class="fas fa-rotate-left"></i> Reset</button>
           <button class="btn-secondary" id="btnDownloadPdf" type="button"><i class="fas fa-file-pdf"></i> PDF</button>
@@ -127,7 +132,7 @@
             <div class="panelHeader" style="padding:0 0 10px; border:none; background:transparent;">
               <div>
                 <h2>Quote Summary</h2>
-                <div class="sub">Rooms, corridors, and estimated monthly budget.</div>
+                <div class="sub">Rooms, corridors, and price per room.</div>
               </div>
             </div>
 
@@ -158,7 +163,7 @@
                 <div class="k">Best value (avg / room)</div>
                 <div class="val">
                   <div id="sumMonthly">—</div>
-                  <span id="sumMonthlySmall">Total Care Program</span>
+                  <span id="sumMonthlySmall">Total Care</span>
                 </div>
               </div>
             </div>

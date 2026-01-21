@@ -57,6 +57,11 @@
       .comment-form .grid { grid-template-columns: 1fr; }
     }
 
+    .comment-modal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:18px; background:rgba(2,8,23,.52); z-index:25000; }
+    .comment-modal .card { width: min(720px, 100%); background:#fff; border-radius:18px; border:1px solid rgba(15,23,42,.12); box-shadow:0 24px 80px rgba(0,0,0,.22); overflow:hidden; }
+    .comment-modal .head { padding:14px 16px; display:flex; justify-content:space-between; align-items:center; gap:10px; border-bottom:1px solid #e2e8f0; background:rgba(248,250,252,.92); }
+    .comment-modal .body { padding:16px; }
+
     .admin-comments { margin-top: 14px; background:#fff; border:1px solid #e2e8f0; border-radius:18px; padding: 14px; box-shadow:0 12px 40px rgba(0,0,0,0.06); display:none; }
     .admin-tabs { display:flex; gap:10px; flex-wrap:wrap; }
     .tab { border:1px solid #e2e8f0; background:#f8fafc; padding:8px 10px; border-radius:12px; cursor:pointer; font-weight:900; font-size:12px; }
@@ -144,46 +149,57 @@
           <h2>Comments</h2>
           <p>Real feedback + a clean history. Your contact details are kept private.</p>
         </div>
-        <button class="btn-secondary" id="refreshCommentsBtn" type="button"><i class="fa-solid fa-rotate"></i> Refresh</button>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn-secondary" id="openCommentModalBtn" type="button"><i class="fa-solid fa-plus"></i> Add comment</button>
+          <button class="btn-secondary" id="refreshCommentsBtn" type="button"><i class="fa-solid fa-rotate"></i> Refresh</button>
+        </div>
       </div>
 
       <div class="comments-grid" id="commentsGrid"></div>
       <div class="planning-item" id="commentsEmpty" style="display:none; margin-top:12px;">No comments yet.</div>
 
-      <div class="comment-form">
-        <div style="font-weight:950; letter-spacing:-0.01em;"><i class="fa-solid fa-pen"></i> Leave a comment</div>
-        <div class="grid" style="margin-top:12px;">
-          <div class="form-field">
-            <label for="cFirstName">First name</label>
-            <input id="cFirstName" type="text" placeholder="First name" />
-          </div>
-          <div class="form-field">
-            <label for="cLastName">Last name</label>
-            <input id="cLastName" type="text" placeholder="Last name" />
-          </div>
-          <div class="form-field">
-            <label for="cCity">City</label>
-            <input id="cCity" type="text" placeholder="Orlando" />
-          </div>
-          <div class="form-field">
-            <label for="cEmail">Email</label>
-            <input id="cEmail" type="email" placeholder="you@domain.com" />
-          </div>
-          <div class="form-field">
-            <label for="cPhone">Phone</label>
-            <input id="cPhone" type="tel" placeholder="(xxx) xxx-xxxx" />
-          </div>
-          <div class="form-field grid-1">
-            <label for="cComment">Comment</label>
-            <textarea id="cComment" rows="3" placeholder="Tell us what you liked…"></textarea>
-          </div>
+    </section>
+
+    <div class="comment-modal" id="commentModal" aria-hidden="true" aria-label="Add comment modal">
+      <div class="card" role="dialog" aria-modal="true">
+        <div class="head">
+          <div style="font-weight:950; letter-spacing:-0.01em;"><i class="fa-solid fa-pen"></i> Add a comment</div>
+          <button class="btn-secondary" id="commentModalClose" type="button"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-          <button class="btn-primary" id="submitCommentBtn" type="button"><i class="fa-solid fa-paper-plane"></i> Submit</button>
-          <div class="field-hint" id="commentStatus" style="margin:0;"></div>
+        <div class="body">
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+            <div class="form-field" style="margin:0;">
+              <label for="cFirstName">First name</label>
+              <input id="cFirstName" type="text" placeholder="First name" />
+            </div>
+            <div class="form-field" style="margin:0;">
+              <label for="cLastName">Last name</label>
+              <input id="cLastName" type="text" placeholder="Last name" />
+            </div>
+            <div class="form-field" style="margin:0;">
+              <label for="cCity">City</label>
+              <input id="cCity" type="text" placeholder="Orlando" />
+            </div>
+            <div class="form-field" style="margin:0;">
+              <label for="cEmail">Email</label>
+              <input id="cEmail" type="email" placeholder="you@domain.com" />
+            </div>
+            <div class="form-field" style="margin:0;">
+              <label for="cPhone">Phone</label>
+              <input id="cPhone" type="tel" placeholder="(xxx) xxx-xxxx" />
+            </div>
+            <div class="form-field" style="margin:0; grid-column:1/-1;">
+              <label for="cComment">Comment</label>
+              <textarea id="cComment" rows="4" placeholder="Tell us what you liked…"></textarea>
+            </div>
+          </div>
+          <div style="margin-top:12px; display:flex; gap:10px; align-items:center; justify-content:flex-end; flex-wrap:wrap;">
+            <div class="field-hint" id="commentStatus" style="margin:0; flex:1;"></div>
+            <button class="btn-primary" id="submitCommentBtn" type="button"><i class="fa-solid fa-paper-plane"></i> Submit</button>
+          </div>
         </div>
       </div>
-    </section>
+    </div>
 
     <section class="admin-comments" id="adminComments" aria-label="Admin comments">
       <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">

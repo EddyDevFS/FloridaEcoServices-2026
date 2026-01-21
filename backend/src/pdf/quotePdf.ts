@@ -103,10 +103,9 @@ function computeFromPayload(payload: QuotePayload) {
 
     const corridorCost = corridorSqft * corridorSqftPrice;
     const totalAnnual = roomsCost + corridorCost;
-    const monthly = totalAnnual / 12;
     const avgPerRoom = billedRooms ? roomsCost / billedRooms : 0;
 
-    return { roomsCost, corridorCost, totalAnnual, monthly, avgPerRoom, billedRooms };
+    return { roomsCost, corridorCost, totalAnnual, avgPerRoom, billedRooms };
   };
 
   const onDemand = computeAnnualForPlan('ondemand');
@@ -180,6 +179,13 @@ export async function renderQuotePdf(opts: {
   const logoH = 64;
   const gap = 14;
 
+  const offerCopy = (key: string) =>
+    key === 'ondemand'
+      ? { title: 'On‑Demand', subtitle: 'One‑time or urgent requests' }
+      : key === 'partner'
+        ? { title: 'Refresh Plan', subtitle: 'Planned yearly refresh (best value for partial coverage)' }
+        : { title: 'Total Care', subtitle: 'Full annual coverage + priority scheduling' };
+
   const logoPath = findLogoPath();
   const hasLogo = !!logoPath;
 
@@ -235,11 +241,12 @@ export async function renderQuotePdf(opts: {
   if (computed.hotelAddress) doc.text(computed.hotelAddress);
   doc.moveDown(0.9);
 
-  const leftX = doc.x;
-  const rightBoxX = left + 310;
+  const boxGap = 16;
   const boxTop = doc.y;
-  const boxW = 240;
-  const boxH = 72;
+  const boxW = (contentW - boxGap) / 2;
+  const boxH = 76;
+  const leftBoxX = left;
+  const rightBoxX = left + boxW + boxGap;
 
   const drawBox = (x: number, y: number, title: string, lines: Array<[string, string]>) => {
     doc.save();
@@ -248,15 +255,17 @@ export async function renderQuotePdf(opts: {
     let yy = y + 28;
     doc.font('Helvetica').fontSize(10).fillColor('#374151');
     for (const [k, v] of lines) {
-      doc.text(k, x + 12, yy, { width: 130 });
-      doc.fillColor('#111827').font('Helvetica-Bold').text(v, x + boxW - 12 - 90, yy, { width: 90, align: 'right' });
+      const valueW = 140;
+      const keyW = boxW - 24 - valueW;
+      doc.text(k, x + 12, yy, { width: keyW });
+      doc.fillColor('#111827').font('Helvetica-Bold').text(v, x + 12 + keyW, yy, { width: valueW, align: 'right' });
       doc.fillColor('#374151').font('Helvetica');
       yy += 16;
     }
     doc.restore();
   };
 
-  drawBox(leftX, boxTop, 'Scope', [
+  drawBox(leftBoxX, boxTop, 'Scope', [
     ['Rooms', num(computed.roomsFinal)],
     ['Corridor sqft', num(computed.corridorSqft)],
     ['Current frequency', computed.currentFreqLabel]
@@ -270,17 +279,11 @@ export async function renderQuotePdf(opts: {
       : chosenKey === 'partner'
         ? computed.offers.partner
         : computed.offers.total;
-  const chosenLabel =
-    chosenKey === 'ondemand'
-      ? 'Normal (On‑Demand)'
-      : chosenKey === 'partner'
-        ? 'Better (Partner Care)'
-        : 'Optimal (Total Care)';
+  const chosenLabel = offerCopy(chosenKey).title;
 
   drawBox(rightBoxX, boxTop, opts.acceptance ? 'Accepted offer' : 'Recommended offer', [
     ['Offer', chosenLabel],
-    ['Avg / room', money(chosen.avgPerRoom)],
-    ['Monthly est.', money(chosen.monthly)]
+    ['Price / room', money(chosen.avgPerRoom)]
   ]);
 
   doc.y = boxTop + boxH + 18;
@@ -288,35 +291,62 @@ export async function renderQuotePdf(opts: {
   doc.fontSize(11).font('Helvetica-Bold').fillColor('#111827').text('Offers');
   doc.moveDown(0.4);
 
-  const tableX = 48;
-  const tableW = 516;
-  const col1 = 210;
-  const col2 = 170;
-  const col3 = tableW - col1 - col2;
+  const tableX = left;
+  const tableW = contentW;
+  const colCheck = 26;
+  const colPlan = 320;
+  const colPrice = tableW - colCheck - colPlan;
 
-  const rowH = 22;
+  const headerH = 22;
+  const rowH = 34;
   const headerY = doc.y;
   doc.save();
-  doc.roundedRect(tableX, headerY, tableW, rowH, 8).fillColor('#f3f4f6').fill();
+  doc.roundedRect(tableX, headerY, tableW, headerH, 8).fillColor('#f3f4f6').fill();
   doc.fillColor('#111827').font('Helvetica-Bold').fontSize(10);
-  doc.text('Plan', tableX + 10, headerY + 6, { width: col1 - 20 });
-  doc.text('Avg / room', tableX + col1, headerY + 6, { width: col2, align: 'right' });
-  doc.text('Monthly est.', tableX + col1 + col2, headerY + 6, { width: col3 - 10, align: 'right' });
+  doc.text('Select', tableX + 10, headerY + 6, { width: colCheck - 10 });
+  doc.text('Offer', tableX + colCheck, headerY + 6, { width: colPlan - 10 });
+  doc.text('Price / room', tableX + colCheck + colPlan, headerY + 6, { width: colPrice - 10, align: 'right' });
   doc.restore();
 
   const rows = [
-    ['Normal (On‑Demand)', computed.offers.ondemand],
-    ['Better (Partner Care)', computed.offers.partner],
-    ['Optimal (Total Care)', computed.offers.total]
+    ['ondemand', computed.offers.ondemand],
+    ['partner', computed.offers.partner],
+    ['total', computed.offers.total]
   ] as const;
 
-  let y = headerY + rowH;
-  for (const [label, calc] of rows) {
+  let y = headerY + headerH;
+  for (const [planKey, calc] of rows) {
+    const isChosen = !!opts.acceptance && String(opts.acceptance.acceptedPlanKey || '') === planKey;
     doc.save();
-    doc.rect(tableX, y, tableW, rowH).strokeColor('#e5e7eb').stroke();
-    doc.fillColor('#111827').font('Helvetica').fontSize(10).text(label, tableX + 10, y + 6, { width: col1 - 20 });
-    doc.font('Helvetica-Bold').text(money(calc.avgPerRoom), tableX + col1, y + 6, { width: col2, align: 'right' });
-    doc.text(money(calc.monthly), tableX + col1 + col2, y + 6, { width: col3 - 10, align: 'right' });
+    doc
+      .rect(tableX, y, tableW, rowH)
+      .lineWidth(isChosen ? 2 : 1)
+      .strokeColor(isChosen ? '#0b6b55' : '#e5e7eb')
+      .stroke();
+
+    // checkbox
+    const cx = tableX + 10;
+    const cy = y + 6;
+    doc.rect(cx, cy, 10, 10).lineWidth(1).strokeColor(isChosen ? '#0b6b55' : '#9ca3af').stroke();
+    if (isChosen) {
+      doc
+        .moveTo(cx + 2, cy + 6)
+        .lineTo(cx + 4.5, cy + 9)
+        .lineTo(cx + 9, cy + 2)
+        .lineWidth(2)
+        .strokeColor('#0b6b55')
+        .stroke();
+    }
+
+    const copy = offerCopy(planKey);
+    doc.fillColor('#111827').font('Helvetica').fontSize(10).text(copy.title, tableX + colCheck, y + 6, { width: colPlan - 10 });
+    doc.fillColor('#6b7280').font('Helvetica').fontSize(8).text(copy.subtitle, tableX + colCheck, y + 19, {
+      width: colPlan - 10
+    });
+    doc.fillColor('#111827')
+      .font('Helvetica-Bold')
+      .fontSize(10)
+      .text(money(calc.avgPerRoom), tableX + colCheck + colPlan, y + 6, { width: colPrice - 10, align: 'right' });
     doc.restore();
     y += rowH;
   }

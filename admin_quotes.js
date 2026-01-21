@@ -93,9 +93,9 @@
       pricing: {
         minRooms: 10,
         plans: {
-          ondemand: { label: 'On‑Demand', subtitle: 'Perfect for one‑time projects or urgent needs', room: { carpet: 45, tile: 65, both: 95 }, corridorSqft: 0.28 },
-          partner: { label: 'Refresh Plan', subtitle: 'Planned yearly refresh · better per‑room rate', room: { carpet: 40, tile: 60, both: 85 }, corridorSqft: 0.25 },
-          total: { label: 'Total Care', subtitle: 'Full annual coverage · best per‑room value', room: { carpet: 35, tile: 50, both: 70 }, corridorSqft: 0.18 }
+          ondemand: { label: 'On‑Demand', subtitle: 'One-time or urgent requests', room: { carpet: 50, tile: 70, both: 100 }, corridorSqft: 0.35 },
+          partner: { label: 'Refresh Plan', subtitle: 'Planned yearly refresh (best value for partial coverage)', room: { carpet: 45, tile: 65, both: 90 }, corridorSqft: 0.3 },
+          total: { label: 'Total Care', subtitle: 'Full annual coverage + priority scheduling', room: { carpet: 40, tile: 60, both: 75 }, corridorSqft: 0.25 }
         }
       }
     };
@@ -364,26 +364,48 @@
     const pa = computeAnnualForPlan('partner');
     const to = computeAnnualForPlan('total');
     return `
-      <div class="qwCard">
+      <div class="qwCard full">
         <h3>Offers</h3>
-        <div class="qwOfferGrid">
-          ${renderOfferCard('On‑Demand', 'One-time use or urgent needs.', on)}
-          ${renderOfferCard('Refresh Plan', 'Great if you target ~50% of rooms yearly.', pa)}
-          ${renderOfferCard('Total Care', 'Full annual coverage + best per-room value.', to, true)}
+        <div class="qwHint" style="margin-top:0;">
+          Clear, per-room pricing with what’s included. (No monthly / yearly totals.)
         </div>
-        <div class="qwHint" style="margin-top:10px;">
-          This proposal focuses on <b>price per room</b> (no monthly or yearly totals).
+        <div class="qwOfferGrid" style="margin-top:12px;">
+          ${renderOfferCard('ondemand', on)}
+          ${renderOfferCard('partner', pa)}
+          ${renderOfferCard('total', to, true)}
         </div>
       </div>
     `;
   }
 
-  function renderOfferCard(title, subtitle, calc, highlight = false) {
+  function renderOfferCard(planKey, calc, highlight = false) {
+    const plan = state?.pricing?.plans?.[planKey] || {};
+    const label = escapeHtml(plan.label || planKey);
+    const subtitle = escapeHtml(plan.subtitle || '');
+    const carpet = money(Number(plan?.room?.carpet) || 0);
+    const tile = money(Number(plan?.room?.tile) || 0);
+    const both = money(Number(plan?.room?.both) || 0);
+    const corridor = Number(plan?.corridorSqft) || 0;
     return `
       <div class="qwOffer ${highlight ? 'highlight' : ''}">
-        <div class="qwOfferTitle">${title}</div>
-        <div class="qwHint" style="margin-top:6px;">${escapeHtml(subtitle || '')}</div>
-        <div class="qwOfferRow"><span>Avg price / room</span><b>${money(calc.avgPerRoom)}</b></div>
+        <div class="qwOfferTitle">${label}</div>
+        ${subtitle ? `<div class="qwHint" style="margin-top:6px;">${subtitle}</div>` : ``}
+
+        <div class="qwOfferRow" style="margin-top:10px;"><span>Average price / room</span><b>${money(calc.avgPerRoom)}</b></div>
+
+        <div class="qwHint" style="margin-top:10px; font-weight:850; color:rgba(8,20,26,.72);">Included</div>
+        <div class="qwHint" style="margin-top:6px;">
+          <b>Carpet cleaning:</b> CRB method · Encapsulation · Odor neutralizer · Commercial protectant shield
+        </div>
+        <div class="qwHint" style="margin-top:6px;">
+          <b>Tile &amp; grout:</b> Bio-safe solution · Hard grout brush · 1200 PSI rinse / extraction
+        </div>
+
+        <div class="qwHint" style="margin-top:10px; font-weight:850; color:rgba(8,20,26,.72);">Base rates</div>
+        <div class="qwOfferRow"><span>Carpet (per room)</span><b>${carpet}</b></div>
+        <div class="qwOfferRow"><span>Tile (per room)</span><b>${tile}</b></div>
+        <div class="qwOfferRow"><span>Both (per room)</span><b>${both}</b></div>
+        <div class="qwOfferRow"><span>Corridor ($ / sqft)</span><b>${corridor ? corridor.toFixed(2) : '—'}</b></div>
       </div>
     `;
   }
@@ -1222,6 +1244,7 @@
     .quoteApp .qwGrid{display:grid; grid-template-columns:1fr 1fr; gap:12px}
     @media (max-width: 820px){ .quoteApp .qwGrid{grid-template-columns:1fr} }
     .quoteApp .qwCard{border:1px solid rgba(8,20,26,.12); background: rgba(255,255,255,.86); border-radius:16px; padding:14px}
+    .quoteApp .qwCard.full{grid-column:1/-1}
     .quoteApp .qwCard h3{margin:0 0 10px; font-size:14px; letter-spacing:.2px; color:rgba(8,20,26,.92)}
     .quoteApp .qwRow{display:grid; grid-template-columns: 160px 1fr; gap:10px; align-items:center; padding:6px 0}
     @media (max-width: 520px){ .quoteApp .qwRow{grid-template-columns:1fr} }

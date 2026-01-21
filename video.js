@@ -12,10 +12,8 @@
   const descEl = document.getElementById('videoDescription');
   const fileEl = document.getElementById('videoFile');
 
-  const player = document.getElementById('player');
-  const playerTitle = document.getElementById('playerTitle');
-  const playerDesc = document.getElementById('playerDesc');
-  const playerMeta = document.getElementById('playerMeta');
+  const nowPlayingTitle = document.getElementById('nowPlayingTitle');
+  const nowPlayingSub = document.getElementById('nowPlayingSub');
 
   const commentsGrid = document.getElementById('commentsGrid');
   const commentsEmpty = document.getElementById('commentsEmpty');
@@ -51,6 +49,9 @@
     activeVideoId: null,
     adminTab: 'SEEDED'
   };
+
+  let activePlayer = null;
+  let activePlayerCard = null;
 
   function escapeHtml(value) {
     return (value || '')
@@ -232,29 +233,55 @@
     return `${apiBase}/api/v1/public/videos/${encodeURIComponent(String(videoId))}/file`;
   }
 
-  function setActiveVideo(video) {
-    if (!video || !player) return;
-    state.activeVideoId = video.id;
-    if (playerTitle) playerTitle.textContent = video?.title || video?.originalName || 'Video';
-    if (playerDesc) playerDesc.textContent = video?.description || '';
-    if (playerMeta) {
-      const size = bytesLabel(video?.sizeBytes);
-      const date = video?.createdAt ? new Date(video.createdAt).toLocaleDateString() : '—';
-      playerMeta.innerHTML = `<i class="fa-regular fa-clock"></i> ${escapeHtml(date)} <span style="opacity:.55;">•</span> <i class="fa-regular fa-file"></i> ${escapeHtml(size)}`;
-    }
+  function stopActivePlayer() {
     try {
-      player.pause();
-      player.removeAttribute('src');
-      player.load();
+      if (activePlayer) {
+        activePlayer.pause();
+        activePlayer.removeAttribute('src');
+        activePlayer.load();
+        activePlayer.controls = false;
+        activePlayer.style.display = 'none';
+      }
     } catch {}
-    player.src = videoFileUrl(video.id);
-    setTimeout(() => {
-      try {
-        player.play();
-      } catch {}
-    }, 120);
+    try {
+      if (activePlayerCard) {
+        const img = activePlayerCard.querySelector('img[data-poster]');
+        const overlay = activePlayerCard.querySelector('[data-play-overlay]');
+        if (img) img.style.display = '';
+        if (overlay) overlay.style.display = '';
+      }
+    } catch {}
+    activePlayer = null;
+    activePlayerCard = null;
+  }
+
+  function setActiveVideo(video, cardEl) {
+    if (!video || !cardEl) return;
+    const v = cardEl.querySelector('video[data-player]');
+    if (!v) return;
+    const img = cardEl.querySelector('img[data-poster]');
+    const overlay = cardEl.querySelector('[data-play-overlay]');
+
+    if (activePlayer && activePlayer !== v) stopActivePlayer();
+    activePlayer = v;
+    activePlayerCard = cardEl;
+
+    try {
+      if (img) img.style.display = 'none';
+      if (overlay) overlay.style.display = 'none';
+      v.style.display = '';
+      v.controls = true;
+      if (!v.src) v.src = videoFileUrl(video.id);
+      v.currentTime = 0;
+      v.play().catch(() => {});
+    } catch {}
+
+    state.activeVideoId = video.id;
+    if (nowPlayingTitle) nowPlayingTitle.textContent = video?.title || video?.originalName || 'Video';
+    if (nowPlayingSub) nowPlayingSub.textContent = video?.description || 'Playing…';
 
     refreshComments().catch(() => {});
+    refreshAdminComments().catch(() => {});
     highlightActiveCard();
   }
 
@@ -274,6 +301,8 @@
   function setThumbPoster(cardEl, url) {
     const img = cardEl?.querySelector('img[data-poster]');
     if (img) img.src = url;
+    const v = cardEl?.querySelector('video[data-player]');
+    if (v) v.setAttribute('poster', url);
   }
 
   async function generatePoster(video, cardEl) {
@@ -342,7 +371,6 @@
       .map((v) => {
         const t = escapeHtml(v.title || v.originalName || 'Video');
         const d = escapeHtml(v.description || '');
-        const size = bytesLabel(v.sizeBytes);
         const date = v.createdAt ? new Date(v.createdAt).toLocaleDateString() : '';
         return `
         <div class="video-card" data-video-id="${escapeHtml(v.id)}" role="button" tabindex="0" aria-label="Play ${t}">
@@ -350,9 +378,9 @@
             <img data-poster alt="" src="data:image/svg+xml,${encodeURIComponent(
               `<svg xmlns='http://www.w3.org/2000/svg' width='640' height='360'><rect width='100%' height='100%' fill='#0b1220'/><text x='50%' y='50%' fill='rgba(255,255,255,.72)' font-family='system-ui,Segoe UI,Roboto' font-size='18' text-anchor='middle'>Loading preview…</text></svg>`
             )}">
+            <video data-player playsinline preload="none"></video>
             <div class="video-play">
-              <span class="play-badge"><i class="fa-solid fa-play"></i> Play</span>
-              <span class="meta-badge"><i class="fa-regular fa-file"></i> ${escapeHtml(size)}</span>
+              <span class="play-badge" data-play-overlay><i class="fa-solid fa-play"></i> Play</span>
             </div>
           </div>
           <div style="margin-top:10px;">
@@ -374,17 +402,27 @@
 
       const activate = () => {
         const vid = videos.find((x) => x.id === id);
-        if (vid) setActiveVideo(vid);
+        if (vid) setActiveVideo(vid, el);
       };
 
       el.addEventListener('click', activate);
       el.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') activate();
       });
+
+      const playerEl = el.querySelector('video[data-player]');
+      playerEl?.addEventListener('click', (e) => e.stopPropagation());
+      playerEl?.addEventListener('ended', () => {
+        if (state.activeVideoId === id) stopActivePlayer();
+      });
     });
 
-    if (!state.activeVideoId && videos[0]) setActiveVideo(videos[0]);
-    else highlightActiveCard();
+    if (!state.activeVideoId) {
+      if (nowPlayingTitle) nowPlayingTitle.textContent = 'Select a video';
+      if (nowPlayingSub) nowPlayingSub.textContent = 'Tap a card below to start playing. Only one video plays at a time.';
+    } else {
+      highlightActiveCard();
+    }
   }
 
   async function fetchComments(videoId) {
@@ -677,7 +715,7 @@
     const role = (state.me?.role || '').toString();
     const canUpload = role === 'SUPER_ADMIN';
 
-    if (uploadCard) uploadCard.style.display = '';
+    if (uploadCard) uploadCard.style.display = canUpload ? '' : 'none';
     const setDisabled = (disabled) => {
       [titleEl, descEl, fileEl, uploadBtn].forEach((el) => {
         try {

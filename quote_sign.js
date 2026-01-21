@@ -183,6 +183,11 @@
         successEl.textContent =
           'Signed successfully. A confirmation email with a PDF copy has been sent. Eddy Sallault will contact you shortly to confirm dates and organization details.';
       }
+      setTimeout(() => {
+        try {
+          window.location.href = 'index.html';
+        } catch {}
+      }, 2200);
     } catch (e) {
       signBtn.disabled = false;
       setStatus(String(e?.message || e), 'error');

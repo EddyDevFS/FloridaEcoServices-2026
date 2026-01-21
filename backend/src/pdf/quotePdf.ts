@@ -303,7 +303,6 @@ export async function renderQuotePdf(opts: {
   doc.save();
   doc.roundedRect(tableX, headerY, tableW, headerH, 8).fillColor('#f3f4f6').fill();
   doc.fillColor('#111827').font('Helvetica-Bold').fontSize(10);
-  doc.text('Select', tableX + 10, headerY + 6, { width: colCheck - 10 });
   doc.text('Offer', tableX + colCheck, headerY + 6, { width: colPlan - 10 });
   doc.text('Price / room', tableX + colCheck + colPlan, headerY + 6, { width: colPrice - 10, align: 'right' });
   doc.restore();
@@ -369,7 +368,7 @@ export async function renderQuotePdf(opts: {
     });
     doc.text(`Email: ${opts.acceptance.signedByEmail}`, tableX + 12, boxY + 42, { width: tableW - 24 });
     doc.text(`Timestamp (UTC): ${opts.acceptance.acceptedAt.toISOString()}`, tableX + 12, boxY + 56, { width: tableW - 24 });
-    doc.text(`Selected offer: ${chosenLabel}`, tableX + 12, boxY + 70, { width: tableW - 24 });
+    doc.text(`Offer: ${chosenLabel}`, tableX + 12, boxY + 70, { width: tableW - 24 });
     doc.restore();
   }
 

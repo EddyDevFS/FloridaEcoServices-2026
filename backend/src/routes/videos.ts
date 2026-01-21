@@ -105,6 +105,35 @@ async function ensureDefaultSeededComments(prisma: ReturnType<typeof getPrisma>,
   }
 }
 
+async function dedupeSeededComments(prisma: ReturnType<typeof getPrisma>, videoId: string) {
+  const list = await prisma.videoComment.findMany({
+    where: { videoId, kind: 'SEEDED' },
+    orderBy: { createdAt: 'desc' },
+    select: { id: true, firstName: true, lastName: true, city: true, comment: true, createdAt: true }
+  });
+
+  const seen = new Set<string>();
+  const toDelete: string[] = [];
+  for (const c of list) {
+    const key = [
+      String(c.createdAt?.toISOString?.() || c.createdAt || ''),
+      String(c.firstName || '').trim().toLowerCase(),
+      String(c.lastName || '').trim().toLowerCase(),
+      String(c.city || '').trim().toLowerCase(),
+      String(c.comment || '').trim()
+    ].join('|');
+    if (seen.has(key)) toDelete.push(c.id);
+    else seen.add(key);
+  }
+  if (!toDelete.length) return;
+
+  try {
+    await prisma.videoComment.deleteMany({ where: { id: { in: toDelete } } });
+  } catch (err) {
+    console.error('[videos] seeded comments dedupe failed:', err);
+  }
+}
+
 function safeName(input: string): string {
   const base = path.basename(String(input || '').trim());
   return base.replace(/[^\w.\-()+ ]+/g, '_').slice(0, 180) || 'video';
@@ -253,6 +282,7 @@ router.get('/public/videos/:videoId/comments', async (req, res: Response) => {
   if (!video) return res.status(404).json({ error: 'video_not_found' });
 
   await ensureDefaultSeededComments(prisma, { id: video.id, organizationId: video.organizationId });
+  await dedupeSeededComments(prisma, video.id);
 
   const comments = await prisma.videoComment.findMany({
     where: {

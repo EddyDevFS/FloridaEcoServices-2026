@@ -81,6 +81,8 @@
       step: 0,
       mode: 'quick',
       hotel: { name: '', address: '', tel: '', contact: '', contactPhone: '', email: '', role: '' },
+      emailRecipients: [],
+      emailCc: '',
       buildingsCount: 1,
       buildings: [{ floors: 4, roomsPerFloor: 12 }],
       roomsCalculated: 0,
@@ -101,6 +103,7 @@
 
   let quoteId = '';
   let quoteNumber = '';
+  let quoteToken = '';
   let quoteStatus = 'DRAFT';
   let customerType = 'PROSPECT';
   let customer = { company: '', contact: '', email: '', phone: '' };
@@ -205,6 +208,13 @@
     const monthly = totalAnnual / 12;
     const avgPerRoom = roomsCost / billedRooms;
     return { roomsAnnual: roomsCost, corridorAnnual: corridorCost, totalAnnual, monthly, avgPerRoom };
+  }
+
+  function signLink() {
+    if (!quoteToken) return '';
+    const origin = window.location.origin || '';
+    const basePath = (window.location.pathname || '/').split('/').slice(0, -1).join('/') + '/';
+    return `${origin}${basePath}quote_sign.html?token=${encodeURIComponent(quoteToken)}`;
   }
 
   function currentFreqLabel() {
@@ -354,20 +364,24 @@
       <div class="qwCard">
         <h3>Offers</h3>
         <div class="qwOfferGrid">
-          ${renderOfferCard('On-Demand', on)}
-          ${renderOfferCard('Partner Care', pa)}
-          ${renderOfferCard('Total Care Program', to, true)}
+          ${renderOfferCard('Normal (On‑Demand)', 'Best for one-time use / urgent needs.', on)}
+          ${renderOfferCard('Better (Partner Care)', 'Better per-room rate + priority scheduling.', pa)}
+          ${renderOfferCard('Optimal (Total Care)', 'Best value: planned program + predictable organization.', to, true)}
+        </div>
+        <div class="qwHint" style="margin-top:10px;">
+          We avoid yearly totals. This proposal focuses on <b>price per room</b> and a clear program cadence.
         </div>
       </div>
     `;
   }
 
-  function renderOfferCard(title, calc, highlight = false) {
+  function renderOfferCard(title, subtitle, calc, highlight = false) {
     return `
       <div class="qwOffer ${highlight ? 'highlight' : ''}">
         <div class="qwOfferTitle">${title}</div>
-        <div class="qwOfferRow"><span>Monthly est.</span><b>${money(calc.monthly)}</b></div>
-        <div class="qwOfferRow"><span>Annual total</span><b>${money(Math.round(calc.totalAnnual))}</b></div>
+        <div class="qwHint" style="margin-top:6px;">${escapeHtml(subtitle || '')}</div>
+        <div class="qwOfferRow"><span>Avg price / room</span><b>${money(calc.avgPerRoom)}</b></div>
+        <div class="qwOfferRow"><span>Monthly est. (optional)</span><b>${money(calc.monthly)}</b></div>
       </div>
     `;
   }
@@ -407,6 +421,8 @@
     const best = computeAnnualForPlan('total');
     const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' });
     const hotelName = escapeHtml(state.hotel.name?.trim() || customer.company?.trim() || 'Proposal');
+    const link = signLink();
+    const emails = Array.isArray(state.emailRecipients) ? state.emailRecipients : [];
     return `
       <div class="qwCard">
         <h3>Proposal Preview</h3>
@@ -429,13 +445,40 @@
               <div class="line"><span>Current frequency</span><b>${escapeHtml(currentFreqLabel())}</b></div>
             </div>
             <div class="proposalCard" style="border-color:rgba(31,157,85,.24);">
-              <div class="hd"><b>Total Care Program</b><span class="miniTag" style="background:rgba(31,157,85,.10); border-color:rgba(31,157,85,.22); color:rgba(31,157,85,.92);">Best value</span></div>
-              <div class="line"><span>Estimated monthly</span><b>${money(best.monthly)}</b></div>
-              <div class="line"><span>Estimated annual total</span><b>${money(Math.round(best.totalAnnual))}</b></div>
+              <div class="hd"><b>Optimal (Total Care)</b><span class="miniTag" style="background:rgba(31,157,85,.10); border-color:rgba(31,157,85,.22); color:rgba(31,157,85,.92);">Best value</span></div>
+              <div class="line"><span>Avg price / room</span><b>${money(best.avgPerRoom)}</b></div>
+              <div class="line"><span>Monthly est. (optional)</span><b>${money(best.monthly)}</b></div>
             </div>
           </div>
         </div>
-        <div class="qwHint" style="margin-top:10px;">Use “Send” to email a PDF version.</div>
+      </div>
+
+      <div class="qwCard">
+        <h3>Send (PDF + secure link)</h3>
+        <div class="qwHint">
+          The hotel can choose an offer and sign digitally using a secure link (timestamped, with email confirmation).
+        </div>
+        <div class="qwHint" style="margin-top:10px;">Recipients</div>
+        <div id="emailRecipients" style="display:grid; gap:10px; margin-top:10px;">
+          ${emails.length
+            ? emails
+                .map(
+                  (v, idx) => `
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                  <input class="qwInput" data-email-idx="${idx}" type="email" value="${escapeHtml(v)}" placeholder="email@hotel.com" style="flex:1; min-width: 220px;">
+                  <button class="btn" data-email-remove="${idx}" type="button">Remove</button>
+                </div>
+              `
+                )
+                .join('')
+            : `<div class="qwHint" style="margin:0;">No recipients yet. Add at least one email.</div>`}
+        </div>
+        <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <button class="btn" id="btnAddRecipient" type="button">+ Add email</button>
+          <button class="btn" id="btnCopySignLink" type="button" ${link ? '' : 'disabled'}>Copy signing link</button>
+        </div>
+        <div class="qwHint" style="margin-top:10px;">Signing link: <span class="mono">${escapeHtml(link || 'Will be generated on send')}</span></div>
+        ${fieldRow('CC (optional)', `<input class="qwInput" id="emailCc" type="text" value="${escapeHtml(state.emailCc || '')}" placeholder="cc1@hotel.com, cc2@hotel.com">`)}
       </div>
     `;
   }
@@ -498,6 +541,41 @@
       });
     });
 
+    // Send / recipients (preview step)
+    $('btnAddRecipient')?.addEventListener('click', () => {
+      if (!Array.isArray(state.emailRecipients)) state.emailRecipients = [];
+      state.emailRecipients.push('');
+      render();
+      scheduleSave();
+    });
+    $('btnCopySignLink')?.addEventListener('click', async () => {
+      const link = signLink();
+      if (!link) return toast('Signing link not available yet. Send first.', 'error');
+      try {
+        await navigator.clipboard.writeText(link);
+        toast('Signing link copied.', 'success');
+      } catch {
+        prompt('Copy signing link:', link);
+      }
+    });
+    document.querySelectorAll('[data-email-idx]').forEach((el) => {
+      el.addEventListener('input', (e) => {
+        const idx = clampInt(e.target.getAttribute('data-email-idx'), 0, 999);
+        if (!Array.isArray(state.emailRecipients)) state.emailRecipients = [];
+        state.emailRecipients[idx] = String(e.target.value || '').trim();
+      });
+    });
+    document.querySelectorAll('[data-email-remove]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const idx = clampInt(el.getAttribute('data-email-remove'), 0, 999);
+        if (!Array.isArray(state.emailRecipients)) state.emailRecipients = [];
+        state.emailRecipients.splice(idx, 1);
+        render();
+        scheduleSave();
+      });
+    });
+    $('emailCc')?.addEventListener('input', (e) => (state.emailCc = String(e.target.value || '').trim()));
+
     // Common: auto-save on any input change.
     document.querySelectorAll('.qwInput').forEach((el) => {
       el.addEventListener('input', () => scheduleSave());
@@ -539,7 +617,7 @@
     $('sumFreq').textContent = `Current: ${currentFreqLabel()}`;
     $('sumRooms').textContent = num(rf);
     $('sumSqft').textContent = num(sqft);
-    $('sumMonthly').textContent = money(best.monthly);
+    $('sumMonthly').textContent = money(best.avgPerRoom);
 
     const ok = validateMix();
     if (!ok) setStatus('Fix mix', 'warn');
@@ -551,8 +629,27 @@
     $('modeTag').textContent = `Mode: ${state.mode === 'quick' ? 'Quick' : 'Advanced'}`;
     $('btnToggleMode').textContent = state.mode === 'quick' ? 'Switch to Advanced' : 'Switch to Quick';
 
+    const backBtn = $('btnBack');
+    const nextBtn = $('btnNext');
+    if (backBtn) backBtn.disabled = !quoteId;
+    if (nextBtn) nextBtn.disabled = !quoteId;
+
     const host = $('stepContainer');
     if (!host) return;
+
+    if (!quoteId) {
+      host.innerHTML = wrapCards(`
+        <div class="qwCard">
+          <h3>Quotes</h3>
+          <div class="qwHint">
+            Select an existing quote above, or click <b>New</b> to create one.
+          </div>
+        </div>
+      `);
+      updateSummary();
+      updateTopMeta();
+      return;
+    }
 
     if (state.step === 0) host.innerHTML = wrapCards(renderStepHotel());
     else if (state.step === 1) host.innerHTML = wrapCards(renderStepStructure());
@@ -562,6 +659,16 @@
     else if (state.step === 5) host.innerHTML = wrapCards(renderStepOffers());
     else if (state.step === 6) host.innerHTML = wrapCards(renderStepPricing());
     else host.innerHTML = wrapCards(renderStepPreview());
+
+    // Seed recipients on preview step (from known emails).
+    if (state.step === 7) {
+      if (!Array.isArray(state.emailRecipients) || state.emailRecipients.length === 0) {
+        const seeded = [customer.email, state.hotel.email]
+          .map((v) => String(v || '').trim())
+          .filter(Boolean);
+        state.emailRecipients = Array.from(new Set(seeded));
+      }
+    }
 
     bindStepInputs();
     updateSummary();
@@ -575,6 +682,21 @@
   function updateTopMeta() {
     const meta = $('quoteMeta');
     if (meta) meta.textContent = quoteId ? `#${quoteNumber || '—'} · ${quoteStatus}` : '—';
+  }
+
+  async function resetToBlank() {
+    quoteId = '';
+    quoteNumber = '';
+    quoteToken = '';
+    quoteStatus = 'DRAFT';
+    customerType = 'PROSPECT';
+    customer = { company: '', contact: '', email: '', phone: '' };
+    state = freshState();
+    syncCustomerUiFromState();
+    updateTopMeta();
+    updateUrl();
+    await refreshQuoteList({ keepSelection: false });
+    render();
   }
 
   let saveTimer = null;
@@ -615,14 +737,50 @@
     if (!res.ok) return;
     const data = await res.json().catch(() => ({}));
     const quotes = Array.isArray(data?.quotes) ? data.quotes : [];
-    select.innerHTML = quotes
-      .map((q) => {
-        const label = `#${q.number || '—'} · ${q.title || 'Untitled'} · ${q.status}`;
-        return `<option value="${escapeHtml(q.id)}">${escapeHtml(label)}</option>`;
-      })
-      .join('');
+    select.innerHTML =
+      `<option value="">— Select a quote —</option>` +
+      quotes
+        .map((q) => {
+          const label = `#${q.number || '—'} · ${q.title || 'Untitled'} · ${q.status}`;
+          return `<option value="${escapeHtml(q.id)}">${escapeHtml(label)}</option>`;
+        })
+        .join('');
     if (prev && quotes.some((q) => q.id === prev)) select.value = prev;
     else if (quoteId && quotes.some((q) => q.id === quoteId)) select.value = quoteId;
+    else select.value = '';
+
+    const cards = $('quoteCards');
+    if (cards) {
+      cards.innerHTML = quotes
+        .map((q) => {
+          const title = escapeHtml(q.title || 'Untitled');
+          const id = escapeHtml(q.id);
+          const numTxt = q.number ? `#${q.number}` : '#—';
+          const date = q.updatedAt ? new Date(q.updatedAt).toLocaleDateString() : '—';
+          const status = String(q.status || '').toUpperCase();
+          const statusCls = status === 'ACCEPTED' ? 'accepted' : status === 'SENT' ? 'sent' : 'draft';
+          const active = quoteId && q.id === quoteId ? 'active' : '';
+          return `
+            <button class="quoteCardBtn ${active}" type="button" data-quote-card="${id}">
+              <div class="quoteCardTop">
+                <b>${escapeHtml(numTxt)}</b>
+                <span class="quoteCardStatus ${statusCls}">${escapeHtml(status)}</span>
+              </div>
+              <div class="quoteCardMeta">${title}</div>
+              <div class="quoteCardMeta">${escapeHtml(date)}</div>
+            </button>
+          `;
+        })
+        .join('');
+
+      cards.querySelectorAll('[data-quote-card]').forEach((el) => {
+        el.addEventListener('click', () => {
+          const id = String(el.getAttribute('data-quote-card') || '').trim();
+          if (!id) return;
+          loadQuote(id).catch((err) => toast(err.message || 'Load failed', 'error'));
+        });
+      });
+    }
   }
 
   async function loadQuote(id) {
@@ -632,10 +790,13 @@
     const q = data?.quote;
     quoteId = q?.id || id;
     quoteNumber = q?.number || '';
+    quoteToken = q?.token || '';
     quoteStatus = q?.status || 'DRAFT';
     customerType = q?.customerType || 'PROSPECT';
     customer = q?.customer || { company: '', contact: '', email: '', phone: '' };
     state = q?.payload && typeof q.payload === 'object' ? q.payload : freshState();
+    if (!Array.isArray(state.emailRecipients)) state.emailRecipients = [];
+    if (state.emailCc == null) state.emailCc = '';
     state.step = clampInt(state.step, 0, steps.length - 1);
     syncCustomerUiFromState();
     render();
@@ -649,6 +810,7 @@
     const q = data?.quote;
     quoteId = q?.id || '';
     quoteNumber = q?.number || '';
+    quoteToken = q?.token || '';
     quoteStatus = q?.status || 'DRAFT';
     updateTopMeta();
     await refreshQuoteList({ keepSelection: false });
@@ -744,9 +906,17 @@
 
   async function sendEmail() {
     if (!quoteId) return;
-    const to = (prompt('Send quote to (comma-separated emails):', customer.email || '') || '').trim();
-    if (!to) return;
-    const cc = (prompt('CC (optional, comma-separated emails):', '') || '').trim();
+    const toList = (Array.isArray(state.emailRecipients) ? state.emailRecipients : [])
+      .map((v) => String(v || '').trim())
+      .filter(Boolean);
+    const to = toList.join(', ');
+    if (!to) {
+      toast('Add at least one recipient email (Preview step).', 'error');
+      state.step = steps.length - 1;
+      render();
+      return;
+    }
+    const cc = String(state.emailCc || '').trim();
     const res = await apiFetch(`/api/v1/quotes/${encodeURIComponent(quoteId)}/send`, {
       method: 'POST',
       body: JSON.stringify({ to, cc })
@@ -768,8 +938,10 @@
     }
     const data = await res.json().catch(() => ({}));
     quoteStatus = data?.quote?.status || quoteStatus;
+    quoteToken = data?.quote?.token || quoteToken;
     updateTopMeta();
     toast('Email sent.', 'success');
+    await resetToBlank();
   }
 
   async function ensureLogin() {
@@ -870,16 +1042,6 @@
       await refreshClients();
       return;
     }
-
-    const select = $('quoteSelect');
-    const first = select?.value || '';
-    if (first) {
-      await loadQuote(first);
-      await refreshClients();
-      return;
-    }
-
-    await createNewQuote();
     await refreshClients();
     render();
   }

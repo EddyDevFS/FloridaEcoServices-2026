@@ -12,11 +12,52 @@
   const descEl = document.getElementById('videoDescription');
   const fileEl = document.getElementById('videoFile');
 
-  const modal = document.getElementById('playerModal');
-  const closeModalBtn = document.getElementById('closeModalBtn');
   const player = document.getElementById('player');
   const playerTitle = document.getElementById('playerTitle');
   const playerDesc = document.getElementById('playerDesc');
+  const playerMeta = document.getElementById('playerMeta');
+
+  const commentsGrid = document.getElementById('commentsGrid');
+  const commentsEmpty = document.getElementById('commentsEmpty');
+  const refreshCommentsBtn = document.getElementById('refreshCommentsBtn');
+  const submitCommentBtn = document.getElementById('submitCommentBtn');
+  const commentStatus = document.getElementById('commentStatus');
+  const cFirstName = document.getElementById('cFirstName');
+  const cLastName = document.getElementById('cLastName');
+  const cCity = document.getElementById('cCity');
+  const cEmail = document.getElementById('cEmail');
+  const cPhone = document.getElementById('cPhone');
+  const cComment = document.getElementById('cComment');
+
+  const adminComments = document.getElementById('adminComments');
+  const tabSeeded = document.getElementById('tabSeeded');
+  const tabPublic = document.getElementById('tabPublic');
+  const adminCommentsList = document.getElementById('adminCommentsList');
+  const adminCommentsEmpty = document.getElementById('adminCommentsEmpty');
+  const addSeededBtn = document.getElementById('addSeededBtn');
+  const adminCommentStatus = document.getElementById('adminCommentStatus');
+  const aFirstName = document.getElementById('aFirstName');
+  const aLastName = document.getElementById('aLastName');
+  const aCity = document.getElementById('aCity');
+  const aDate = document.getElementById('aDate');
+  const aComment = document.getElementById('aComment');
+
+  let state = {
+    me: null,
+    videos: [],
+    activeVideoId: null,
+    adminTab: 'SEEDED'
+  };
+
+  function escapeHtml(value) {
+    return (value || '')
+      .toString()
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
 
   function bytesLabel(n) {
     const v = Number(n || 0);
@@ -31,51 +72,15 @@
     return `${x.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
   }
 
-  function escapeHtml(value) {
-    return (value || '').toString()
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
-  }
-
-  function setUploadStatus(text, kind) {
-    if (!uploadStatus) return;
-    uploadStatus.textContent = text || '';
-    uploadStatus.style.color =
-      kind === 'error' ? '#b91c1c' :
-      kind === 'success' ? '#0b6b55' :
-      '#64748b';
-  }
-
-  function openPlayer(video) {
-    if (!modal || !player) return;
-    player.pause();
-    player.removeAttribute('src');
-    player.load();
-    if (playerTitle) playerTitle.textContent = video?.title || video?.originalName || 'Video';
-    if (playerDesc) playerDesc.textContent = video?.description || '';
-    player.src = `${apiBase}/api/v1/public/videos/${encodeURIComponent(video.id)}/file`;
-    modal.style.display = 'flex';
-    setTimeout(() => {
-      try { player.play(); } catch {}
-    }, 120);
-  }
-
-  function closePlayer() {
-    if (!modal || !player) return;
-    try { player.pause(); } catch {}
-    modal.style.display = 'none';
-    player.removeAttribute('src');
-    player.load();
+  function setHint(el, text, kind) {
+    if (!el) return;
+    el.textContent = text || '';
+    el.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#0b6b55' : '#64748b';
   }
 
   async function refreshMe() {
     const token = (localStorage.getItem('feco.accessToken') || '').trim();
     try {
-      // Prefer Bearer token (localStorage) but fall back to cookie-based auth
-      // (Safari/iOS can be flaky with localStorage in some contexts).
       const doMe = async (bearer) => {
         return fetch(`${apiBase}/api/v1/auth/me`, {
           headers: bearer ? { Authorization: `Bearer ${bearer}` } : {},
@@ -85,10 +90,7 @@
 
       const refreshAccessToken = async () => {
         try {
-          const r = await fetch(`${apiBase}/api/v1/auth/refresh`, {
-            method: 'POST',
-            credentials: 'include'
-          });
+          const r = await fetch(`${apiBase}/api/v1/auth/refresh`, { method: 'POST', credentials: 'include' });
           const body = await r.json().catch(() => ({}));
           if (!r.ok) return null;
           const next = (body?.accessToken || '').toString().trim();
@@ -101,7 +103,6 @@
 
       let res = await doMe(token);
       if (res.status === 401) {
-        // Token can expire quickly; try cookie refresh once and retry /me.
         const next = await refreshAccessToken();
         res = await doMe(next || '');
       }
@@ -205,58 +206,397 @@
     return Array.isArray(body?.videos) ? body.videos : [];
   }
 
-  async function render() {
+  function videoFileUrl(videoId) {
+    return `${apiBase}/api/v1/public/videos/${encodeURIComponent(String(videoId))}/file`;
+  }
+
+  function setActiveVideo(video) {
+    if (!video || !player) return;
+    state.activeVideoId = video.id;
+    if (playerTitle) playerTitle.textContent = video?.title || video?.originalName || 'Video';
+    if (playerDesc) playerDesc.textContent = video?.description || '';
+    if (playerMeta) {
+      const size = bytesLabel(video?.sizeBytes);
+      const date = video?.createdAt ? new Date(video.createdAt).toLocaleDateString() : '—';
+      playerMeta.innerHTML = `<i class="fa-regular fa-clock"></i> ${escapeHtml(date)} <span style="opacity:.55;">•</span> <i class="fa-regular fa-file"></i> ${escapeHtml(size)}`;
+    }
+    try {
+      player.pause();
+      player.removeAttribute('src');
+      player.load();
+    } catch {}
+    player.src = videoFileUrl(video.id);
+    setTimeout(() => {
+      try {
+        player.play();
+      } catch {}
+    }, 120);
+
+    refreshComments().catch(() => {});
+    highlightActiveCard();
+  }
+
+  function highlightActiveCard() {
+    if (!grid) return;
+    grid.querySelectorAll('[data-video-id]').forEach((el) => {
+      const id = el.getAttribute('data-video-id');
+      el.style.outline = id === state.activeVideoId ? '3px solid rgba(11,107,85,0.55)' : '';
+    });
+  }
+
+  function posterCacheKey(video) {
+    const at = video?.createdAt ? String(video.createdAt) : '';
+    return `feco.videoPoster.${String(video?.id || '')}.${at}`;
+  }
+
+  function setThumbPoster(cardEl, url) {
+    const img = cardEl?.querySelector('img[data-poster]');
+    if (img) img.src = url;
+  }
+
+  async function generatePoster(video, cardEl) {
+    try {
+      const key = posterCacheKey(video);
+      const cached = localStorage.getItem(key);
+      if (cached && cached.startsWith('data:image/')) {
+        setThumbPoster(cardEl, cached);
+        return;
+      }
+
+      const v = document.createElement('video');
+      v.muted = true;
+      v.playsInline = true;
+      v.preload = 'metadata';
+      v.src = videoFileUrl(video.id);
+
+      const wait = (ev) =>
+        new Promise((resolve, reject) => {
+          const onOk = () => cleanup(resolve);
+          const onFail = () => cleanup(() => reject(new Error('poster_failed')));
+          const cleanup = (fn) => {
+            v.removeEventListener(ev, onOk);
+            v.removeEventListener('error', onFail);
+            fn();
+          };
+          v.addEventListener(ev, onOk, { once: true });
+          v.addEventListener('error', onFail, { once: true });
+        });
+
+      await wait('loadedmetadata');
+      const target = Math.min(1.0, Math.max(0, (v.duration || 0) * 0.05));
+      try {
+        v.currentTime = target;
+      } catch {}
+      await wait('seeked');
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 360;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.78);
+      if (dataUrl && dataUrl.startsWith('data:image/')) {
+        setThumbPoster(cardEl, dataUrl);
+        try {
+          localStorage.setItem(key, dataUrl);
+        } catch {}
+      }
+    } catch {}
+  }
+
+  async function renderVideos(videos) {
     if (!grid) return;
     grid.innerHTML = '';
     if (empty) empty.style.display = 'none';
+    state.videos = videos;
 
-    const videos = await fetchVideos();
     if (!videos.length) {
       if (empty) empty.style.display = '';
       return;
     }
 
-    grid.innerHTML = videos.map((v) => {
-      const t = escapeHtml(v.title || v.originalName || 'Video');
-      const d = escapeHtml(v.description || '');
-      const size = bytesLabel(v.sizeBytes);
-      const date = v.createdAt ? new Date(v.createdAt).toLocaleDateString() : '';
-      return `
-        <div class="video-card" data-video-id="${escapeHtml(v.id)}">
-          <div style="display:flex; gap:10px; align-items:flex-start;">
-            <div class="pill"><i class="fa-solid fa-play"></i> Play</div>
-            <div style="flex:1;">
-              <h3>${t}</h3>
-              ${d ? `<p>${d}</p>` : `<p style="opacity:.7;">No description</p>`}
-              <div class="video-meta">
-                <span><i class="fa-regular fa-clock"></i> ${escapeHtml(date || '—')}</span>
-                <span style="opacity:.55;">•</span>
-                <span><i class="fa-regular fa-file"></i> ${escapeHtml(size)}</span>
-              </div>
+    grid.innerHTML = videos
+      .map((v) => {
+        const t = escapeHtml(v.title || v.originalName || 'Video');
+        const d = escapeHtml(v.description || '');
+        const size = bytesLabel(v.sizeBytes);
+        const date = v.createdAt ? new Date(v.createdAt).toLocaleDateString() : '';
+        return `
+        <div class="video-card" data-video-id="${escapeHtml(v.id)}" role="button" tabindex="0" aria-label="Play ${t}">
+          <div class="video-thumb">
+            <img data-poster alt="" src="data:image/svg+xml,${encodeURIComponent(
+              `<svg xmlns='http://www.w3.org/2000/svg' width='640' height='360'><rect width='100%' height='100%' fill='#0b1220'/><text x='50%' y='50%' fill='rgba(255,255,255,.72)' font-family='system-ui,Segoe UI,Roboto' font-size='18' text-anchor='middle'>Loading preview…</text></svg>`
+            )}">
+            <div class="video-play">
+              <span class="play-badge"><i class="fa-solid fa-play"></i> Play</span>
+              <span class="meta-badge"><i class="fa-regular fa-file"></i> ${escapeHtml(size)}</span>
+            </div>
+          </div>
+          <div style="margin-top:10px;">
+            <h3>${t}</h3>
+            ${d ? `<p>${d}</p>` : `<p style="opacity:.7;">No description</p>`}
+            <div class="video-meta">
+              <span><i class="fa-regular fa-clock"></i> ${escapeHtml(date || '—')}</span>
             </div>
           </div>
         </div>
       `;
-    }).join('');
+      })
+      .join('');
 
     grid.querySelectorAll('[data-video-id]').forEach((el) => {
-      el.addEventListener('click', () => {
-        const id = el.getAttribute('data-video-id');
-        const v = videos.find((x) => x.id === id);
-        if (v) openPlayer(v);
+      const id = el.getAttribute('data-video-id');
+      const v = videos.find((x) => x.id === id);
+      if (v) generatePoster(v, el);
+
+      const activate = () => {
+        const vid = videos.find((x) => x.id === id);
+        if (vid) setActiveVideo(vid);
+      };
+
+      el.addEventListener('click', activate);
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') activate();
       });
     });
+
+    if (!state.activeVideoId && videos[0]) setActiveVideo(videos[0]);
+    else highlightActiveCard();
+  }
+
+  async function fetchComments(videoId) {
+    const res = await fetch(`${apiBase}/api/v1/public/videos/${encodeURIComponent(String(videoId))}/comments`, { credentials: 'include' });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body?.error || 'failed_to_load_comments');
+    return Array.isArray(body?.comments) ? body.comments : [];
+  }
+
+  function renderComments(comments) {
+    if (!commentsGrid) return;
+    commentsGrid.innerHTML = '';
+    if (commentsEmpty) commentsEmpty.style.display = 'none';
+
+    if (!comments.length) {
+      if (commentsEmpty) commentsEmpty.style.display = '';
+      return;
+    }
+
+    commentsGrid.innerHTML = comments
+      .map((c) => {
+        const name = escapeHtml(c.name || 'Anonymous');
+        const city = escapeHtml(c.city || '');
+        const text = escapeHtml(c.comment || '');
+        const initial = escapeHtml((c.name || 'A').trim().slice(0, 1).toUpperCase());
+        return `
+          <div class="comment-card">
+            <div class="who">
+              <div style="display:flex; gap:10px; align-items:center;">
+                <div class="avatar">${initial}</div>
+                <div>
+                  <strong>${name}</strong>
+                  <div><small>${city}</small></div>
+                </div>
+              </div>
+            </div>
+            <div class="text">“${text}”</div>
+          </div>
+        `;
+      })
+      .join('');
+  }
+
+  async function refreshComments() {
+    if (!state.activeVideoId) return;
+    const comments = await fetchComments(state.activeVideoId);
+    renderComments(comments);
+  }
+
+  async function submitComment() {
+    if (!state.activeVideoId) return;
+    const payload = {
+      firstName: (cFirstName?.value || '').trim(),
+      lastName: (cLastName?.value || '').trim(),
+      city: (cCity?.value || '').trim(),
+      email: (cEmail?.value || '').trim(),
+      phone: (cPhone?.value || '').trim(),
+      comment: (cComment?.value || '').trim()
+    };
+    if (!payload.firstName || !payload.lastName || !payload.city || !payload.email || !payload.phone || !payload.comment) {
+      return setHint(commentStatus, 'All fields are required.', 'error');
+    }
+    setHint(commentStatus, 'Submitting…', 'info');
+    submitCommentBtn.disabled = true;
+    try {
+      const res = await fetch(`${apiBase}/api/v1/public/videos/${encodeURIComponent(String(state.activeVideoId))}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload)
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body?.error || 'submit_failed');
+
+      setHint(commentStatus, 'Thanks! Your comment has been added.', 'success');
+      [cFirstName, cLastName, cCity, cEmail, cPhone, cComment].forEach((el) => {
+        try {
+          if (el) el.value = '';
+        } catch {}
+      });
+      await refreshComments();
+    } catch (e) {
+      setHint(commentStatus, String(e?.message || e), 'error');
+    } finally {
+      submitCommentBtn.disabled = false;
+    }
+  }
+
+  async function fetchAdminComments(videoId, kind) {
+    const token = (localStorage.getItem('feco.accessToken') || '').trim();
+    const res = await fetch(`${apiBase}/api/v1/videos/${encodeURIComponent(String(videoId))}/comments?kind=${encodeURIComponent(kind)}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include'
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body?.error || 'failed_to_load_admin_comments');
+    return Array.isArray(body?.comments) ? body.comments : [];
+  }
+
+  function renderAdminComments(list) {
+    if (!adminCommentsList) return;
+    adminCommentsList.innerHTML = '';
+    if (adminCommentsEmpty) adminCommentsEmpty.style.display = 'none';
+
+    if (!list.length) {
+      if (adminCommentsEmpty) adminCommentsEmpty.style.display = '';
+      return;
+    }
+
+    adminCommentsList.innerHTML = list
+      .map((c) => {
+        const id = escapeHtml(c.id);
+        const who = escapeHtml(`${c.firstName || ''} ${c.lastName || ''}`.trim());
+        const city = escapeHtml(c.city || '');
+        const comment = escapeHtml(c.comment || '');
+        const createdAt = c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '';
+        const meta = c.kind === 'PUBLIC' ? `PUBLIC · ${createdAt}` : `SEEDED · ${createdAt}`;
+        const contact = c.kind === 'PUBLIC' ? `Email: ${c.email || '—'} · Phone: ${c.phone || '—'}` : '';
+        const pubLabel = c.published ? 'Hide' : 'Show';
+        return `
+          <div class="admin-row" data-comment-id="${id}">
+            <div style="min-width:280px; flex:1;">
+              <div style="font-weight:950;">${who || '—'} <span style="opacity:.55;">•</span> ${city || '—'}</div>
+              <div style="margin-top:4px; color:#64748b; font-weight:750; font-size:12px;">${escapeHtml(meta)}</div>
+              ${contact ? `<div style="margin-top:6px; color:#0f172a; font-weight:750; font-size:12px;">${escapeHtml(contact)}</div>` : ''}
+              <pre style="margin-top:10px;">${comment}</pre>
+            </div>
+            <div class="actions">
+              <button class="btn-secondary" data-action="toggle" data-published="${c.published ? '1' : '0'}">${pubLabel}</button>
+              <button class="btn-secondary" data-action="delete"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+
+    adminCommentsList.querySelectorAll('[data-comment-id]').forEach((row) => {
+      const id = row.getAttribute('data-comment-id');
+      row.querySelector('[data-action="toggle"]')?.addEventListener('click', async () => {
+        try {
+          const toggleBtn = row.querySelector('[data-action="toggle"]');
+          const published = toggleBtn?.getAttribute('data-published') === '1';
+          const token = (localStorage.getItem('feco.accessToken') || '').trim();
+          const res = await fetch(`${apiBase}/api/v1/videos/comments/${encodeURIComponent(String(id))}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {})
+            },
+            credentials: 'include',
+            body: JSON.stringify({ published: !published })
+          });
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(body?.error || 'update_failed');
+          await refreshAdminComments();
+          await refreshComments();
+        } catch (e) {
+          setHint(adminCommentStatus, String(e?.message || e), 'error');
+        }
+      });
+      row.querySelector('[data-action="delete"]')?.addEventListener('click', async () => {
+        try {
+          const token = (localStorage.getItem('feco.accessToken') || '').trim();
+          const res = await fetch(`${apiBase}/api/v1/videos/comments/${encodeURIComponent(String(id))}`, {
+            method: 'DELETE',
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            credentials: 'include'
+          });
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(body?.error || 'delete_failed');
+          await refreshAdminComments();
+          await refreshComments();
+        } catch (e) {
+          setHint(adminCommentStatus, String(e?.message || e), 'error');
+        }
+      });
+    });
+  }
+
+  async function refreshAdminComments() {
+    if (!state.me || state.me.role !== 'SUPER_ADMIN') return;
+    if (!state.activeVideoId) return;
+    const list = await fetchAdminComments(state.activeVideoId, state.adminTab);
+    renderAdminComments(list);
+  }
+
+  async function addSeededComment() {
+    if (!state.activeVideoId) return;
+    const firstName = (aFirstName?.value || '').trim();
+    const lastName = (aLastName?.value || '').trim();
+    const city = (aCity?.value || '').trim();
+    const comment = (aComment?.value || '').trim();
+    const date = (aDate?.value || '').trim();
+    if (!firstName || !lastName || !city || !comment) return setHint(adminCommentStatus, 'First/last/city/comment required.', 'error');
+
+    setHint(adminCommentStatus, 'Adding…', 'info');
+    addSeededBtn.disabled = true;
+    try {
+      const token = (localStorage.getItem('feco.accessToken') || '').trim();
+      const res = await fetch(`${apiBase}/api/v1/videos/${encodeURIComponent(String(state.activeVideoId))}/comments/seeded`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        credentials: 'include',
+        body: JSON.stringify({ firstName, lastName, city, comment, date: date ? new Date(date).toISOString() : '' })
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body?.error || 'create_failed');
+      setHint(adminCommentStatus, 'Seeded comment added.', 'success');
+      [aFirstName, aLastName, aCity, aDate, aComment].forEach((el) => {
+        try {
+          if (el) el.value = '';
+        } catch {}
+      });
+      await refreshAdminComments();
+      await refreshComments();
+    } catch (e) {
+      setHint(adminCommentStatus, String(e?.message || e), 'error');
+    } finally {
+      addSeededBtn.disabled = false;
+    }
   }
 
   async function uploadVideo() {
     const token = (localStorage.getItem('feco.accessToken') || '').trim();
     const file = fileEl?.files?.[0];
-    if (!file) return setUploadStatus('Choose a video file first.', 'error');
+    if (!file) return setHint(uploadStatus, 'Choose a video file first.', 'error');
     const title = (titleEl?.value || '').trim();
     const description = (descEl?.value || '').trim();
-    if (!title) return setUploadStatus('Title is required.', 'error');
+    if (!title) return setHint(uploadStatus, 'Title is required.', 'error');
 
-    setUploadStatus('Uploading...', 'info');
+    setHint(uploadStatus, 'Uploading…', 'info');
     uploadBtn.disabled = true;
     try {
       const fd = new FormData();
@@ -276,7 +616,6 @@
 
       let { r: res, body } = await doUpload(token);
       if (res.status === 401) {
-        // Try cookie refresh once, then retry.
         try {
           const rr = await fetch(`${apiBase}/api/v1/auth/refresh`, { method: 'POST', credentials: 'include' });
           const rb = await rr.json().catch(() => ({}));
@@ -293,29 +632,29 @@
         }
         throw new Error(body?.error || 'upload_failed');
       }
-      setUploadStatus('Uploaded.', 'success');
+      setHint(uploadStatus, 'Uploaded.', 'success');
       if (fileEl) fileEl.value = '';
-      await render();
+      await bootstrapVideosOnly();
     } catch (e) {
-      setUploadStatus(String(e?.message || e), 'error');
+      setHint(uploadStatus, String(e?.message || e), 'error');
     } finally {
       uploadBtn.disabled = false;
     }
   }
 
-  async function bootstrap() {
-    let me = null;
-    try {
-      me = await refreshMe();
-    } catch {}
+  async function bootstrapVideosOnly() {
+    const videos = await fetchVideos();
+    await renderVideos(videos);
+    await refreshComments();
+    await refreshAdminComments();
+  }
 
-    const role = (me?.role || '').toString();
+  async function bootstrap() {
+    state.me = await refreshMe();
+    const role = (state.me?.role || '').toString();
     const canUpload = role === 'SUPER_ADMIN';
 
-    // Always show the upload card (public page), but lock it unless SUPER_ADMIN.
-    // This avoids "I'm logged in but I can't see upload" confusion.
     if (uploadCard) uploadCard.style.display = '';
-
     const setDisabled = (disabled) => {
       [titleEl, descEl, fileEl, uploadBtn].forEach((el) => {
         try {
@@ -325,33 +664,45 @@
       });
     };
 
-    if (!me) {
+    if (!state.me) {
       setDisabled(true);
-      setUploadStatus('Admin upload: login required.', 'info');
+      setHint(uploadStatus, 'Admin upload: login required.', 'info');
       if (loginBtn) loginBtn.textContent = 'Admin login';
+      if (adminComments) adminComments.style.display = 'none';
     } else if (!canUpload) {
       setDisabled(true);
-      setUploadStatus(`Admin upload: not allowed for role "${role || 'unknown'}".`, 'error');
+      setHint(uploadStatus, `Admin upload: not allowed for role "${role || 'unknown'}".`, 'error');
       if (loginBtn) loginBtn.textContent = `Logged in (${role || 'user'})`;
+      if (adminComments) adminComments.style.display = 'none';
     } else {
       setDisabled(false);
-      setUploadStatus('', 'info');
+      setHint(uploadStatus, '', 'info');
       if (loginBtn) loginBtn.textContent = 'Logged in (admin)';
+      if (adminComments) adminComments.style.display = '';
     }
 
-    await render();
+    await bootstrapVideosOnly();
   }
+
+  tabSeeded?.addEventListener('click', async () => {
+    state.adminTab = 'SEEDED';
+    tabSeeded.classList.add('active');
+    tabPublic.classList.remove('active');
+    await refreshAdminComments();
+  });
+  tabPublic?.addEventListener('click', async () => {
+    state.adminTab = 'PUBLIC';
+    tabPublic.classList.add('active');
+    tabSeeded.classList.remove('active');
+    await refreshAdminComments();
+  });
 
   refreshBtn?.addEventListener('click', () => bootstrap());
   loginBtn?.addEventListener('click', () => ensureLogin());
   uploadBtn?.addEventListener('click', () => uploadVideo());
-  closeModalBtn?.addEventListener('click', () => closePlayer());
-  modal?.addEventListener('click', (e) => {
-    if (e.target === modal) closePlayer();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closePlayer();
-  });
+  refreshCommentsBtn?.addEventListener('click', () => refreshComments());
+  submitCommentBtn?.addEventListener('click', () => submitComment());
+  addSeededBtn?.addEventListener('click', () => addSeededComment());
 
   bootstrap();
 })();

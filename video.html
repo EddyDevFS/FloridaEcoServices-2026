@@ -16,21 +16,55 @@
     .video-title h1 { margin:0; font-size: 26px; letter-spacing:-0.02em; }
     .video-title p { margin:4px 0 0; color:#64748b; font-weight:650; }
     .video-actions { margin-left:auto; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .video-grid { margin-top: 16px; display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
-    .video-card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:14px; box-shadow:0 10px 30px rgba(0,0,0,0.06); cursor:pointer; transition: transform .12s ease, box-shadow .12s ease; }
+    .player-shell { margin-top: 16px; background:#0b1220; border-radius:18px; overflow:hidden; border:1px solid rgba(255,255,255,0.10); box-shadow: 0 18px 54px rgba(0,0,0,0.16); }
+    .player-top { padding: 14px 16px; display:flex; gap:10px; align-items:flex-start; justify-content:space-between; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.92); }
+    .player-top strong { font-weight: 950; letter-spacing:-0.01em; }
+    .player-top .sub { margin-top:4px; font-size:12px; opacity:0.76; font-weight:700; line-height:1.35; }
+    .player-body { padding: 12px; }
+    .player { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 14px; overflow:hidden; }
+    .player video { width:100%; height:100%; background:#000; }
+
+    .video-grid { margin-top: 14px; display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+    .video-card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:12px; box-shadow:0 10px 30px rgba(0,0,0,0.06); cursor:pointer; transition: transform .12s ease, box-shadow .12s ease; }
     .video-card:hover { transform: translateY(-2px); box-shadow:0 14px 36px rgba(0,0,0,0.10); }
+    .video-thumb { position:relative; border-radius:14px; overflow:hidden; border:1px solid #e2e8f0; background: linear-gradient(135deg, rgba(11,107,85,0.10), rgba(14,165,233,0.08)); aspect-ratio: 16/9; display:grid; place-items:center; }
+    .video-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+    .video-play { position:absolute; inset:auto 12px 12px 12px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .play-badge { display:inline-flex; gap:8px; align-items:center; padding:8px 10px; border-radius:999px; background: rgba(2,8,23,0.72); color:#fff; border:1px solid rgba(255,255,255,0.10); font-weight:900; font-size:12px; backdrop-filter: blur(8px); }
+    .meta-badge { display:inline-flex; gap:6px; align-items:center; padding:8px 10px; border-radius:999px; background: rgba(255,255,255,0.92); color:#0f172a; border:1px solid rgba(15,23,42,0.12); font-weight:900; font-size:12px; }
     .video-card h3 { margin:0; font-size: 16px; letter-spacing:-0.01em; }
     .video-card p { margin:8px 0 0; color:#64748b; font-size: 13px; font-weight:650; line-height:1.35; }
     .video-meta { margin-top:10px; display:flex; gap:8px; align-items:center; color:#94a3b8; font-size:12px; font-weight:700; }
     .pill { display:inline-flex; gap:6px; align-items:center; padding:6px 10px; border-radius:999px; background: rgba(11,107,85,0.10); border:1px solid rgba(11,107,85,0.14); color:#0b6b55; font-weight:850; font-size:12px; }
-    .modal { position: fixed; inset: 0; background: rgba(2,8,23,0.64); display:none; align-items:center; justify-content:center; padding: 18px; z-index: 10000; }
-    .modal-card { width: min(980px, 100%); background:#0b1220; border-radius: 18px; overflow:hidden; border:1px solid rgba(255,255,255,0.08); box-shadow: 0 24px 80px rgba(0,0,0,0.40); }
-    .modal-top { display:flex; justify-content:space-between; align-items:center; padding: 12px 14px; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.92); }
-    .modal-top strong { font-weight: 900; letter-spacing:-0.01em; }
-    .modal-close { border:0; background: rgba(255,255,255,0.10); color:#fff; width:34px; height:34px; border-radius: 12px; display:grid; place-items:center; cursor:pointer; }
-    .modal-body { padding: 12px; }
-    .player { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 14px; overflow:hidden; }
-    .player video { width:100%; height:100%; background:#000; }
+
+    .comments-shell { margin-top: 14px; background:#fff; border:1px solid #e2e8f0; border-radius:18px; padding: 14px; box-shadow:0 12px 40px rgba(0,0,0,0.06); }
+    .comments-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .comments-head h2 { margin:0; font-size: 18px; letter-spacing:-0.01em; }
+    .comments-head p { margin:4px 0 0; color:#64748b; font-weight:650; }
+    .comments-grid { margin-top: 12px; display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+    .comment-card { border:1px solid #e2e8f0; border-radius:16px; padding: 12px; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); }
+    .comment-card .who { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .avatar { width:34px; height:34px; border-radius:14px; display:grid; place-items:center; background:rgba(11,107,85,0.12); border:1px solid rgba(11,107,85,0.18); color:#0b6b55; font-weight:950; }
+    .who strong { font-weight:950; }
+    .who small { color:#64748b; font-weight:750; }
+    .comment-card .text { margin-top:10px; color:#0f172a; font-weight:650; line-height:1.45; }
+
+    .comment-form { margin-top: 14px; border-top:1px solid #e2e8f0; padding-top: 14px; }
+    .comment-form .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .comment-form .grid .form-field { margin:0; }
+    .comment-form .grid-1 { grid-column: 1 / -1; }
+    @media (max-width: 720px) {
+      .comment-form .grid { grid-template-columns: 1fr; }
+    }
+
+    .admin-comments { margin-top: 14px; background:#fff; border:1px solid #e2e8f0; border-radius:18px; padding: 14px; box-shadow:0 12px 40px rgba(0,0,0,0.06); display:none; }
+    .admin-tabs { display:flex; gap:10px; flex-wrap:wrap; }
+    .tab { border:1px solid #e2e8f0; background:#f8fafc; padding:8px 10px; border-radius:12px; cursor:pointer; font-weight:900; font-size:12px; }
+    .tab.active { background:#0b6b55; border-color:#0b6b55; color:#fff; }
+    .admin-list { margin-top: 12px; display:grid; gap:10px; }
+    .admin-row { border:1px solid #e2e8f0; border-radius:16px; padding: 12px; display:flex; gap:10px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; }
+    .admin-row pre { margin:0; white-space:pre-wrap; word-break:break-word; font-family:inherit; color:#0f172a; }
+    .admin-row .actions { display:flex; gap:8px; flex-wrap:wrap; }
     .upload-card { margin-top: 14px; background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:14px; }
     .upload-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .upload-grid .form-field { margin:0; }
@@ -84,27 +118,115 @@
       </div>
     </div>
 
-    <div class="video-grid" id="videoGrid"></div>
-    <div class="planning-item" id="emptyState" style="display:none; margin-top:16px;">No videos yet.</div>
-  </div>
-
-  <div class="modal" id="playerModal" role="dialog" aria-modal="true">
-    <div class="modal-card">
-      <div class="modal-top">
+    <section class="player-shell" aria-label="Video player">
+      <div class="player-top">
         <div>
-          <strong id="playerTitle">Video</strong>
-          <div style="font-size:12px; opacity:0.78; font-weight:750;" id="playerDesc"></div>
+          <strong id="playerTitle">Select a video</strong>
+          <div class="sub" id="playerDesc">Choose a thumbnail below to start watching.</div>
         </div>
-        <button class="modal-close" id="closeModalBtn" type="button" aria-label="Close">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <span class="pill" id="playerMeta" style="background:rgba(255,255,255,0.10); border-color:rgba(255,255,255,0.14); color:rgba(255,255,255,0.92);"><i class="fa-regular fa-circle-play"></i> Ready</span>
+        </div>
       </div>
-      <div class="modal-body">
+      <div class="player-body">
         <div class="player">
           <video id="player" controls playsinline></video>
         </div>
       </div>
-    </div>
+    </section>
+
+    <div class="video-grid" id="videoGrid"></div>
+    <div class="planning-item" id="emptyState" style="display:none; margin-top:16px;">No videos yet.</div>
+
+    <section class="comments-shell" aria-label="Comments">
+      <div class="comments-head">
+        <div>
+          <h2>Comments</h2>
+          <p>Real feedback + a clean history. Your contact details are kept private.</p>
+        </div>
+        <button class="btn-secondary" id="refreshCommentsBtn" type="button"><i class="fa-solid fa-rotate"></i> Refresh</button>
+      </div>
+
+      <div class="comments-grid" id="commentsGrid"></div>
+      <div class="planning-item" id="commentsEmpty" style="display:none; margin-top:12px;">No comments yet.</div>
+
+      <div class="comment-form">
+        <div style="font-weight:950; letter-spacing:-0.01em;"><i class="fa-solid fa-pen"></i> Leave a comment</div>
+        <div class="grid" style="margin-top:12px;">
+          <div class="form-field">
+            <label for="cFirstName">First name</label>
+            <input id="cFirstName" type="text" placeholder="First name" />
+          </div>
+          <div class="form-field">
+            <label for="cLastName">Last name</label>
+            <input id="cLastName" type="text" placeholder="Last name" />
+          </div>
+          <div class="form-field">
+            <label for="cCity">City</label>
+            <input id="cCity" type="text" placeholder="Orlando" />
+          </div>
+          <div class="form-field">
+            <label for="cEmail">Email</label>
+            <input id="cEmail" type="email" placeholder="you@domain.com" />
+          </div>
+          <div class="form-field">
+            <label for="cPhone">Phone</label>
+            <input id="cPhone" type="tel" placeholder="(xxx) xxx-xxxx" />
+          </div>
+          <div class="form-field grid-1">
+            <label for="cComment">Comment</label>
+            <textarea id="cComment" rows="3" placeholder="Tell us what you liked…"></textarea>
+          </div>
+        </div>
+        <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <button class="btn-primary" id="submitCommentBtn" type="button"><i class="fa-solid fa-paper-plane"></i> Submit</button>
+          <div class="field-hint" id="commentStatus" style="margin:0;"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="admin-comments" id="adminComments" aria-label="Admin comments">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+        <div>
+          <div style="font-weight:950; letter-spacing:-0.01em;"><i class="fa-solid fa-shield"></i> Comments (admin)</div>
+          <div style="margin-top:4px; color:#64748b; font-weight:650;">Seeded history vs real leads (with contacts).</div>
+        </div>
+        <div class="admin-tabs">
+          <button class="tab active" id="tabSeeded" type="button">Seeded (fake)</button>
+          <button class="tab" id="tabPublic" type="button">Public (real)</button>
+        </div>
+      </div>
+
+      <div class="upload-grid" style="margin-top:12px;">
+        <div class="form-field">
+          <label for="aFirstName">First name</label>
+          <input id="aFirstName" type="text" placeholder="Maria">
+        </div>
+        <div class="form-field">
+          <label for="aLastName">Last name</label>
+          <input id="aLastName" type="text" placeholder="L.">
+        </div>
+        <div class="form-field">
+          <label for="aCity">City</label>
+          <input id="aCity" type="text" placeholder="Miami">
+        </div>
+        <div class="form-field">
+          <label for="aDate">Date (optional)</label>
+          <input id="aDate" type="date">
+        </div>
+        <div class="form-field" style="grid-column:1/-1;">
+          <label for="aComment">Comment</label>
+          <textarea id="aComment" rows="3" placeholder="Short seeded testimonial…"></textarea>
+        </div>
+      </div>
+      <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <button class="btn-primary" id="addSeededBtn" type="button"><i class="fa-solid fa-plus"></i> Add seeded comment</button>
+        <div class="field-hint" id="adminCommentStatus" style="margin:0;"></div>
+      </div>
+
+      <div class="admin-list" id="adminCommentsList"></div>
+      <div class="planning-item" id="adminCommentsEmpty" style="display:none; margin-top:12px;">No comments.</div>
+    </section>
   </div>
 
   <script src="app-config.js?v=20260116"></script>

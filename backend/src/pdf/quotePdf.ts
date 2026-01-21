@@ -104,8 +104,9 @@ function computeFromPayload(payload: QuotePayload) {
     const corridorCost = corridorSqft * corridorSqftPrice;
     const totalAnnual = roomsCost + corridorCost;
     const monthly = totalAnnual / 12;
+    const avgPerRoom = billedRooms ? roomsCost / billedRooms : 0;
 
-    return { roomsCost, corridorCost, totalAnnual, monthly };
+    return { roomsCost, corridorCost, totalAnnual, monthly, avgPerRoom, billedRooms };
   };
 
   const onDemand = computeAnnualForPlan('ondemand');
@@ -144,6 +145,13 @@ export async function renderQuotePdf(opts: {
   title: string;
   customer: { company?: string; contact?: string; email?: string; phone?: string };
   payload: QuotePayload;
+  acceptance?: {
+    acceptedAt: Date;
+    acceptedPlanKey: string;
+    signedByName: string;
+    signedByTitle: string;
+    signedByEmail: string;
+  } | null;
 }) {
   const doc = new PDFDocument({ size: 'LETTER', margin: 48 });
   const chunks: Buffer[] = [];
@@ -254,10 +262,25 @@ export async function renderQuotePdf(opts: {
     ['Current frequency', computed.currentFreqLabel]
   ]);
 
-  drawBox(rightBoxX, boxTop, 'Best Value (Total Care)', [
-    ['Monthly est.', money(computed.offers.total.monthly)],
-    ['Annual total', money(Math.round(computed.offers.total.totalAnnual))],
-    ['Mode', String((opts.payload && opts.payload.mode) || 'quick')]
+  const acceptedKey = String(opts.acceptance?.acceptedPlanKey || '').trim();
+  const chosenKey = acceptedKey || 'total';
+  const chosen =
+    chosenKey === 'ondemand'
+      ? computed.offers.ondemand
+      : chosenKey === 'partner'
+        ? computed.offers.partner
+        : computed.offers.total;
+  const chosenLabel =
+    chosenKey === 'ondemand'
+      ? 'Normal (On‑Demand)'
+      : chosenKey === 'partner'
+        ? 'Better (Partner Care)'
+        : 'Optimal (Total Care)';
+
+  drawBox(rightBoxX, boxTop, opts.acceptance ? 'Accepted offer' : 'Recommended offer', [
+    ['Offer', chosenLabel],
+    ['Avg / room', money(chosen.avgPerRoom)],
+    ['Monthly est.', money(chosen.monthly)]
   ]);
 
   doc.y = boxTop + boxH + 18;
@@ -268,7 +291,7 @@ export async function renderQuotePdf(opts: {
   const tableX = 48;
   const tableW = 516;
   const col1 = 210;
-  const col2 = 150;
+  const col2 = 170;
   const col3 = tableW - col1 - col2;
 
   const rowH = 22;
@@ -277,14 +300,14 @@ export async function renderQuotePdf(opts: {
   doc.roundedRect(tableX, headerY, tableW, rowH, 8).fillColor('#f3f4f6').fill();
   doc.fillColor('#111827').font('Helvetica-Bold').fontSize(10);
   doc.text('Plan', tableX + 10, headerY + 6, { width: col1 - 20 });
-  doc.text('Monthly', tableX + col1, headerY + 6, { width: col2, align: 'right' });
-  doc.text('Annual', tableX + col1 + col2, headerY + 6, { width: col3 - 10, align: 'right' });
+  doc.text('Avg / room', tableX + col1, headerY + 6, { width: col2, align: 'right' });
+  doc.text('Monthly est.', tableX + col1 + col2, headerY + 6, { width: col3 - 10, align: 'right' });
   doc.restore();
 
   const rows = [
-    ['On-Demand', computed.offers.ondemand],
-    ['Partner Care', computed.offers.partner],
-    ['Total Care Program', computed.offers.total]
+    ['Normal (On‑Demand)', computed.offers.ondemand],
+    ['Better (Partner Care)', computed.offers.partner],
+    ['Optimal (Total Care)', computed.offers.total]
   ] as const;
 
   let y = headerY + rowH;
@@ -292,14 +315,33 @@ export async function renderQuotePdf(opts: {
     doc.save();
     doc.rect(tableX, y, tableW, rowH).strokeColor('#e5e7eb').stroke();
     doc.fillColor('#111827').font('Helvetica').fontSize(10).text(label, tableX + 10, y + 6, { width: col1 - 20 });
-    doc.font('Helvetica-Bold').text(money(calc.monthly), tableX + col1, y + 6, { width: col2, align: 'right' });
-    doc.text(money(Math.round(calc.totalAnnual)), tableX + col1 + col2, y + 6, { width: col3 - 10, align: 'right' });
+    doc.font('Helvetica-Bold').text(money(calc.avgPerRoom), tableX + col1, y + 6, { width: col2, align: 'right' });
+    doc.text(money(calc.monthly), tableX + col1 + col2, y + 6, { width: col3 - 10, align: 'right' });
     doc.restore();
     y += rowH;
   }
 
   doc.moveDown(0.8);
-  doc.fontSize(9).font('Helvetica').fillColor('#6b7280').text('This quote is an estimate. Final pricing may vary after on-site validation.');
+  doc.fontSize(9)
+    .font('Helvetica')
+    .fillColor('#6b7280')
+    .text('This quote is an estimate. Final pricing may vary after on-site validation.');
+
+  if (opts.acceptance) {
+    doc.moveDown(1.1);
+    doc.save();
+    const boxY = doc.y;
+    doc.roundedRect(tableX, boxY, tableW, 86, 10).lineWidth(1).strokeColor('#e5e7eb').fillColor('#ffffff').fillAndStroke();
+    doc.fillColor('#111827').font('Helvetica-Bold').fontSize(10).text('Digital signature', tableX + 12, boxY + 10, { width: tableW - 24 });
+    doc.fillColor('#374151').font('Helvetica').fontSize(9);
+    doc.text(`Signed by: ${opts.acceptance.signedByName} (${opts.acceptance.signedByTitle})`, tableX + 12, boxY + 28, {
+      width: tableW - 24
+    });
+    doc.text(`Email: ${opts.acceptance.signedByEmail}`, tableX + 12, boxY + 42, { width: tableW - 24 });
+    doc.text(`Timestamp (UTC): ${opts.acceptance.acceptedAt.toISOString()}`, tableX + 12, boxY + 56, { width: tableW - 24 });
+    doc.text(`Selected offer: ${chosenLabel}`, tableX + 12, boxY + 70, { width: tableW - 24 });
+    doc.restore();
+  }
 
   doc.end();
   return done;

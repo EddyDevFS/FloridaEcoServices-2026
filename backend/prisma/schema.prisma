@@ -39,6 +39,7 @@ model Organization {
   contracts Contract[]
   pricingDefaults PricingDefaults?
   videos Video[]
+  videoComments VideoComment[]
   prospects Prospect[]
   clients Client[]
   quotes Quote[]
@@ -234,8 +235,41 @@ model Video {
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   uploadedByUser User?        @relation("UserUploadedVideos", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+  comments VideoComment[]
 
   @@index([organizationId])
+  @@index([published])
+  @@index([createdAt])
+}
+
+enum VideoCommentKind {
+  SEEDED
+  PUBLIC
+}
+
+model VideoComment {
+  id             String           @id @default(cuid())
+  organizationId String
+  videoId        String
+  kind           VideoCommentKind @default(PUBLIC)
+  published      Boolean          @default(true)
+
+  firstName String @default("")
+  lastName  String @default("")
+  city      String @default("")
+  email     String @default("")
+  phone     String @default("")
+  comment   String @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  video        Video        @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([videoId])
+  @@index([kind])
   @@index([published])
   @@index([createdAt])
 }
@@ -536,7 +570,15 @@ model Quote {
   id             String            @id @default(cuid())
   organizationId String
   number         Int
+  token          String?           @unique
   status         QuoteStatus       @default(DRAFT)
+  acceptedAt     DateTime?
+  acceptedPlanKey String           @default("")
+  signedByName   String            @default("")
+  signedByTitle  String            @default("")
+  signedByEmail  String            @default("")
+  signedByIp     String            @default("")
+  signedByUserAgent String         @default("")
   customerType   QuoteCustomerType @default(PROSPECT)
   customer       Json              @default("{}")
   title          String            @default("")

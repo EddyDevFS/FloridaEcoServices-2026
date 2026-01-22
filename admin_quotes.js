@@ -93,9 +93,30 @@
       pricing: {
         minRooms: 10,
         plans: {
-          ondemand: { label: 'On‑Demand', subtitle: 'One-time or urgent requests', room: { carpet: 50, tile: 70, both: 100 }, corridorSqft: 0.35 },
-          partner: { label: 'Refresh Plan', subtitle: 'Planned yearly refresh (best value for partial coverage)', room: { carpet: 45, tile: 65, both: 90 }, corridorSqft: 0.3 },
-          total: { label: 'Total Care', subtitle: 'Full annual coverage + priority scheduling', room: { carpet: 40, tile: 60, both: 75 }, corridorSqft: 0.25 }
+          ondemand: {
+            label: 'On‑Demand',
+            subtitle: 'One-time or urgent requests',
+            room: { carpet: 50, tile: 70, both: 100 },
+            carpetSqft: 0.35,
+            tileSqft: 0.35,
+            corridorSqft: 0.35
+          },
+          partner: {
+            label: 'Refresh Plan',
+            subtitle: 'Planned yearly refresh (best value for partial coverage)',
+            room: { carpet: 45, tile: 65, both: 90 },
+            carpetSqft: 0.3,
+            tileSqft: 0.3,
+            corridorSqft: 0.3
+          },
+          total: {
+            label: 'Total Care',
+            subtitle: 'Full annual coverage + priority scheduling',
+            room: { carpet: 40, tile: 60, both: 75 },
+            carpetSqft: 0.25,
+            tileSqft: 0.25,
+            corridorSqft: 0.25
+          }
         }
       }
     };
@@ -206,7 +227,11 @@
     }
 
     const corridorSqft = corridorFinalSqft();
-    const corridorCost = corridorSqft * plan.corridorSqft;
+    const corridorSurface = String(state?.corridor?.surface || 'carpet');
+    const tileSqft = Number(plan.tileSqft ?? plan.tileSqftPrice ?? plan.corridorSqft) || 0;
+    const carpetSqft = Number(plan.carpetSqft ?? plan.carpetSqftPrice ?? plan.corridorSqft) || 0;
+    const sqftRate = corridorSurface === 'tile' ? tileSqft : carpetSqft;
+    const corridorCost = corridorSqft * sqftRate;
     const totalAnnual = roomsCost + corridorCost;
     const monthly = totalAnnual / 12;
     const avgPerRoom = roomsCost / billedRooms;
@@ -319,6 +344,13 @@
       <div class="qwCard">
         <h3>Corridors</h3>
         ${fieldRow('Enabled', `<select class="qwInput" id="corrEnabled"><option value="1" ${state.corridor.enabled ? 'selected' : ''}>Yes</option><option value="0" ${!state.corridor.enabled ? 'selected' : ''}>No</option></select>`)}
+        ${fieldRow(
+          'Surface',
+          `<select class="qwInput" id="corrSurface" ${!state.corridor.enabled ? 'disabled' : ''}>
+            <option value="carpet" ${String(state?.corridor?.surface || 'carpet') === 'carpet' ? 'selected' : ''}>Carpet</option>
+            <option value="tile" ${String(state?.corridor?.surface || 'carpet') === 'tile' ? 'selected' : ''}>Tile</option>
+          </select>`
+        )}
         ${fieldRow('How many corridors', `<input class="qwInput" id="corrQty" type="number" min="0" value="${clampInt(state.corridor.qty, 0, 9999)}" ${!state.corridor.enabled ? 'disabled' : ''}>`)}
         ${fieldRow('Sqft per corridor', `<input class="qwInput" id="corrSqftPer" type="number" min="0" value="${clampInt(state.corridor.sqftPer, 0, 999999)}" ${!state.corridor.enabled ? 'disabled' : ''}>`)}
       </div>
@@ -385,7 +417,8 @@
     const carpet = money(Number(plan?.room?.carpet) || 0);
     const tile = money(Number(plan?.room?.tile) || 0);
     const both = money(Number(plan?.room?.both) || 0);
-    const corridor = Number(plan?.corridorSqft) || 0;
+    const carpetSqft = Number(plan?.carpetSqft ?? plan?.carpetSqftPrice ?? plan?.corridorSqft) || 0;
+    const tileSqft = Number(plan?.tileSqft ?? plan?.tileSqftPrice ?? plan?.corridorSqft) || 0;
     return `
       <div class="qwOffer ${highlight ? 'highlight' : ''}">
         <div class="qwOfferTitle">${label}</div>
@@ -405,7 +438,8 @@
         <div class="qwOfferRow"><span>Carpet (per room)</span><b>${carpet}</b></div>
         <div class="qwOfferRow"><span>Tile (per room)</span><b>${tile}</b></div>
         <div class="qwOfferRow"><span>Both (per room)</span><b>${both}</b></div>
-        <div class="qwOfferRow"><span>Corridor ($ / sqft)</span><b>${corridor ? corridor.toFixed(2) : '—'}</b></div>
+        <div class="qwOfferRow"><span>Carpet $/sqft (corridor, meeting room, hall, lobby)</span><b>${carpetSqft ? carpetSqft.toFixed(2) : '—'}</b></div>
+        <div class="qwOfferRow"><span>Tile $/sqft (corridor, meeting room, hall, lobby)</span><b>${tileSqft ? tileSqft.toFixed(2) : '—'}</b></div>
       </div>
     `;
   }
@@ -437,7 +471,14 @@
       ${fieldRow('Room (Carpet)', `<input class="qwInput" data-plan="${key}" data-p="room.carpet" type="number" min="0" value="${Number(plan.room.carpet) || 0}">`)}
       ${fieldRow('Room (Tile)', `<input class="qwInput" data-plan="${key}" data-p="room.tile" type="number" min="0" value="${Number(plan.room.tile) || 0}">`)}
       ${fieldRow('Room (Both)', `<input class="qwInput" data-plan="${key}" data-p="room.both" type="number" min="0" value="${Number(plan.room.both) || 0}">`)}
-      ${fieldRow('Corridor $/sqft', `<input class="qwInput" data-plan="${key}" data-p="corridorSqft" type="number" min="0" step="0.01" value="${Number(plan.corridorSqft) || 0}">`)}
+      ${fieldRow(
+        'Carpet $/sqft (corridor, meeting room, hall, lobby)',
+        `<input class="qwInput" data-plan="${key}" data-p="carpetSqft" type="number" min="0" step="0.01" value="${Number(plan.carpetSqft ?? plan.carpetSqftPrice ?? plan.corridorSqft) || 0}">`
+      )}
+      ${fieldRow(
+        'Tile $/sqft (corridor, meeting room, hall, lobby)',
+        `<input class="qwInput" data-plan="${key}" data-p="tileSqft" type="number" min="0" step="0.01" value="${Number(plan.tileSqft ?? plan.tileSqftPrice ?? plan.corridorSqft) || 0}">`
+      )}
     `;
   }
 
@@ -540,6 +581,9 @@
     $('corrEnabled')?.addEventListener('change', (e) => {
       state.corridor.enabled = String(e.target.value) === '1';
       render();
+    });
+    $('corrSurface')?.addEventListener('change', (e) => {
+      state.corridor.surface = String(e.target.value || 'carpet');
     });
     $('corrQty')?.addEventListener('input', (e) => (state.corridor.qty = clampInt(e.target.value, 0, 9999)));
     $('corrSqftPer')?.addEventListener('input', (e) => (state.corridor.sqftPer = clampInt(e.target.value, 0, 999999)));

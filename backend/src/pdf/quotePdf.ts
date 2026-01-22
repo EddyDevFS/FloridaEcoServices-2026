@@ -89,7 +89,8 @@ function computeFromPayload(payload: QuotePayload) {
   const computeAnnualForPlan = (planKey: string) => {
     const plan = plans?.[planKey] || {};
     const room = plan.room || {};
-    const corridorSqftPrice = Number(plan.corridorSqft) || 0;
+    const tileSqftPrice = Number(plan.tileSqft ?? plan.tileSqftPrice ?? plan.corridorSqft) || 0;
+    const carpetSqftPrice = Number(plan.carpetSqft ?? plan.carpetSqftPrice ?? plan.corridorSqft) || 0;
     const billedRooms = Math.max(roomsFinal, minRooms);
 
     let roomsCost = 0;
@@ -101,11 +102,13 @@ function computeFromPayload(payload: QuotePayload) {
       roomsCost = billedRooms * (Number(room.both) || 0);
     }
 
-    const corridorCost = corridorSqft * corridorSqftPrice;
+    const corridorSurface = String(state?.corridor?.surface || 'carpet');
+    const corridorRate = corridorSurface === 'tile' ? tileSqftPrice : carpetSqftPrice;
+    const corridorCost = corridorSqft * corridorRate;
     const totalAnnual = roomsCost + corridorCost;
     const avgPerRoom = billedRooms ? roomsCost / billedRooms : 0;
 
-    return { roomsCost, corridorCost, totalAnnual, avgPerRoom, billedRooms };
+    return { roomsCost, corridorCost, totalAnnual, avgPerRoom, billedRooms, tileSqftPrice, carpetSqftPrice };
   };
 
   const onDemand = computeAnnualForPlan('ondemand');
@@ -185,6 +188,11 @@ export async function renderQuotePdf(opts: {
       : key === 'partner'
         ? { title: 'Refresh Plan', subtitle: 'Planned yearly refresh (best value for partial coverage)' }
         : { title: 'Total Care', subtitle: 'Full annual coverage + priority scheduling' };
+
+  const ensureSpace = (neededH: number) => {
+    const bottom = doc.page.height - doc.page.margins.bottom;
+    if (doc.y + neededH > bottom) doc.addPage();
+  };
 
   const logoPath = findLogoPath();
   const hasLogo = !!logoPath;
@@ -355,6 +363,133 @@ export async function renderQuotePdf(opts: {
     .font('Helvetica')
     .fillColor('#6b7280')
     .text('This quote is an estimate. Final pricing may vary after on-site validation.');
+
+  // Detailed pricing (per plan)
+  ensureSpace(220);
+  doc.moveDown(1.1);
+  doc.fontSize(11).font('Helvetica-Bold').fillColor('#111827').text('Pricing details');
+  doc
+    .fontSize(9)
+    .font('Helvetica')
+    .fillColor('#6b7280')
+    .text('Per-room rates + $/sqft for common areas (corridor, meeting room, hall, lobby).');
+  doc.moveDown(0.6);
+
+  const rawPlans = (opts.payload && typeof opts.payload === 'object' ? (opts.payload as any).pricing?.plans : null) || {};
+
+  const detailX = left;
+  const detailW = contentW;
+  const detailRowH = 18;
+  const cols = {
+    offer: 140,
+    carpet: 70,
+    tile: 70,
+    both: 70,
+    carpetSqft: 83,
+    tileSqft: detailW - (140 + 70 + 70 + 70 + 83)
+  };
+
+  doc.save();
+  doc.roundedRect(detailX, doc.y, detailW, 22, 8).fillColor('#f3f4f6').fill();
+  doc.fillColor('#111827').font('Helvetica-Bold').fontSize(9);
+  doc.text('Offer', detailX + 10, doc.y + 6, { width: cols.offer - 10 });
+  doc.text('Carpet / room', detailX + cols.offer, doc.y + 6, { width: cols.carpet, align: 'right' });
+  doc.text('Tile / room', detailX + cols.offer + cols.carpet, doc.y + 6, { width: cols.tile, align: 'right' });
+  doc.text('Both / room', detailX + cols.offer + cols.carpet + cols.tile, doc.y + 6, { width: cols.both, align: 'right' });
+  doc.text('Carpet $/sqft', detailX + cols.offer + cols.carpet + cols.tile + cols.both, doc.y + 6, {
+    width: cols.carpetSqft - 10,
+    align: 'right'
+  });
+  doc.text('Tile $/sqft', detailX + cols.offer + cols.carpet + cols.tile + cols.both + cols.carpetSqft, doc.y + 6, {
+    width: cols.tileSqft - 10,
+    align: 'right'
+  });
+  doc.restore();
+
+  doc.y += 22;
+  const planRows = [
+    ['ondemand', rawPlans?.ondemand || {}, computed.offers.ondemand],
+    ['partner', rawPlans?.partner || {}, computed.offers.partner],
+    ['total', rawPlans?.total || {}, computed.offers.total]
+  ] as const;
+
+  for (const [key, plan, calc] of planRows) {
+    const isChosen = !!opts.acceptance && String(opts.acceptance.acceptedPlanKey || '') === key;
+    const room = (plan as any).room || {};
+    const carpetSqftPrice = Number((plan as any).carpetSqft ?? (plan as any).carpetSqftPrice ?? (plan as any).corridorSqft) || 0;
+    const tileSqftPrice = Number((plan as any).tileSqft ?? (plan as any).tileSqftPrice ?? (plan as any).corridorSqft) || 0;
+    const label = offerCopy(String(key)).title;
+
+    doc.save();
+    doc
+      .rect(detailX, doc.y, detailW, detailRowH)
+      .lineWidth(isChosen ? 2 : 1)
+      .strokeColor(isChosen ? '#0b6b55' : '#e5e7eb')
+      .stroke();
+    doc.fillColor('#111827').font('Helvetica').fontSize(9).text(label, detailX + 10, doc.y + 5, { width: cols.offer - 10 });
+    doc.font('Helvetica-Bold');
+    doc.text(money(Number(room.carpet) || 0), detailX + cols.offer, doc.y + 5, { width: cols.carpet, align: 'right' });
+    doc.text(money(Number(room.tile) || 0), detailX + cols.offer + cols.carpet, doc.y + 5, { width: cols.tile, align: 'right' });
+    doc.text(money(Number(room.both) || 0), detailX + cols.offer + cols.carpet + cols.tile, doc.y + 5, { width: cols.both, align: 'right' });
+    doc.text(carpetSqftPrice ? `$${carpetSqftPrice.toFixed(2)}` : '—', detailX + cols.offer + cols.carpet + cols.tile + cols.both, doc.y + 5, {
+      width: cols.carpetSqft - 10,
+      align: 'right'
+    });
+    doc.text(
+      tileSqftPrice ? `$${tileSqftPrice.toFixed(2)}` : '—',
+      detailX + cols.offer + cols.carpet + cols.tile + cols.both + cols.carpetSqft,
+      doc.y + 5,
+      {
+        width: cols.tileSqft - 10,
+        align: 'right'
+      }
+    );
+    doc.restore();
+    doc.y += detailRowH;
+  }
+
+  doc.moveDown(1.1);
+  ensureSpace(140);
+
+  // Process & timing (marketing)
+  const procX = left;
+  const procW = contentW;
+  const procY = doc.y;
+  const procH = 112;
+  doc.save();
+  doc.roundedRect(procX, procY, procW, procH, 10).lineWidth(1).strokeColor('#e5e7eb').fillColor('#ffffff').fillAndStroke();
+  doc.fillColor('#111827').font('Helvetica-Bold').fontSize(10).text('Process & timing', procX + 12, procY + 10, { width: procW - 24 });
+  doc.fillColor('#374151').font('Helvetica').fontSize(9);
+  const colW = (procW - 24 - 14) / 2;
+  const leftColX = procX + 12;
+  const rightColX = procX + 12 + colW + 14;
+
+  doc
+    .fillColor('#111827')
+    .font('Helvetica-Bold')
+    .text('Tile & grout', leftColX, procY + 30, { width: colW })
+    .fillColor('#374151')
+    .font('Helvetica')
+    .text('• Detergent solution', leftColX, procY + 46, { width: colW })
+    .text('• Hard stiff brushing', leftColX, procY + 60, { width: colW })
+    .text('• 1200 PSI rinse / extraction', leftColX, procY + 74, { width: colW });
+
+  doc
+    .fillColor('#111827')
+    .font('Helvetica-Bold')
+    .text('Carpet cleaning', rightColX, procY + 30, { width: colW })
+    .fillColor('#374151')
+    .font('Helvetica')
+    .text('• Detergent Pro Encapsulation', rightColX, procY + 46, { width: colW })
+    .text('• Odor neutralizer', rightColX, procY + 60, { width: colW })
+    .text('• High-agitation brushing', rightColX, procY + 74, { width: colW })
+    .text('• Fiber protectant (commercial)', rightColX, procY + 88, { width: colW });
+
+  doc.fillColor('#0b6b55').font('Helvetica-Bold').fontSize(9).text('30–40 minutes per room • Ready after ~1 hour', procX + 12, procY + 98, {
+    width: procW - 24,
+    align: 'center'
+  });
+  doc.restore();
 
   if (opts.acceptance) {
     doc.moveDown(1.1);

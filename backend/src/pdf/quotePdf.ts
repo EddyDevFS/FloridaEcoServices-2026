@@ -325,12 +325,17 @@ export async function renderQuotePdf(opts: {
   // KPI helper
   const kv = (x: number, y: number, w: number, label: string, value: string, align: 'left' | 'right' = 'left') => {
     doc.font('Helvetica').fontSize(9).fillColor(C.muted).text(label, x, y, { width: w, align });
-    doc.font('Helvetica-Bold').fontSize(11).fillColor(C.ink).text(value, x, y + 12, { width: w, align });
+    doc.font('Helvetica-Bold').fontSize(10).fillColor(C.ink).text(value, x, y + 12, { width: w, align });
   };
 
   kv(scopeX + 14, kpiY, kpiW, 'Rooms', num0(computed.roomsFinal));
-  kv(scopeX + 14 + kpiW + 14, kpiY, kpiW, 'Corridor sqft', num0(computed.corridorSqft));
-  kv(scopeX + 14, kpiY + 40, colB - 28, 'Current cleaning frequency', computed.currentFreqLabel || '—');
+kv(scopeX + 14 + kpiW + 14, kpiY, kpiW, 'Corridor sqft', num0(computed.corridorSqft));
+
+// Frequency (manual, tighter so it never clips)
+doc.font('Helvetica').fontSize(8).fillColor(C.muted).text('Current cleaning frequency', scopeX + 14, row1Y + 60, { width: colB - 28 });
+doc.font('Helvetica-Bold').fontSize(10).fillColor(C.ink).text(computed.currentFreqLabel || '—', scopeX + 14, row1Y + 72, {
+  width: colB - 28
+});
   doc.restore();
 
   // ---------- Offers: 3 cards (NO annual totals, NO overflow) ----------
@@ -359,7 +364,7 @@ export async function renderQuotePdf(opts: {
 
     doc.save();
     roundRect(x, cardsY, cardW, cardH, 16);
-    doc.lineWidth(isChosen ? 2 : 1).strokeColor(isChosen ? C.brand : C.line).fillColor(C.card).fillAndStroke();
+    doc.lineWidth(isChosen ? 1.25 : 1).strokeColor(isChosen ? C.brand : C.line).fillColor(C.card).fillAndStroke();
 
     drawBadge(x + 12, cardsY + 10, copy.badge);
 
@@ -413,7 +418,7 @@ export async function renderQuotePdf(opts: {
     const room = planRoom(key);
 
     doc.save();
-    doc.rect(tableX, y, tableW, rowH).lineWidth(isChosen ? 2 : 1).strokeColor(isChosen ? C.brand : C.line).stroke();
+    doc.rect(tableX, y, tableW, rowH).lineWidth(isChosen ? 1.25 : 1).strokeColor(isChosen ? C.brand : C.line).stroke();
 
     doc.fillColor(C.ink).font('Helvetica').fontSize(9).text(label, tableX + 12, y + 6, { width: cols.offer - 12 });
 

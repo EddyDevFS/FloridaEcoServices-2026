@@ -153,12 +153,7 @@ export async function renderQuotePdf(opts: {
     signedByEmail: string;
   } | null;
 }) {
-  const doc = new PDFDocument({ 
-    size: 'LETTER', 
-    margin: 36,
-    bufferPages: true
-  });
-  
+  const doc = new PDFDocument({ size: 'LETTER', margin: 48 });
   const chunks: Buffer[] = [];
 
   doc.on('data', (c) => chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c)));
@@ -167,6 +162,32 @@ export async function renderQuotePdf(opts: {
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
   });
+
+  const COLORS = {
+    text: '#111827',
+    muted: '#6b7280',
+    line: '#e5e7eb',
+    brand: '#0b6b55'
+  } as const;
+
+  const left = doc.page.margins.left;
+  const top = doc.page.margins.top;
+  const W = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  const pageBottom = () => doc.page.height - doc.page.margins.bottom;
+  const ensureSpace = (h: number) => {
+    if (doc.y + h > pageBottom()) doc.addPage();
+  };
+
+  const drawHRule = (y: number) => {
+    doc.save();
+    doc.moveTo(left, y).lineTo(left + W, y).lineWidth(1).strokeColor(COLORS.line).stroke();
+    doc.restore();
+  };
+
+  const usd2 = (n: number) => {
+    if (!Number.isFinite(n)) return '—';
+    return `$${Number(n).toFixed(2)}`;
+  };
 
   // ---------- Data ----------
   const computed = computeFromPayload(opts.payload);
@@ -179,61 +200,14 @@ export async function renderQuotePdf(opts: {
   const phone = String(opts.customer?.phone || computed.hotelTel || '').trim();
 
   const acceptedKey = String(opts.acceptance?.acceptedPlanKey || '').trim();
-  const chosenKey = acceptedKey || 'total';
-
-  const offerCopy = (key: string) =>
-    key === 'ondemand'
-      ? { 
-          title: 'On-Demand', 
-          subtitle: 'One-time cleaning as needed', 
-          badge: 'FLEXIBLE',
-          color: '#3B82F6',
-          icon: '⚡'
-        }
-      : key === 'partner'
-        ? { 
-            title: 'Refresh Plan', 
-            subtitle: 'Regular maintenance program', 
-            badge: 'RECOMMENDED',
-            color: '#10B981',
-            icon: '🔄'
-          }
-        : { 
-            title: 'Total Care', 
-            subtitle: 'Complete peace of mind', 
-            badge: "POPULAR",
-            color: '#8B5CF6',
-            icon: '🏆'
-          };
-
-  const money0 = (n: number) => {
-    if (!Number.isFinite(n)) return '—';
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
-  };
-
-  const usd2 = (n: number) => {
-    if (!Number.isFinite(n)) return '—';
-    return `$${Number(n).toFixed(2)}`;
-  };
-  
-  const num0 = (n: number) => {
-    if (!Number.isFinite(n)) return '—';
-    return new Intl.NumberFormat('en-US').format(Math.round(n));
-  };
 
   const rawPlans = (opts.payload && typeof opts.payload === 'object' ? (opts.payload as any).pricing?.plans : null) || {};
-
-  const planRoom = (key: string) => {
+  const planRoom = (key: 'ondemand' | 'partner' | 'total') => {
     const plan = rawPlans?.[key] || {};
     const room = plan.room || {};
-    return {
-      carpet: Number(room.carpet) || 0,
-      tile: Number(room.tile) || 0,
-      both: Number(room.both) || 0
-    };
+    return { carpet: Number(room.carpet) || 0, tile: Number(room.tile) || 0, both: Number(room.both) || 0 };
   };
-
-  const planSqft = (key: string) => {
+  const planSqft = (key: 'ondemand' | 'partner' | 'total') => {
     const plan = rawPlans?.[key] || {};
     return {
       carpetSqft: Number((plan as any).carpetSqft ?? (plan as any).carpetSqftPrice ?? (plan as any).corridorSqft) || 0,
@@ -241,729 +215,220 @@ export async function renderQuotePdf(opts: {
     };
   };
 
-  // ---------- Layout constants ----------
-  const left = doc.page.margins.left;
-  const top = doc.page.margins.top;
-  const W = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-  const H = doc.page.height - doc.page.margins.top - doc.page.margins.bottom;
-
-  // Modern color palette
-  const C = {
-    // Brand colors
-    primary: '#0B6B55',         // Florida Eco Services green
-    primaryLight: '#E7F7F1',
-    secondary: '#F59E0B',       // Accent orange
-    accent: '#3B82F6',          // Blue for CTAs
-    
-    // Neutrals
-    dark: '#111827',
-    grayDark: '#374151',
-    gray: '#6B7280',
-    grayLight: '#E5E7EB',
-    grayLighter: '#F3F4F6',
-    white: '#FFFFFF',
-    
-    // Status colors
-    success: '#10B981',
-    warning: '#F59E0B',
-    error: '#EF4444',
-    info: '#3B82F6'
+  const offerCopy = (key: 'ondemand' | 'partner' | 'total') => {
+    if (key === 'ondemand') return { title: 'On‑Demand', condition: 'No obligation / no commitment.' };
+    if (key === 'partner') return { title: 'Refresh Plan', condition: 'Minimum 50% of rooms completed within 6 months.' };
+    return { title: 'Total Care', condition: 'Minimum 90% of rooms completed within 6 months.' };
   };
 
-  const rr = (x: number) => Math.round(x);
-
-  // ---------- Helper functions ----------
-  const roundRect = (x: number, y: number, w: number, h: number, radius = 8) => {
-    doc.roundedRect(rr(x), rr(y), rr(w), rr(h), radius);
-  };
-
-  const drawGradientCard = (x: number, y: number, w: number, h: number, color1 = C.white, color2 = C.grayLighter) => {
-    doc.save();
-    
-    // Create gradient
-    const gradient = doc.linearGradient(x, y, x, y + h);
-    gradient.stop(0, color1);
-    gradient.stop(1, color2);
-    
-    roundRect(x, y, w, h, 12);
-    doc.fill(gradient);
-    
-    // Subtle border
-    doc.lineWidth(0.5);
-    doc.strokeColor(C.grayLight);
-    doc.stroke();
-    
-    doc.restore();
-  };
-
-  const drawBadge = (x: number, y: number, label: string, color = C.primary) => {
-    if (!label) return;
-    
-    doc.save();
-    doc.font('Helvetica-Bold').fontSize(7);
-    
-    const padX = 8, padY = 3;
-    const w = doc.widthOfString(label) + padX * 2;
-    const h = 16;
-    
-    roundRect(x, y, w, h, 20);
-    doc.fillColor(color + '20'); // 20% opacity
-    doc.fill();
-    
-    doc.fillColor(color);
-    doc.text(label, x + padX, y + padY, { 
-      width: w - padX * 2, 
-      align: 'center',
-      characterSpacing: 0.3
-    });
-    
-    doc.restore();
-  };
-
-  const drawSectionHeader = (text: string, y: number) => {
-    doc.save();
-    
-    // Background accent
-    doc.rect(left, y - 4, 4, 20)
-       .fillColor(C.primary)
-       .fill();
-    
-    // Text
-    doc.font('Helvetica-Bold')
-       .fontSize(14)
-       .fillColor(C.dark)
-       .text(text, left + 12, y, {
-         width: W - 12
-       });
-    
-    doc.restore();
-  };
-
-  // ---------- HEADER (Modern) ----------
-  const headerH = 100;
-  
-  // Header background
-  doc.save();
-  const headerGradient = doc.linearGradient(left, top, left + W, top + headerH);
-  headerGradient.stop(0, C.primary);
-  headerGradient.stop(1, C.primary + 'DD');
-  doc.rect(left, top, W, headerH).fill(headerGradient);
-  doc.restore();
-
-  // Logo
+  // ---------- Header ----------
   const logoPath = findLogoPath();
-  const hasLogo = !!logoPath;
-  const logoW = 140, logoH = 40;
-  
-	  if (logoPath) {
-	    try { 
-	      doc.image(logoPath, left + 20, top + 20, { 
-	        fit: [logoW, logoH]
-	      }); 
-	    } catch {}
-	  }
+  const logoW = 140;
+  const logoH = 48;
 
-  // Quote info (right aligned)
-  const quoteInfoX = left + W - 200;
-  
-  doc.save();
-  roundRect(quoteInfoX, top + 20, 180, 60, 8);
-  doc.fillColor(C.white + '20').fill();
-  
-  doc.fillColor(C.white)
-     .font('Helvetica-Bold')
-     .fontSize(10)
-     .text('QUOTE PROPOSAL', quoteInfoX + 12, top + 30, {
-       width: 156,
-       characterSpacing: 1
-     });
-  
-  doc.font('Helvetica')
-     .fontSize(20)
-     .text(quoteNo || 'NEW', quoteInfoX + 12, top + 45, {
-       width: 156
-     });
-  
-  doc.font('Helvetica')
-     .fontSize(9)
-     .text(`Date: ${now}`, quoteInfoX + 12, top + 70, {
-       width: 156
-     });
-  
-  doc.restore();
-
-  // Header text
-  const headerTextX = hasLogo ? left + logoW + 30 : left + 20;
-  const headerTextW = W - (hasLogo ? logoW + 30 : 20) - 200;
-  
-  doc.save();
-  doc.fillColor(C.white)
-     .font('Helvetica-Bold')
-     .fontSize(24)
-     .text('Elevate Your Hotel\'s Cleanliness', headerTextX, top + 20, {
-       width: headerTextW
-     });
-  
-	  doc.font('Helvetica')
-	     .fontSize(11)
-	     .fillColor(C.white + 'E6')
-	     .text('Professional Carpet & Tile Cleaning Solutions', headerTextX, top + 50, {
-	       width: headerTextW
-	     });
-	  
-	  doc.font('Helvetica')
-	     .fontSize(9)
-	     .fillColor(C.white + 'CC')
-	     .text(`${BRAND.phone} • ${BRAND.email}`, headerTextX, top + 70, {
-	       width: headerTextW
-	     });
-  
-  doc.restore();
-
-  // ---------- CUSTOMER & SCOPE SECTION ----------
-  const section1Y = top + headerH + 24;
-  
-  drawSectionHeader('Project Details', section1Y);
-  
-  const section1ContentY = section1Y + 28;
-  const section1H = 90;
-  
-  // Customer card
-  const customerCardW = W * 0.5 - 10;
-  drawGradientCard(left, section1ContentY, customerCardW, section1H);
-  
-  doc.save();
-  doc.fillColor(C.dark)
-     .font('Helvetica-Bold')
-     .fontSize(10)
-     .text('HOTEL INFORMATION', left + 16, section1ContentY + 16);
-  
-  doc.fillColor(C.grayDark)
-     .font('Helvetica-Bold')
-     .fontSize(12)
-     .text(company || 'Hotel Name', left + 16, section1ContentY + 34, {
-       width: customerCardW - 32
-     });
-  
-  const contactLines = [
-    contact ? `Contact: ${contact}` : null,
-    email ? `Email: ${email}` : null,
-    phone ? `Phone: ${phone}` : null
-  ].filter(Boolean);
-  
-  doc.font('Helvetica')
-     .fontSize(9)
-     .fillColor(C.gray)
-     .text(contactLines.join('\n'), left + 16, section1ContentY + 54, {
-       width: customerCardW - 32,
-       lineGap: 4
-     });
-  
-  doc.restore();
-  
-  // Scope card
-  const scopeCardX = left + customerCardW + 20;
-  const scopeCardW = W - customerCardW - 20;
-  drawGradientCard(scopeCardX, section1ContentY, scopeCardW, section1H);
-  
-  doc.save();
-  doc.fillColor(C.dark)
-     .font('Helvetica-Bold')
-     .fontSize(10)
-     .text('PROJECT SCOPE', scopeCardX + 16, section1ContentY + 16);
-  
-  // Metrics in grid
-  const metricY = section1ContentY + 38;
-  const metricW = (scopeCardW - 32) / 3;
-  
-  const drawMetric = (x: number, y: number, label: string, value: string, subtext = '') => {
-    doc.fillColor(C.primary)
-       .font('Helvetica-Bold')
-       .fontSize(18)
-       .text(value, x, y, {
-         width: metricW,
-         align: 'center'
-       });
-    
-    doc.fillColor(C.gray)
-       .font('Helvetica')
-       .fontSize(8)
-       .text(label, x, y + 24, {
-         width: metricW,
-         align: 'center'
-       });
-    
-    if (subtext) {
-      doc.fillColor(C.grayDark)
-         .font('Helvetica')
-         .fontSize(7)
-         .text(subtext, x, y + 36, {
-           width: metricW,
-           align: 'center'
-         });
-    }
-  };
-  
-  drawMetric(scopeCardX + 16, metricY, 'ROOMS', num0(computed.roomsFinal));
-  drawMetric(scopeCardX + 16 + metricW, metricY, 'CORRIDOR SQFT', num0(computed.corridorSqft));
-  drawMetric(
-    scopeCardX + 16 + metricW * 2, 
-    metricY, 
-    'FREQUENCY', 
-    computed.currentFreqLabel || '—',
-    'Current cleaning'
-  );
-  
-  doc.restore();
-
-  // ---------- OFFERS SECTION ----------
-  const offersSectionY = section1ContentY + section1H + 32;
-  
-  drawSectionHeader('Choose Your Cleaning Plan', offersSectionY);
-  
-  const offersDescY = offersSectionY + 28;
-  
-  doc.save();
-  doc.fillColor(C.grayDark)
-     .font('Helvetica')
-     .fontSize(10)
-     .text('Select the plan that best fits your needs. All prices are per room unless otherwise specified.', 
-           left, offersDescY, {
-             width: W,
-             lineGap: 4
-           });
-  doc.restore();
-  
-  // Offers cards
-  const cardsY = offersDescY + 20;
-  const cardGap = 16;
-  const cardW = (W - cardGap * 2) / 3;
-  const cardH = 140;
-  
-  const offerKeys = ['ondemand', 'partner', 'total'] as const;
-  
-  for (let i = 0; i < offerKeys.length; i++) {
-    const key = offerKeys[i];
-    const x = left + i * (cardW + cardGap);
-    const isChosen = String(chosenKey) === key;
-    const copy = offerCopy(key);
-    const room = planRoom(key);
-    
-    doc.save();
-    
-    // Card with shadow effect
-    if (isChosen) {
-      // Highlight chosen plan
-      roundRect(x - 2, cardsY - 2, cardW + 4, cardH + 4, 14);
-      doc.fillColor(copy.color + '20').fill();
-      
-      doc.lineWidth(2);
-      doc.strokeColor(copy.color);
-      doc.stroke();
-    }
-    
-    // Main card
-    drawGradientCard(x, cardsY, cardW, cardH);
-    
-    // Badge
-    drawBadge(x + 16, cardsY + 16, copy.badge, copy.color);
-    
-    // Icon and title
-    doc.fillColor(C.dark)
-       .font('Helvetica-Bold')
-       .fontSize(18)
-       .text(`${copy.icon} ${copy.title}`, x + 16, cardsY + 38, {
-         width: cardW - 32
-       });
-    
-    // Subtitle
-    doc.fillColor(C.gray)
-       .font('Helvetica')
-       .fontSize(9)
-       .text(copy.subtitle, x + 16, cardsY + 62, {
-         width: cardW - 32
-       });
-    
-    // Price highlight
-    const priceY = cardsY + 88;
-    
-    // Price background accent
-    doc.rect(x, priceY - 8, cardW, 40)
-       .fillColor(copy.color + '10')
-       .fill();
-    
-    // Price
-    doc.fillColor(C.dark)
-       .font('Helvetica-Bold')
-       .fontSize(20)
-       .text(money0(room.both), x + 16, priceY, {
-         width: cardW - 32
-       });
-    
-    doc.fillColor(C.gray)
-       .font('Helvetica')
-       .fontSize(8)
-       .text('Per room / both surfaces', x + 16, priceY + 24, {
-         width: cardW - 32
-       });
-    
-    // Accepted indicator
-    if (opts.acceptance && isChosen) {
-      doc.fillColor(C.success)
-         .font('Helvetica-Bold')
-         .fontSize(9)
-         .text('✓ ACCEPTED', x + cardW - 76, cardsY + 16, {
-           width: 60,
-           align: 'right'
-         });
-    }
-    
-    doc.restore();
+  if (logoPath) {
+    try {
+      doc.image(logoPath, left, top, { fit: [logoW, logoH] });
+    } catch {}
   }
 
-  // ---------- PRICING DETAILS TABLE ----------
-  const tableY = cardsY + cardH + 32;
-  
-  drawSectionHeader('Detailed Pricing', tableY);
-  
-  const tableContentY = tableY + 28;
-  const headerH2 = 28;
-  const rowH = 26;
-  
-  // Table header
-  doc.save();
-  roundRect(left, tableContentY, W, headerH2, 8);
-  doc.fillColor(C.primaryLight).fill();
-  
-  doc.fillColor(C.primary)
-     .font('Helvetica-Bold')
-     .fontSize(10)
-     .text('PLAN', left + 16, tableContentY + 8, {
-       width: 150
-     });
-  
-  doc.text('CARPET / ROOM', left + 166, tableContentY + 8, {
-    width: 110,
+  const headerRightW = 220;
+  const headerRightX = left + W - headerRightW;
+
+  doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(22).text('Quote', headerRightX, top, {
+    width: headerRightW,
     align: 'right'
   });
-  
-  doc.text('TILE / ROOM', left + 286, tableContentY + 8, {
-    width: 110,
+  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(10).text([quoteNo, now].filter(Boolean).join(' • '), headerRightX, top + 26, {
+    width: headerRightW,
     align: 'right'
   });
-  
-  doc.text('BOTH / ROOM', left + 406, tableContentY + 8, {
-    width: W - 406 - 16,
-    align: 'right'
-  });
-  
-  doc.restore();
-  
-  // Table rows
-  const rowStartY = tableContentY + headerH2;
-  
-  const tableRow = (y: number, key: 'ondemand' | 'partner' | 'total', index: number) => {
-    const isChosen = String(chosenKey) === key;
-    const copy = offerCopy(key);
-    const room = planRoom(key);
-    
-    doc.save();
-    
-    // Row background
-    if (isChosen) {
-      doc.rect(left, y, W, rowH)
-         .fillColor(C.primary + '08')
-         .fill();
-    } else if (index % 2 === 1) {
-      doc.rect(left, y, W, rowH)
-         .fillColor(C.grayLighter)
-         .fill();
-    }
-    
-    // Row border
-    doc.rect(left, y, W, rowH)
-       .lineWidth(0.5)
-       .strokeColor(C.grayLight)
-       .stroke();
-    
-    // Plan name with icon
-    doc.fillColor(C.dark)
-       .font('Helvetica')
-       .fontSize(10)
-       .text(`${copy.icon} ${copy.title}`, left + 16, y + 7, {
-         width: 134
-       });
-    
-    // Prices
-    doc.font('Helvetica-Bold');
-    doc.fillColor(isChosen ? C.primary : C.dark)
-       .text(money0(room.carpet), left + 166, y + 7, {
-         width: 110,
-         align: 'right'
-       });
-    
-    doc.fillColor(isChosen ? C.primary : C.dark)
-       .text(money0(room.tile), left + 286, y + 7, {
-         width: 110,
-         align: 'right'
-       });
-    
-    doc.fillColor(isChosen ? C.primary : C.dark)
-       .fontSize(11)
-       .text(money0(room.both), left + 406, y + 6, {
-         width: W - 406 - 16,
-         align: 'right'
-       });
-    
-    doc.restore();
-  };
-  
-  tableRow(rowStartY, 'ondemand', 0);
-  tableRow(rowStartY + rowH, 'partner', 1);
-  tableRow(rowStartY + rowH * 2, 'total', 2);
-  
-  // Table note
-  doc.save();
-  doc.fillColor(C.gray)
-     .font('Helvetica')
-     .fontSize(8)
-     .text('* Common areas billed per square foot (corridor, meeting room, hall, lobby). Rates below.', 
-           left, rowStartY + rowH * 3 + 8, {
-             width: W
-           });
-  doc.restore();
 
-  // ---------- BENEFITS SECTION ----------
-  // Common areas table (per sqft)
-  const commonY = rowStartY + rowH * 3 + 26;
-  const commonTitleY = commonY + 10;
-  const commonTableY = commonTitleY + 14;
-  const commonHeaderH = 22;
-  const commonRowH = 20;
+  const headerLeftX = left + (logoPath ? logoW + 12 : 0);
+  const headerLeftW = W - (logoPath ? logoW + 12 : 0) - headerRightW - 10;
+  doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(12).text(BRAND.name, headerLeftX, top + 2, { width: headerLeftW });
+  doc
+    .fillColor(COLORS.muted)
+    .font('Helvetica')
+    .fontSize(9)
+    .text(BRAND.address1, headerLeftX, top + 18, { width: headerLeftW })
+    .text(BRAND.address2, headerLeftX, top + 30, { width: headerLeftW })
+    .text(`${BRAND.phone} • ${BRAND.email} • ${BRAND.website}`, headerLeftX, top + 42, { width: headerLeftW });
 
-  doc.save();
-  doc.fillColor(C.dark).font('Helvetica-Bold').fontSize(10).text('Common areas (per sqft)', left, commonTitleY, { width: W });
-  doc.restore();
+  const headerBottomY = top + 64;
+  drawHRule(headerBottomY);
+  doc.y = headerBottomY + 14;
 
-  // header
-  doc.save();
-  roundRect(left, commonTableY, W, commonHeaderH, 8);
-  doc.fillColor(C.grayLighter).fill();
-  doc.fillColor(C.grayDark).font('Helvetica-Bold').fontSize(9);
-  doc.text('PLAN', left + 16, commonTableY + 7, { width: 150 });
-  doc.text('CARPET $/SQFT', left + 166, commonTableY + 7, { width: 150, align: 'right' });
-  doc.text('TILE $/SQFT', left + 316, commonTableY + 7, { width: W - 316 - 16, align: 'right' });
-  doc.restore();
+  // ---------- Customer ----------
+  doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(11).text('Customer');
+  doc.fillColor(COLORS.text).font('Helvetica').fontSize(10);
+  if (company) doc.text(company);
+  if (contact) doc.text(contact);
+  if (email) doc.text(email);
+  if (phone) doc.text(phone);
+  if (computed.hotelAddress) doc.text(computed.hotelAddress);
+  doc.moveDown(0.8);
 
-  const commonRow = (y: number, key: 'ondemand' | 'partner' | 'total', index: number) => {
-    const isChosen = String(chosenKey) === key;
-    const copy = offerCopy(key);
-    const sqft = planSqft(key);
-    doc.save();
-    if (isChosen) {
-      doc.rect(left, y, W, commonRowH).fillColor(C.primary + '08').fill();
-    } else if (index % 2 === 1) {
-      doc.rect(left, y, W, commonRowH).fillColor(C.white).fill();
-    }
-    doc.rect(left, y, W, commonRowH).lineWidth(0.5).strokeColor(C.grayLight).stroke();
-    doc.fillColor(C.dark).font('Helvetica').fontSize(9).text(`${copy.icon} ${copy.title}`, left + 16, y + 6, { width: 150 });
-    doc.fillColor(isChosen ? C.primary : C.dark).font('Helvetica-Bold');
-    doc.text(usd2(sqft.carpetSqft), left + 166, y + 6, { width: 150, align: 'right' });
-    doc.text(usd2(sqft.tileSqft), left + 316, y + 6, { width: W - 316 - 16, align: 'right' });
-    doc.restore();
-  };
-
-  const commonStartY = commonTableY + commonHeaderH;
-  commonRow(commonStartY, 'ondemand', 0);
-  commonRow(commonStartY + commonRowH, 'partner', 1);
-  commonRow(commonStartY + commonRowH * 2, 'total', 2);
-
-  let benefitsY = commonStartY + commonRowH * 3 + 28;
-  const safeBottomY = top + H - 120;
-  if (benefitsY + 180 > safeBottomY) {
-    doc.addPage();
-    benefitsY = doc.page.margins.top;
-  }
-  
-  drawSectionHeader('Why Choose Florida Eco Services', benefitsY);
-  
-  const benefitsContentY = benefitsY + 28;
-  const benefitsH = 100;
-  const benefitColW = (W - 20) / 2;
-  
-  // Left column - What's included
-  drawGradientCard(left, benefitsContentY, benefitColW, benefitsH);
-  
-  doc.save();
-  doc.fillColor(C.dark)
-     .font('Helvetica-Bold')
-     .fontSize(10)
-     .text('PREMIUM SERVICE INCLUDES', left + 16, benefitsContentY + 16);
-  
-  const benefitsList = [
-    { icon: '✓', text: 'Tile & grout deep cleaning' },
-    { icon: '✓', text: 'Carpet encapsulation cleaning' },
-    { icon: '✓', text: 'Odor neutralization' },
-    { icon: '✓', text: 'Eco-friendly solutions' },
-    { icon: '✓', text: 'Hotel-optimized scheduling' },
-    { icon: '✓', text: '24/7 emergency support' }
+  // ---------- Scope ----------
+  doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(11).text('Scope');
+  const scopeTableY = doc.y + 8;
+  const scopeRowH = 18;
+  const scopeX = left;
+  const scopeW = W;
+  const kW = 190;
+  const vW = scopeW - kW;
+  const scopeRows: Array<[string, string]> = [
+    ['Rooms', num(computed.roomsFinal)],
+    ['Corridor sqft', num(computed.corridorSqft)],
+    ['Current cleaning frequency', computed.currentFreqLabel || '—']
   ];
-  
-  let benefitY = benefitsContentY + 40;
-  benefitsList.forEach((benefit, i) => {
-    if (i < 3) { // First column
-      doc.fillColor(C.primary)
-         .font('Helvetica-Bold')
-         .fontSize(9)
-         .text(benefit.icon, left + 16, benefitY);
-      
-      doc.fillColor(C.grayDark)
-         .font('Helvetica')
-         .fontSize(9)
-         .text(benefit.text, left + 30, benefitY, {
-           width: benefitColW - 46
-         });
-      
-      benefitY += 16;
-    }
-  });
-  
-  doc.restore();
-  
-  // Right column - Process & Guarantee
-  drawGradientCard(left + benefitColW + 20, benefitsContentY, benefitColW, benefitsH);
-  
   doc.save();
-  doc.fillColor(C.dark)
-     .font('Helvetica-Bold')
-     .fontSize(10)
-     .text('OUR GUARANTEE', left + benefitColW + 36, benefitsContentY + 16);
-  
-  benefitY = benefitsContentY + 40;
-  benefitsList.forEach((benefit, i) => {
-    if (i >= 3) { // Second column
-      doc.fillColor(C.primary)
-         .font('Helvetica-Bold')
-         .fontSize(9)
-         .text(benefit.icon, left + benefitColW + 36, benefitY);
-      
-      doc.fillColor(C.grayDark)
-         .font('Helvetica')
-         .fontSize(9)
-         .text(benefit.text, left + benefitColW + 50, benefitY, {
-           width: benefitColW - 66
-         });
-      
-      benefitY += 16;
-    }
-  });
-  
-  // CTA Box
-  const ctaY = benefitsContentY + benefitsH - 36;
-  doc.rect(left + benefitColW + 36, ctaY, benefitColW - 52, 28)
-     .fillColor(C.primary + '20')
-     .fill();
-  
-  doc.fillColor(C.primary)
-     .font('Helvetica-Bold')
-     .fontSize(9)
-     .text('Ready to elevate your cleanliness?', left + benefitColW + 42, ctaY + 8, {
-       width: benefitColW - 64
-     });
-  
-  doc.fillColor(C.dark)
-     .font('Helvetica-Bold')
-     .fontSize(8)
-     .text('APPROVE ONLINE TO LOCK YOUR RATE', left + benefitColW + 42, ctaY + 20, {
-       width: benefitColW - 64
-     });
-  
+  doc.roundedRect(scopeX, scopeTableY, scopeW, scopeRowH * scopeRows.length + 12, 10).lineWidth(1).strokeColor(COLORS.line).stroke();
   doc.restore();
-
-  // ---------- FOOTER / SIGNATURE ----------
-  const footerY = Math.min(benefitsContentY + benefitsH + 40, top + H - 100);
-  const footerH = 80;
-  
-  drawGradientCard(left, footerY, W, footerH);
-  
-  // Footer content
-  doc.save();
-  
-  if (opts.acceptance) {
-    // Accepted version
-    const a = opts.acceptance;
-    doc.fillColor(C.success)
-       .font('Helvetica-Bold')
-       .fontSize(11)
-       .text('✓ QUOTE ACCEPTED', left + 16, footerY + 16);
-    
-    const acceptedLines = [
-      `Plan: ${offerCopy(chosenKey).title}`,
-      `Signed by: ${a.signedByName}${a.signedByTitle ? ` (${a.signedByTitle})` : ''}`,
-      `Date: ${a.acceptedAt.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })}`
-    ];
-    
-    doc.fillColor(C.grayDark)
-       .font('Helvetica')
-       .fontSize(9)
-       .text(acceptedLines.join(' • '), left + 16, footerY + 36, {
-         width: W - 32,
-         lineGap: 4
-       });
-  } else {
-    // Pending approval version
-    doc.fillColor(C.dark)
-       .font('Helvetica-Bold')
-       .fontSize(11)
-       .text('NEXT STEPS', left + 16, footerY + 16);
-    
-    doc.fillColor(C.grayDark)
-       .font('Helvetica')
-       .fontSize(9)
-       .text('This quote is valid for 30 days. To proceed:', left + 16, footerY + 34, {
-         width: W - 32
-       });
-    
-    doc.fillColor(C.primary)
-       .font('Helvetica-Bold')
-       .fontSize(9)
-       .text('1. Select your preferred plan • 2. Approve digitally online • 3. We\'ll contact you to schedule', 
-             left + 16, footerY + 52, {
-               width: W - 32
-             });
+  let sy = scopeTableY + 8;
+  for (const [k, v] of scopeRows) {
+    doc.fillColor(COLORS.muted).font('Helvetica').fontSize(9).text(k, scopeX + 12, sy, { width: kW - 12 });
+    doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(9).text(v, scopeX + kW, sy, { width: vW - 12, align: 'right' });
+    sy += scopeRowH;
   }
-  
-  // Company info
-  doc.fillColor(C.gray)
-     .font('Helvetica')
-     .fontSize(8)
-     .text(`${BRAND.name} • ${BRAND.address1} • ${BRAND.address2} • ${BRAND.phone} • ${BRAND.email} • ${BRAND.website}`, 
-           left + 16, footerY + footerH - 20, {
-             width: W - 32
-           });
-  
+  doc.y = scopeTableY + scopeRowH * scopeRows.length + 18;
+
+  // ---------- Plans & Pricing ----------
+  ensureSpace(220);
+  doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(11).text('Plans & pricing');
+  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(9).text('Fixed pricing per room + per sqft for common areas.', { width: W });
+  doc.moveDown(0.5);
+
+  const tableX = left;
+  const tableW = W;
+  const headH = 22;
+  const rowH = 22;
+  const colPlan = 132;
+  const colCarpetRoom = 76;
+  const colTileRoom = 76;
+  const colBothRoom = 76;
+  const colCarpetSqft = 80;
+  const colTileSqft = tableW - (colPlan + colCarpetRoom + colTileRoom + colBothRoom + colCarpetSqft);
+
+  const tableY = doc.y;
+  doc.save();
+  doc.roundedRect(tableX, tableY, tableW, headH, 10).fillColor('#f3f4f6').fill();
+  doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(9);
+  doc.text('Plan', tableX + 10, tableY + 7, { width: colPlan - 10 });
+  doc.text('Carpet/room', tableX + colPlan, tableY + 7, { width: colCarpetRoom, align: 'right' });
+  doc.text('Tile/room', tableX + colPlan + colCarpetRoom, tableY + 7, { width: colTileRoom, align: 'right' });
+  doc.text('Both/room', tableX + colPlan + colCarpetRoom + colTileRoom, tableY + 7, { width: colBothRoom, align: 'right' });
+  doc.text('Carpet $/sqft', tableX + colPlan + colCarpetRoom + colTileRoom + colBothRoom, tableY + 7, { width: colCarpetSqft, align: 'right' });
+  doc.text('Tile $/sqft', tableX + colPlan + colCarpetRoom + colTileRoom + colBothRoom + colCarpetSqft, tableY + 7, {
+    width: colTileSqft - 10,
+    align: 'right'
+  });
   doc.restore();
 
-  // ---------- FINAL PAGE NUMBER ----------
-  const pageCount = doc.bufferedPageRange().count;
-  for (let i = 0; i < pageCount; i++) {
-    doc.switchToPage(i);
-    
-    // Add page number at bottom
-    doc.fillColor(C.gray)
-       .font('Helvetica')
-       .fontSize(8)
-       .text(`Page ${i + 1} of ${pageCount}`, 
-             left, doc.page.height - 20, {
-               width: W,
-               align: 'center'
-             });
+  const planKeys: Array<'ondemand' | 'partner' | 'total'> = ['ondemand', 'partner', 'total'];
+  let ry = tableY + headH;
+  for (const key of planKeys) {
+    const copy = offerCopy(key);
+    const room = planRoom(key);
+    const sqft = planSqft(key);
+    const isAccepted = !!opts.acceptance && acceptedKey === key;
+
+    doc.save();
+    doc.rect(tableX, ry, tableW, rowH).lineWidth(isAccepted ? 2 : 1).strokeColor(isAccepted ? COLORS.brand : COLORS.line).stroke();
+    doc.fillColor(COLORS.text).font('Helvetica').fontSize(9).text(copy.title, tableX + 10, ry + 6, { width: colPlan - 10 });
+    doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(9);
+    doc.text(money(room.carpet), tableX + colPlan, ry + 6, { width: colCarpetRoom, align: 'right' });
+    doc.text(money(room.tile), tableX + colPlan + colCarpetRoom, ry + 6, { width: colTileRoom, align: 'right' });
+    doc.text(money(room.both), tableX + colPlan + colCarpetRoom + colTileRoom, ry + 6, { width: colBothRoom, align: 'right' });
+    doc.text(usd2(sqft.carpetSqft), tableX + colPlan + colCarpetRoom + colTileRoom + colBothRoom, ry + 6, {
+      width: colCarpetSqft,
+      align: 'right'
+    });
+    doc.text(usd2(sqft.tileSqft), tableX + colPlan + colCarpetRoom + colTileRoom + colBothRoom + colCarpetSqft, ry + 6, {
+      width: colTileSqft - 10,
+      align: 'right'
+    });
+    doc.restore();
+    ry += rowH;
+  }
+  doc.y = ry + 10;
+
+  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(8).text('Note: "Both" applies when a room includes carpet + tile surfaces.', {
+    width: W
+  });
+  doc.moveDown(0.6);
+
+  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(9).text('Plan conditions:', { width: W });
+  doc.moveDown(0.2);
+  for (const key of planKeys) {
+    const c = offerCopy(key);
+    doc.text(`• ${c.title}: ${c.condition}`, { width: W });
+  }
+  doc.moveDown(0.8);
+
+  // ---------- Service & marketing ----------
+  ensureSpace(170);
+  doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(11).text('Service & process');
+  doc
+    .fillColor(COLORS.muted)
+    .font('Helvetica')
+    .fontSize(9)
+    .text('Designed for hotel operations: fast turnaround, consistent results, and minimal disruption.', { width: W });
+  doc.moveDown(0.4);
+
+  const colGap = 18;
+  const colW = (W - colGap) / 2;
+  const col1X = left;
+  const col2X = left + colW + colGap;
+  const startY = doc.y;
+
+  doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(10).text('Tile & grout', col1X, startY, { width: colW });
+  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(9);
+  doc.text('• Detergent solution', col1X, startY + 14, { width: colW });
+  doc.text('• Hard stiff brushing', col1X, startY + 28, { width: colW });
+  doc.text('• 1200 PSI rinse / extraction', col1X, startY + 42, { width: colW });
+
+  doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(10).text('Carpet cleaning', col2X, startY, { width: colW });
+  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(9);
+  doc.text('• Detergent Pro Encapsulation', col2X, startY + 14, { width: colW });
+  doc.text('• Odor neutralizer', col2X, startY + 28, { width: colW });
+  doc.text('• High-agitation brushing process', col2X, startY + 42, { width: colW });
+  doc.text('• Commercial fiber protectant', col2X, startY + 56, { width: colW });
+
+  doc.y = startY + 78;
+  doc.fillColor(COLORS.brand).font('Helvetica-Bold').fontSize(9).text('30–40 minutes per room • Ready after ~1 hour', left, doc.y, {
+    width: W,
+    align: 'center'
+  });
+  doc.moveDown(1.2);
+
+  // ---------- Terms ----------
+  ensureSpace(120);
+  doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(11).text('Terms');
+  doc
+    .fillColor(COLORS.muted)
+    .font('Helvetica')
+    .fontSize(9)
+    .text(
+      'Pricing is subject to the agreed scope and conditions. Final quantities and any special constraints may be confirmed after on-site validation.',
+      { width: W }
+    );
+  doc.moveDown(0.9);
+
+  // ---------- Signature / status ----------
+  if (opts.acceptance) {
+    ensureSpace(86);
+    doc.save();
+    const boxY = doc.y;
+    doc.roundedRect(left, boxY, W, 78, 10).lineWidth(1).strokeColor(COLORS.line).fillColor('#ffffff').fillAndStroke();
+    doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(10).text('Digital signature', left + 12, boxY + 10, { width: W - 24 });
+    doc.fillColor(COLORS.muted).font('Helvetica').fontSize(9);
+    doc.text(`Signed by: ${opts.acceptance.signedByName} (${opts.acceptance.signedByTitle})`, left + 12, boxY + 28, { width: W - 24 });
+    doc.text(`Email: ${opts.acceptance.signedByEmail}`, left + 12, boxY + 42, { width: W - 24 });
+    doc.text(`Timestamp (UTC): ${opts.acceptance.acceptedAt.toISOString()}`, left + 12, boxY + 56, { width: W - 24 });
+    doc.restore();
+  } else {
+    doc.fillColor(COLORS.muted).font('Helvetica').fontSize(9).text('To approve: choose a plan and sign digitally using the secure link.', { width: W });
   }
 
   doc.end();

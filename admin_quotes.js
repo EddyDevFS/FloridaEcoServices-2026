@@ -424,7 +424,7 @@
         <div class="qwOfferTitle">${label}</div>
         ${subtitle ? `<div class="qwHint" style="margin-top:6px;">${subtitle}</div>` : ``}
 
-        <div class="qwOfferRow" style="margin-top:10px;"><span>Average price / room</span><b>${money(calc.avgPerRoom)}</b></div>
+        <div class="qwOfferRow" style="margin-top:10px;"><span>Price / room (both)</span><b>${both}</b></div>
 
         <div class="qwHint" style="margin-top:10px; font-weight:850; color:rgba(8,20,26,.72);">Included</div>
         <div class="qwHint" style="margin-top:6px;">

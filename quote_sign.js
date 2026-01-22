@@ -4,7 +4,6 @@
   const qsMeta = document.getElementById('qsMeta');
   const scopeHost = document.getElementById('qsScope');
   const offersHost = document.getElementById('qsOffers');
-  const pricingHost = document.getElementById('qsPricingDetails');
   const downloadBtn = document.getElementById('qsDownloadBtn');
   const printBtn = document.getElementById('qsPrintBtn');
   const signBtn = document.getElementById('qsSignBtn');
@@ -207,43 +206,6 @@
     });
   }
 
-  function renderPricingDetails() {
-    if (!pricingHost) return;
-    const payload = quote?.payload || {};
-    const rows = ['ondemand', 'partner', 'total'].map((k) => {
-      const copy = offersCopy(k);
-      const plan = getPlan(payload, k);
-      return `
-        <div class="row">
-          <div>${escapeHtml(copy.title)}</div>
-          <div>${escapeHtml(money(plan.room.carpet))}</div>
-          <div>${escapeHtml(money(plan.room.tile))}</div>
-          <div><b>${escapeHtml(money(plan.room.both))}</b></div>
-          <div>${escapeHtml(money2(plan.carpetSqft))}</div>
-          <div>${escapeHtml(money2(plan.tileSqft))}</div>
-        </div>
-      `;
-    });
-
-    pricingHost.style.display = '';
-    pricingHost.innerHTML = `
-      <div class="row head">
-        <div>Plan</div>
-        <div>Carpet / room</div>
-        <div>Tile / room</div>
-        <div>Both / room</div>
-        <div>Carpet $/sqft</div>
-        <div>Tile $/sqft</div>
-      </div>
-      ${rows.join('')}
-      <div class="row">
-        <div class="mut" style="grid-column:1/-1;">
-          Common areas billed per square foot (corridor, meeting room, hall, lobby). Eddy Sallault will confirm scheduling and organization details after approval.
-        </div>
-      </div>
-    `;
-  }
-
   async function loadQuote() {
     if (!token) throw new Error('Missing token.');
     const res = await fetch(`${apiBase}/api/v1/public/quotes/by-token/${encodeURIComponent(token)}`, { credentials: 'include' });
@@ -266,7 +228,6 @@
 
     renderScope();
     renderOffers();
-    renderPricingDetails();
     setStatus('', 'info');
   }
 

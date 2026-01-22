@@ -38,24 +38,6 @@
 	    .qs-scopeCard .k { color:#64748b; font-weight:850; font-size:12px; }
 	    .qs-scopeCard .v { margin-top:6px; font-weight:950; font-size:16px; color:#0f172a; }
 	    .qs-scopeCard .v.small { font-size:14px; }
-	    .qs-table { margin-top: 14px; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden; }
-	    .qs-table .row { display:grid; grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr 1fr; gap:0; }
-	    .qs-table .row > div { padding: 10px 12px; border-bottom:1px solid #e2e8f0; font-weight:850; }
-	    .qs-table .row.head { background:#f1f5f9; }
-	    .qs-table .row.head > div { font-weight:950; color:#0f172a; border-bottom:1px solid #e2e8f0; }
-	    .qs-table .row > div:nth-child(n+2){ text-align:right; }
-	    .qs-table .row:last-child > div { border-bottom:none; }
-	    .qs-table .mut { color:#64748b; font-weight:850; }
-	    @media (max-width: 860px){
-	      .qs-table .row { grid-template-columns: 1fr 1fr; }
-	      .qs-table .row.head { display:none; }
-	      .qs-table .row > div:nth-child(n+2){ text-align:left; }
-	      .qs-table .row > div { border-bottom:none; padding: 8px 12px; }
-	      .qs-table .row { border-bottom:1px solid #e2e8f0; padding: 6px 0; }
-	      .qs-table .row:last-child { border-bottom:none; }
-	      .qs-table .row > div:nth-child(odd){ color:#64748b; font-weight:850; }
-	      .qs-table .row > div:nth-child(even){ font-weight:950; color:#0f172a; }
-	    }
 	    .qs-form { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 	    .qs-form .form-field { margin:0; }
 	    .qs-form .full { grid-column: 1 / -1; }
@@ -85,8 +67,6 @@
 	      <div class="qs-scope" id="qsScope" style="display:none;"></div>
 
 	      <div class="qs-grid" id="qsOffers"></div>
-
-	      <div class="qs-table" id="qsPricingDetails" style="display:none;"></div>
 
 	      <div class="qs-divider"></div>
 

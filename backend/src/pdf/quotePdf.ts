@@ -210,6 +210,11 @@ export async function renderQuotePdf(opts: {
     if (!Number.isFinite(n)) return '—';
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
   };
+
+  const usd2 = (n: number) => {
+    if (!Number.isFinite(n)) return '—';
+    return `$${Number(n).toFixed(2)}`;
+  };
   
   const num0 = (n: number) => {
     if (!Number.isFinite(n)) return '—';
@@ -225,6 +230,14 @@ export async function renderQuotePdf(opts: {
       carpet: Number(room.carpet) || 0,
       tile: Number(room.tile) || 0,
       both: Number(room.both) || 0
+    };
+  };
+
+  const planSqft = (key: string) => {
+    const plan = rawPlans?.[key] || {};
+    return {
+      carpetSqft: Number((plan as any).carpetSqft ?? (plan as any).carpetSqftPrice ?? (plan as any).corridorSqft) || 0,
+      tileSqft: Number((plan as any).tileSqft ?? (plan as any).tileSqftPrice ?? (plan as any).corridorSqft) || 0
     };
   };
 
@@ -714,14 +727,63 @@ export async function renderQuotePdf(opts: {
   doc.fillColor(C.gray)
      .font('Helvetica')
      .fontSize(8)
-     .text('* Corridor pricing available upon request. Common areas billed per square foot.', 
+     .text('* Common areas billed per square foot (corridor, meeting room, hall, lobby). Rates below.', 
            left, rowStartY + rowH * 3 + 8, {
              width: W
            });
   doc.restore();
 
   // ---------- BENEFITS SECTION ----------
-  const benefitsY = rowStartY + rowH * 3 + 32;
+  // Common areas table (per sqft)
+  const commonY = rowStartY + rowH * 3 + 26;
+  const commonTitleY = commonY + 10;
+  const commonTableY = commonTitleY + 14;
+  const commonHeaderH = 22;
+  const commonRowH = 20;
+
+  doc.save();
+  doc.fillColor(C.dark).font('Helvetica-Bold').fontSize(10).text('Common areas (per sqft)', left, commonTitleY, { width: W });
+  doc.restore();
+
+  // header
+  doc.save();
+  roundRect(left, commonTableY, W, commonHeaderH, 8);
+  doc.fillColor(C.grayLighter).fill();
+  doc.fillColor(C.grayDark).font('Helvetica-Bold').fontSize(9);
+  doc.text('PLAN', left + 16, commonTableY + 7, { width: 150 });
+  doc.text('CARPET $/SQFT', left + 166, commonTableY + 7, { width: 150, align: 'right' });
+  doc.text('TILE $/SQFT', left + 316, commonTableY + 7, { width: W - 316 - 16, align: 'right' });
+  doc.restore();
+
+  const commonRow = (y: number, key: 'ondemand' | 'partner' | 'total', index: number) => {
+    const isChosen = String(chosenKey) === key;
+    const copy = offerCopy(key);
+    const sqft = planSqft(key);
+    doc.save();
+    if (isChosen) {
+      doc.rect(left, y, W, commonRowH).fillColor(C.primary + '08').fill();
+    } else if (index % 2 === 1) {
+      doc.rect(left, y, W, commonRowH).fillColor(C.white).fill();
+    }
+    doc.rect(left, y, W, commonRowH).lineWidth(0.5).strokeColor(C.grayLight).stroke();
+    doc.fillColor(C.dark).font('Helvetica').fontSize(9).text(`${copy.icon} ${copy.title}`, left + 16, y + 6, { width: 150 });
+    doc.fillColor(isChosen ? C.primary : C.dark).font('Helvetica-Bold');
+    doc.text(usd2(sqft.carpetSqft), left + 166, y + 6, { width: 150, align: 'right' });
+    doc.text(usd2(sqft.tileSqft), left + 316, y + 6, { width: W - 316 - 16, align: 'right' });
+    doc.restore();
+  };
+
+  const commonStartY = commonTableY + commonHeaderH;
+  commonRow(commonStartY, 'ondemand', 0);
+  commonRow(commonStartY + commonRowH, 'partner', 1);
+  commonRow(commonStartY + commonRowH * 2, 'total', 2);
+
+  let benefitsY = commonStartY + commonRowH * 3 + 28;
+  const safeBottomY = top + H - 120;
+  if (benefitsY + 180 > safeBottomY) {
+    doc.addPage();
+    benefitsY = doc.page.margins.top;
+  }
   
   drawSectionHeader('Why Choose Florida Eco Services', benefitsY);
   

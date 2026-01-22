@@ -2,7 +2,9 @@
   const apiBase = (window.FECO?.API_BASE || 'http://localhost:3001').toString().replace(/\/+$/, '');
 
   const qsMeta = document.getElementById('qsMeta');
+  const scopeHost = document.getElementById('qsScope');
   const offersHost = document.getElementById('qsOffers');
+  const pricingHost = document.getElementById('qsPricingDetails');
   const downloadBtn = document.getElementById('qsDownloadBtn');
   const printBtn = document.getElementById('qsPrintBtn');
   const signBtn = document.getElementById('qsSignBtn');
@@ -39,41 +41,80 @@
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
   }
 
-  function computeAvgPerRoom(payload, planKey) {
+  function money2(n) {
+    if (!Number.isFinite(n)) return '—';
+    return `$${Number(n).toFixed(2)}`;
+  }
+
+  function currentFreqLabel(payload) {
+    const state = payload && typeof payload === 'object' ? payload : {};
+    const key = String(state.currentFrequency || '').trim();
+    const map = {
+      '1/year': 'Once per year',
+      '2/year': 'Twice per year',
+      '3/year': 'Three times per year',
+      quarterly: 'Quarterly',
+      monthly: 'Monthly',
+      unknown: 'Not sure'
+    };
+    return map[key] || '—';
+  }
+
+  function clampInt(v, min, max) {
+    let n = parseInt(String(v ?? ''), 10);
+    if (Number.isNaN(n)) n = min;
+    return Math.max(min, Math.min(max, n));
+  }
+
+  function computeRoomsFinal(payload) {
+    const state = payload && typeof payload === 'object' ? payload : {};
+    const buildingsCount = clampInt(state.buildingsCount, 1, 25);
+    const buildings = Array.isArray(state.buildings) ? state.buildings.slice(0, buildingsCount) : [];
+    while (buildings.length < buildingsCount) buildings.push({ floors: 0, roomsPerFloor: 0 });
+    let roomsCalculated = 0;
+    for (const b of buildings) roomsCalculated += clampInt(b?.floors, 0, 99) * clampInt(b?.roomsPerFloor, 0, 200);
+    const roomsOverride = state.roomsOverride;
+    const roomsFinal =
+      roomsOverride !== null &&
+      roomsOverride !== undefined &&
+      roomsOverride !== '' &&
+      !Number.isNaN(parseInt(String(roomsOverride), 10))
+        ? clampInt(roomsOverride, 0, 99999)
+        : roomsCalculated;
+    return roomsFinal;
+  }
+
+  function computeCorridorSqft(payload) {
+    const state = payload && typeof payload === 'object' ? payload : {};
+    const corridor = state.corridor || {};
+    const enabled = !!corridor.enabled;
+    if (!enabled) return 0;
+    const qty = clampInt(corridor.qty, 0, 9999);
+    const sqftPer = clampInt(corridor.sqftPer, 0, 999999);
+    const calculated = qty * sqftPer;
+    const override = corridor.sqftOverride;
+    const finalSqft =
+      override !== null && override !== undefined && override !== '' && !Number.isNaN(parseInt(String(override), 10))
+        ? clampInt(override, 0, 999999999)
+        : calculated;
+    return finalSqft;
+  }
+
+  function getPlan(payload, planKey) {
     const state = payload && typeof payload === 'object' ? payload : {};
     const plan = state?.pricing?.plans?.[planKey] || {};
     const room = plan.room || {};
-    const minRooms = Number(state?.pricing?.minRooms || 0) || 0;
-
-    const buildings = Array.isArray(state.buildings) ? state.buildings : [];
-    const buildingsCount = Number(state.buildingsCount || buildings.length || 0) || buildings.length || 0;
-    const used = buildings.slice(0, Math.max(0, buildingsCount));
-    let roomsCalc = 0;
-    for (const b of used) {
-      const floors = parseInt(String(b?.floors ?? 0), 10) || 0;
-      const roomsPerFloor = parseInt(String(b?.roomsPerFloor ?? 0), 10) || 0;
-      roomsCalc += Math.max(0, floors) * Math.max(0, roomsPerFloor);
-    }
-    const ov = state.roomsOverride;
-    const roomsFinal =
-      ov !== null && ov !== undefined && ov !== '' && !Number.isNaN(parseInt(String(ov), 10)) ? parseInt(String(ov), 10) : roomsCalc;
-    const billed = Math.max(roomsFinal, minRooms);
-    if (!billed) return { perRoom: 0, billedRooms: 0 };
-
-    const mode = String(state.mode || 'quick');
-    let roomsCost = 0;
-    if (mode === 'advanced' && state.roomMix) {
-      const m = state.roomMix || {};
-      const carpet = parseInt(String(m.carpet || 0), 10) || 0;
-      const tile = parseInt(String(m.tile || 0), 10) || 0;
-      const both = parseInt(String(m.both || 0), 10) || 0;
-      roomsCost = carpet * (Number(room.carpet) || 0) + tile * (Number(room.tile) || 0) + both * (Number(room.both) || 0);
-      if (billed > roomsFinal) roomsCost += (billed - roomsFinal) * (Number(room.both) || 0);
-    } else {
-      roomsCost = billed * (Number(room.both) || 0);
-    }
-
-    return { perRoom: roomsCost / billed, billedRooms: billed };
+    const carpetSqft = Number(plan.carpetSqft ?? plan.carpetSqftPrice ?? plan.corridorSqft) || 0;
+    const tileSqft = Number(plan.tileSqft ?? plan.tileSqftPrice ?? plan.corridorSqft) || 0;
+    return {
+      room: {
+        carpet: Number(room.carpet) || 0,
+        tile: Number(room.tile) || 0,
+        both: Number(room.both) || 0
+      },
+      carpetSqft,
+      tileSqft
+    };
   }
 
   function offersCopy(planKey) {
@@ -98,6 +139,32 @@
     };
   }
 
+  function renderScope() {
+    if (!scopeHost) return;
+    const payload = quote?.payload || {};
+    const rooms = computeRoomsFinal(payload);
+    const sqft = computeCorridorSqft(payload);
+    const freq = currentFreqLabel(payload);
+    const hotelAddress = String(payload?.hotel?.address || quote?.title || '').trim();
+
+    scopeHost.style.display = '';
+    scopeHost.innerHTML = `
+      <div class="qs-scopeCard">
+        <div class="k">Rooms</div>
+        <div class="v">${escapeHtml(new Intl.NumberFormat('en-US').format(Math.round(rooms || 0)))}</div>
+      </div>
+      <div class="qs-scopeCard">
+        <div class="k">Corridor sqft</div>
+        <div class="v">${escapeHtml(new Intl.NumberFormat('en-US').format(Math.round(sqft || 0)))}</div>
+      </div>
+      <div class="qs-scopeCard">
+        <div class="k">Current cleaning frequency</div>
+        <div class="v small">${escapeHtml(freq)}</div>
+      </div>
+      ${hotelAddress ? `<div class="qs-scopeCard" style="grid-column:1/-1;"><div class="k">Location</div><div class="v small">${escapeHtml(hotelAddress)}</div></div>` : ''}
+    `;
+  }
+
   function renderOffers() {
     if (!offersHost) return;
     const payload = quote?.payload || {};
@@ -105,8 +172,8 @@
     offersHost.innerHTML = keys
       .map((k) => {
         const copy = offersCopy(k);
-        const calc = computeAvgPerRoom(payload, k);
-        const price = money(calc.perRoom);
+        const plan = getPlan(payload, k);
+        const price = money(plan.room.both);
         const active = k === selectedPlanKey ? 'active' : '';
         return `
           <div class="qs-offer ${active}" data-plan="${escapeHtml(k)}">
@@ -114,7 +181,13 @@
             <div class="tagline">${escapeHtml(copy.tagline)}</div>
             <div class="qs-price">
               <b>${escapeHtml(price)}</b>
-              <span>avg price / room</span>
+              <span>Both surfaces / room</span>
+            </div>
+            <div class="qs-mini">
+              <div class="row"><small>Carpet / room</small><span>${escapeHtml(money(plan.room.carpet))}</span></div>
+              <div class="row"><small>Tile / room</small><span>${escapeHtml(money(plan.room.tile))}</span></div>
+              <div class="row"><small>Carpet $/sqft (common areas)</small><span>${escapeHtml(money2(plan.carpetSqft))}</span></div>
+              <div class="row"><small>Tile $/sqft (common areas)</small><span>${escapeHtml(money2(plan.tileSqft))}</span></div>
             </div>
             <div class="qs-bullets">
               ${copy.bullets
@@ -132,6 +205,43 @@
         renderOffers();
       });
     });
+  }
+
+  function renderPricingDetails() {
+    if (!pricingHost) return;
+    const payload = quote?.payload || {};
+    const rows = ['ondemand', 'partner', 'total'].map((k) => {
+      const copy = offersCopy(k);
+      const plan = getPlan(payload, k);
+      return `
+        <div class="row">
+          <div>${escapeHtml(copy.title)}</div>
+          <div>${escapeHtml(money(plan.room.carpet))}</div>
+          <div>${escapeHtml(money(plan.room.tile))}</div>
+          <div><b>${escapeHtml(money(plan.room.both))}</b></div>
+          <div>${escapeHtml(money2(plan.carpetSqft))}</div>
+          <div>${escapeHtml(money2(plan.tileSqft))}</div>
+        </div>
+      `;
+    });
+
+    pricingHost.style.display = '';
+    pricingHost.innerHTML = `
+      <div class="row head">
+        <div>Plan</div>
+        <div>Carpet / room</div>
+        <div>Tile / room</div>
+        <div>Both / room</div>
+        <div>Carpet $/sqft</div>
+        <div>Tile $/sqft</div>
+      </div>
+      ${rows.join('')}
+      <div class="row">
+        <div class="mut" style="grid-column:1/-1;">
+          Common areas billed per square foot (corridor, meeting room, hall, lobby). Eddy Sallault will confirm scheduling and organization details after approval.
+        </div>
+      </div>
+    `;
   }
 
   async function loadQuote() {
@@ -154,7 +264,9 @@
       if (signBtn) signBtn.disabled = true;
     }
 
+    renderScope();
     renderOffers();
+    renderPricingDetails();
     setStatus('', 'info');
   }
 

@@ -483,11 +483,11 @@
   }
 
   function renderStepPreview() {
-    const best = computeAnnualForPlan('total');
     const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' });
     const hotelName = escapeHtml(state.hotel.name?.trim() || customer.company?.trim() || 'Proposal');
     const link = signLink();
     const emails = Array.isArray(state.emailRecipients) ? state.emailRecipients : [];
+    const totalBoth = Number(state?.pricing?.plans?.total?.room?.both) || 0;
     return `
       <div class="qwCard">
         <h3>Proposal Preview</h3>
@@ -511,7 +511,7 @@
             </div>
             <div class="proposalCard" style="border-color:rgba(31,157,85,.24);">
               <div class="hd"><b>Total Care</b><span class="miniTag" style="background:rgba(31,157,85,.10); border-color:rgba(31,157,85,.22); color:rgba(31,157,85,.92);">Best value</span></div>
-              <div class="line"><span>Avg price / room</span><b>${money(best.avgPerRoom)}</b></div>
+              <div class="line"><span>Price / room (both)</span><b>${money(totalBoth)}</b></div>
             </div>
           </div>
         </div>
@@ -674,7 +674,7 @@
   function updateSummary() {
     const rf = roomsFinal();
     const sqft = corridorFinalSqft();
-    const best = computeAnnualForPlan('total');
+    const bestBoth = Number(state?.pricing?.plans?.total?.room?.both) || 0;
 
     $('sumHotelName').textContent = (state.hotel.name || customer.company || '—').trim() || '—';
     const metaParts = [];
@@ -684,7 +684,7 @@
     $('sumFreq').textContent = `Current: ${currentFreqLabel()}`;
     $('sumRooms').textContent = num(rf);
     $('sumSqft').textContent = num(sqft);
-    $('sumMonthly').textContent = money(best.avgPerRoom);
+    $('sumMonthly').textContent = money(bestBoth);
 
     const ok = validateMix();
     if (!ok) setStatus('Fix mix', 'warn');
@@ -1303,15 +1303,17 @@
     .quoteApp .proposal{margin-top:10px; border:1px solid rgba(8,20,26,.12); border-radius:16px; background:#fff; padding:14px}
     .quoteApp .proposalHeader{display:flex; justify-content:space-between; gap:12px; padding-bottom:10px; border-bottom:1px solid rgba(8,20,26,.12)}
     .quoteApp .proposalHeader .left div{color:rgba(8,20,26,.60); font-size:12px; margin-top:4px; line-height:1.35}
-    .quoteApp .proposalGrid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px}
-    @media (max-width: 520px){ .quoteApp .proposalGrid{grid-template-columns:1fr} }
-    .quoteApp .proposalCard{border:1px solid rgba(8,20,26,.12); border-radius:14px; padding:12px}
-    .quoteApp .proposalCard .hd{display:flex; align-items:center; justify-content:space-between; gap:10px; padding-bottom:10px; border-bottom:1px solid rgba(8,20,26,.10)}
-    .quoteApp .proposalCard .miniTag{font-size:11px; padding:5px 9px; border-radius:999px; border:1px solid rgba(8,20,26,.12); background:rgba(8,20,26,.03); color:rgba(8,20,26,.70); font-weight:850}
-    .quoteApp .proposalCard .line{display:flex; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px dashed rgba(8,20,26,.10); color:rgba(8,20,26,.68); font-weight:850}
-    .quoteApp .proposalCard .line:last-child{border-bottom:none}
-    .quoteApp .proposalCard .line b{color:rgba(8,20,26,.92)}
-  `;
+	    .quoteApp .proposalGrid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px}
+	    @media (max-width: 520px){ .quoteApp .proposalGrid{grid-template-columns:1fr} }
+	    .quoteApp .proposalCard{border:1px solid rgba(8,20,26,.12); border-radius:14px; padding:12px}
+	    .quoteApp .proposalCard .hd{display:flex; align-items:center; justify-content:space-between; gap:10px; padding-bottom:10px; border-bottom:1px solid rgba(8,20,26,.10)}
+	    .quoteApp .proposalCard .miniTag{font-size:11px; padding:5px 9px; border-radius:999px; border:1px solid rgba(8,20,26,.12); background:rgba(8,20,26,.03); color:rgba(8,20,26,.70); font-weight:850}
+	    .quoteApp .proposalCard .line{display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:10px; padding:9px 0; border-bottom:1px dashed rgba(8,20,26,.10); color:rgba(8,20,26,.68); font-weight:850}
+	    .quoteApp .proposalCard .line span{flex:1 1 auto; min-width: 180px}
+	    .quoteApp .proposalCard .line b{flex:0 0 auto; white-space:nowrap}
+	    .quoteApp .proposalCard .line:last-child{border-bottom:none}
+	    .quoteApp .proposalCard .line b{color:rgba(8,20,26,.92)}
+	  `;
   document.head.appendChild(style);
 
   init().catch((e) => toast(e.message || 'Init failed', 'error'));

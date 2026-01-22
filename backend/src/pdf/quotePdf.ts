@@ -177,40 +177,42 @@ export async function renderQuotePdf(opts: {
 
   const acceptedKey = String(opts.acceptance?.acceptedPlanKey || '').trim();
   const chosenKey = acceptedKey || 'total';
-  const chosen =
-    chosenKey === 'ondemand'
-      ? computed.offers.ondemand
-      : chosenKey === 'partner'
-        ? computed.offers.partner
-        : computed.offers.total;
 
   const offerCopy = (key: string) =>
     key === 'ondemand'
       ? { title: 'On-Demand', subtitle: 'One-time or urgent requests', badge: '' }
       : key === 'partner'
-        ? { title: 'Refresh Plan', subtitle: 'Yearly refresh for partial coverage', badge: 'BEST VALUE' }
-        : { title: 'Total Care', subtitle: 'Full annual coverage + priority scheduling', badge: 'RECOMMENDED' };
+        ? { title: 'Refresh Plan', subtitle: 'Yearly refresh for partial coverage', badge: 'GREAT OFFER' }
+        : { title: 'Total Care', subtitle: 'Full coverage + priority scheduling', badge: "HOTEL'S CHOICE" };
 
   const money0 = (n: number) => {
     if (!Number.isFinite(n)) return '—';
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
-  };
-  const money2 = (n: number) => {
-    if (!Number.isFinite(n)) return '—';
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
   };
   const num0 = (n: number) => {
     if (!Number.isFinite(n)) return '—';
     return new Intl.NumberFormat('en-US').format(Math.round(n));
   };
 
-  // ---------- Layout constants (fixed 1-page grid) ----------
+  const rawPlans =
+    (opts.payload && typeof opts.payload === 'object' ? (opts.payload as any).pricing?.plans : null) || {};
+
+  const planRoom = (key: string) => {
+    const plan = rawPlans?.[key] || {};
+    const room = plan.room || {};
+    return {
+      carpet: Number(room.carpet) || 0,
+      tile: Number(room.tile) || 0,
+      both: Number(room.both) || 0
+    };
+  };
+
+  // ---------- Layout constants (STRICT 1 page) ----------
   const left = doc.page.margins.left;
   const top = doc.page.margins.top;
   const W = doc.page.width - doc.page.margins.left - doc.page.margins.right;
   const H = doc.page.height - doc.page.margins.top - doc.page.margins.bottom;
 
-  // Colors
   const C = {
     ink: '#111827',
     sub: '#374151',
@@ -222,15 +224,22 @@ export async function renderQuotePdf(opts: {
     brandSoft: '#e7f7f1'
   };
 
-  const r = (n: number) => Math.round(n);
+  const rr = (x: number) => Math.round(x);
 
   const roundRect = (x: number, y: number, w: number, h: number, radius = 12) => {
-    doc.roundedRect(r(x), r(y), r(w), r(h), radius);
+    doc.roundedRect(rr(x), rr(y), rr(w), rr(h), radius);
+  };
+
+  const drawCard = (x: number, y: number, w: number, h: number) => {
+    doc.save();
+    roundRect(x, y, w, h, 14);
+    doc.lineWidth(1).strokeColor(C.line).fillColor(C.card).fillAndStroke();
+    doc.restore();
   };
 
   const hr = (y: number) => {
     doc.save();
-    doc.moveTo(left, r(y)).lineTo(left + W, r(y)).lineWidth(1).strokeColor(C.line).stroke();
+    doc.moveTo(left, rr(y)).lineTo(left + W, rr(y)).lineWidth(1).strokeColor(C.line).stroke();
     doc.restore();
   };
 
@@ -247,39 +256,20 @@ export async function renderQuotePdf(opts: {
     doc.restore();
   };
 
-  const drawKeyValue = (x: number, y: number, w: number, label: string, value: string, align: 'left' | 'right' = 'left') => {
-    doc.save();
-    doc.font('Helvetica').fontSize(9).fillColor(C.muted).text(label, x, y, { width: w, align });
-    doc.font('Helvetica-Bold').fontSize(11).fillColor(C.ink).text(value, x, y + 12, { width: w, align });
-    doc.restore();
-  };
-
-  const drawCard = (x: number, y: number, w: number, h: number) => {
-    doc.save();
-    roundRect(x, y, w, h, 14);
-    doc.lineWidth(1).strokeColor(C.line).fillColor(C.card).fillAndStroke();
-    doc.restore();
-  };
-
-  // ---------- Header (fixed) ----------
+  // ---------- Header ----------
   const headerH = 86;
   const headerY = top;
 
-  // thin brand bar
   doc.save();
   doc.rect(left, headerY, W, 3).fillColor(C.brand).fill();
   doc.restore();
 
-  // Logo
   const logoPath = findLogoPath();
   const hasLogo = !!logoPath;
-  const logoW = 120;
-  const logoH = 44;
+  const logoW = 120, logoH = 44;
 
   if (logoPath) {
-    try {
-      doc.image(logoPath, left, headerY + 12, { fit: [logoW, logoH] });
-    } catch {}
+    try { doc.image(logoPath, left, headerY + 12, { fit: [logoW, logoH] }); } catch {}
   }
 
   const titleX = left + (hasLogo ? logoW + 14 : 0);
@@ -288,17 +278,11 @@ export async function renderQuotePdf(opts: {
   doc.save();
   doc.font('Helvetica-Bold').fontSize(18).fillColor(C.ink).text('Quote', titleX, headerY + 10, { width: titleW });
   doc.font('Helvetica').fontSize(10).fillColor(C.sub).text('Commercial carpet + tile & grout cleaning', titleX, headerY + 34, { width: titleW });
-
-  // Brand contact (small)
-  doc.font('Helvetica').fontSize(9).fillColor(C.muted).text(
-    `${BRAND.name} • ${BRAND.phone} • ${BRAND.email}`,
-    titleX,
-    headerY + 54,
-    { width: titleW }
-  );
+  doc.font('Helvetica').fontSize(9).fillColor(C.muted).text(`${BRAND.name} • ${BRAND.phone} • ${BRAND.email}`, titleX, headerY + 54, {
+    width: titleW
+  });
   doc.restore();
 
-  // Right meta box
   const metaX = left + W - 190;
   doc.save();
   roundRect(metaX, headerY + 12, 190, 56, 12);
@@ -311,10 +295,9 @@ export async function renderQuotePdf(opts: {
 
   hr(headerY + headerH);
 
-  // ---------- Row 1: Customer + Scope summary ----------
+  // ---------- Row 1: Customer + Scope ----------
   const row1Y = headerY + headerH + 14;
   const row1H = 92;
-
   const colGap = 14;
   const colA = (W - colGap) * 0.58;
   const colB = W - colGap - colA;
@@ -325,168 +308,193 @@ export async function renderQuotePdf(opts: {
   drawCard(customerX, row1Y, colA, row1H);
   drawCard(scopeX, row1Y, colB, row1H);
 
-  // Customer card
+  // Customer
   doc.save();
   doc.font('Helvetica-Bold').fontSize(10).fillColor(C.ink).text('Customer', customerX + 14, row1Y + 12, { width: colA - 28 });
-  doc.font('Helvetica').fontSize(10).fillColor(C.ink);
-
-  // Keep it tight: max 4 lines
-  const custLines = [
-    company || '—',
-    contact || '',
-    email || '',
-    phone || '',
-    computed.hotelAddress || ''
-  ].filter(Boolean);
-
-  doc.font('Helvetica').fontSize(10).fillColor(C.sub).text(custLines.slice(0, 4).join('\n'), customerX + 14, row1Y + 30, { width: colA - 28 });
+  const custLines = [company || '—', contact || '', email || '', phone || ''].filter(Boolean).slice(0, 4);
+  doc.font('Helvetica').fontSize(10).fillColor(C.sub).text(custLines.join('\n'), customerX + 14, row1Y + 32, { width: colA - 28 });
   doc.restore();
 
-  // Scope card (3 KPIs)
+  // Scope
   doc.save();
   doc.font('Helvetica-Bold').fontSize(10).fillColor(C.ink).text('Scope summary', scopeX + 14, row1Y + 12, { width: colB - 28 });
 
   const kpiY = row1Y + 34;
   const kpiW = (colB - 28 - 14) / 2;
 
-  drawKeyValue(scopeX + 14, kpiY, kpiW, 'Rooms', num0(computed.roomsFinal));
-  drawKeyValue(scopeX + 14 + kpiW + 14, kpiY, kpiW, 'Corridor sqft', num0(computed.corridorSqft));
-  drawKeyValue(scopeX + 14, kpiY + 40, colB - 28, 'Current cleaning frequency', computed.currentFreqLabel || '—');
+  // KPI helper
+  const kv = (x: number, y: number, w: number, label: string, value: string, align: 'left' | 'right' = 'left') => {
+    doc.font('Helvetica').fontSize(9).fillColor(C.muted).text(label, x, y, { width: w, align });
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(C.ink).text(value, x, y + 12, { width: w, align });
+  };
+
+  kv(scopeX + 14, kpiY, kpiW, 'Rooms', num0(computed.roomsFinal));
+  kv(scopeX + 14 + kpiW + 14, kpiY, kpiW, 'Corridor sqft', num0(computed.corridorSqft));
+  kv(scopeX + 14, kpiY + 40, colB - 28, 'Current cleaning frequency', computed.currentFreqLabel || '—');
   doc.restore();
 
-  // ---------- Row 2: Offer cards (3 across) ----------
-  const row2Y = row1Y + row1H + 14;
-  const row2H = 150;
+  // ---------- Offers: 3 cards (NO annual totals, NO overflow) ----------
+  const offersTitleY = row1Y + row1H + 16;
 
+  doc.save();
+  doc.font('Helvetica-Bold').fontSize(11).fillColor(C.ink).text('Offers', left, offersTitleY, { width: W });
+  doc.font('Helvetica').fontSize(9).fillColor(C.muted).text('Per-room rates shown below. Common areas billed per sqft as applicable.', left, offersTitleY + 16, {
+    width: W
+  });
+  doc.restore();
+
+  const cardsY = offersTitleY + 38;
   const cardGap = 12;
   const cardW = (W - cardGap * 2) / 3;
+  const cardH = 108;
 
   const offerKeys = ['ondemand', 'partner', 'total'] as const;
-  const offersMap = {
-    ondemand: computed.offers.ondemand,
-    partner: computed.offers.partner,
-    total: computed.offers.total
-  } as const;
-
-  // Section title
-  doc.save();
-  doc.font('Helvetica-Bold').fontSize(11).fillColor(C.ink).text('Offers', left, row2Y - 2, { width: W });
-  doc.font('Helvetica').fontSize(9).fillColor(C.muted).text('Estimates include rooms + corridor/common areas based on provided scope.', left, row2Y + 14, { width: W });
-  doc.restore();
-
-  const cardsY = row2Y + 34;
 
   for (let i = 0; i < offerKeys.length; i++) {
     const key = offerKeys[i];
-    const calc = offersMap[key];
     const x = left + i * (cardW + cardGap);
     const isChosen = String(chosenKey) === key;
     const copy = offerCopy(key);
+    const room = planRoom(key);
 
-    // Card shell (highlight chosen)
     doc.save();
-    roundRect(x, cardsY, cardW, row2H - 34, 16);
+    roundRect(x, cardsY, cardW, cardH, 16);
     doc.lineWidth(isChosen ? 2 : 1).strokeColor(isChosen ? C.brand : C.line).fillColor(C.card).fillAndStroke();
 
-    // Badge (best value/recommended)
     drawBadge(x + 12, cardsY + 10, copy.badge);
 
-    // Title + subtitle
-    doc.fillColor(C.ink).font('Helvetica-Bold').fontSize(12).text(copy.title, x + 12, cardsY + 28, { width: cardW - 24 });
-    doc.fillColor(C.muted).font('Helvetica').fontSize(9).text(copy.subtitle, x + 12, cardsY + 46, { width: cardW - 24 });
+    doc.fillColor(C.ink).font('Helvetica-Bold').fontSize(12).text(copy.title, x + 12, cardsY + 30, { width: cardW - 24 });
+    doc.fillColor(C.muted).font('Helvetica').fontSize(9).text(copy.subtitle, x + 12, cardsY + 48, { width: cardW - 24 });
 
-    // Price block
-    const priceY = cardsY + 70;
-    doc.fillColor(C.muted).font('Helvetica').fontSize(9).text('Avg price / room', x + 12, priceY, { width: cardW - 24 });
-    doc.fillColor(C.ink).font('Helvetica-Bold').fontSize(18).text(money0(calc.avgPerRoom), x + 12, priceY + 12, { width: cardW - 24 });
+    // Single anchor price inside card (Both/room) — marketing-friendly, not annual
+    doc.fillColor(C.muted).font('Helvetica').fontSize(9).text('Both / room', x + 12, cardsY + 70, { width: cardW - 24 });
+    doc.fillColor(C.ink).font('Helvetica-Bold').fontSize(18).text(money0(room.both), x + 12, cardsY + 82, { width: cardW - 24 });
 
-    // Totals
-    const totalsY = cardsY + 108;
-    doc.fillColor(C.sub).font('Helvetica').fontSize(9).text('Est. annual total', x + 12, totalsY, { width: cardW - 24 });
-    doc.fillColor(C.ink).font('Helvetica-Bold').fontSize(12).text(money0(calc.totalAnnual), x + 12, totalsY + 12, { width: cardW - 24 });
-
-    // Small footer line
-    doc.fillColor(C.muted).font('Helvetica').fontSize(8).text(
-      `Rooms: ${money0(calc.roomsCost)}  •  Common areas: ${money0(calc.corridorCost)}`,
-      x + 12,
-      cardsY + 132,
-      { width: cardW - 24 }
-    );
-
-    // “Selected” marker (if signature already accepted)
     if (opts.acceptance && isChosen) {
-      doc.fillColor(C.brand).font('Helvetica-Bold').fontSize(9).text('ACCEPTED', x + cardW - 72, cardsY + 12, { width: 60, align: 'right' });
+      doc.fillColor(C.brand).font('Helvetica-Bold').fontSize(9).text('ACCEPTED', x + cardW - 78, cardsY + 12, { width: 66, align: 'right' });
     }
 
     doc.restore();
   }
 
-  // ---------- Row 3: What’s included + Process (2 columns) ----------
-  const row3Y = cardsY + (row2H - 34) + 12;
-  const row3H = 128;
+  // ---------- Room pricing table (THIS is what you want) ----------
+  const tableY = cardsY + cardH + 14;
+  const tableX = left;
+  const tableW = W;
+  const headerH2 = 22;
+  const rowH = 20;
 
-  const col3A = (W - colGap) / 2;
-  const col3B = col3A;
+  // Columns (sum to tableW)
+  const cols = {
+    offer: 170,
+    carpet: 110,
+    tile: 110,
+    both: tableW - (170 + 110 + 110)
+  };
+
+  // Header baseline (IMPORTANT: fixed Y so it NEVER diagonalizes)
+  const hy = tableY;
+
+  doc.save();
+  roundRect(tableX, hy, tableW, headerH2, 10);
+  doc.fillColor(C.soft).fill();
+  doc.fillColor(C.ink).font('Helvetica-Bold').fontSize(9);
+  doc.text('Room pricing (per room)', tableX + 12, hy + 6, { width: cols.offer - 12 });
+  doc.text('Carpet', tableX + cols.offer, hy + 6, { width: cols.carpet - 10, align: 'right' });
+  doc.text('Tile', tableX + cols.offer + cols.carpet, hy + 6, { width: cols.tile - 10, align: 'right' });
+  doc.text('Both', tableX + cols.offer + cols.carpet + cols.tile, hy + 6, { width: cols.both - 10, align: 'right' });
+  doc.restore();
+
+  const rowStartY = hy + headerH2;
+
+  const tableRow = (y: number, key: 'ondemand' | 'partner' | 'total') => {
+    const isChosen = String(chosenKey) === key;
+    const label = offerCopy(key).title;
+    const room = planRoom(key);
+
+    doc.save();
+    doc.rect(tableX, y, tableW, rowH).lineWidth(isChosen ? 2 : 1).strokeColor(isChosen ? C.brand : C.line).stroke();
+
+    doc.fillColor(C.ink).font('Helvetica').fontSize(9).text(label, tableX + 12, y + 6, { width: cols.offer - 12 });
+
+    doc.font('Helvetica-Bold');
+    doc.text(money0(room.carpet), tableX + cols.offer, y + 6, { width: cols.carpet - 10, align: 'right' });
+    doc.text(money0(room.tile), tableX + cols.offer + cols.carpet, y + 6, { width: cols.tile - 10, align: 'right' });
+    doc.text(money0(room.both), tableX + cols.offer + cols.carpet + cols.tile, y + 6, { width: cols.both - 10, align: 'right' });
+
+    doc.restore();
+  };
+
+  tableRow(rowStartY + rowH * 0, 'ondemand');
+  tableRow(rowStartY + rowH * 1, 'partner');
+  tableRow(rowStartY + rowH * 2, 'total');
+
+  // ---------- Info boxes (tight) ----------
+  const infoY = rowStartY + rowH * 3 + 12;
+
+  // Signature zone fixed at bottom
+  const sigH = 92;
+  const sigY = top + H - sigH;
+
+  // Make sure info section never overlaps signature zone
+  const maxInfoH = Math.max(70, sigY - 12 - infoY);
+  const infoH = Math.min(96, maxInfoH);
+
+  const infoGap = 14;
+  const infoW = (W - infoGap) / 2;
 
   const incX = left;
-  const procX = left + col3A + colGap;
+  const procX = left + infoW + infoGap;
 
-  drawCard(incX, row3Y, col3A, row3H);
-  drawCard(procX, row3Y, col3B, row3H);
+  drawCard(incX, infoY, infoW, infoH);
+  drawCard(procX, infoY, infoW, infoH);
 
-  // Included
   doc.save();
-  doc.font('Helvetica-Bold').fontSize(10).fillColor(C.ink).text('What’s included', incX + 14, row3Y + 12, { width: col3A - 28 });
+  doc.font('Helvetica-Bold').fontSize(10).fillColor(C.ink).text("What's included", incX + 14, infoY + 12, { width: infoW - 28 });
   doc.font('Helvetica').fontSize(9).fillColor(C.sub).text(
     [
-      '• Professional detergent & agitation',
       '• Tile & grout brushing + rinse/extraction',
       '• Carpet encapsulation + high-agitation brushing',
-      '• Odor neutralizer included when needed',
-      '• Commercial-grade fiber protectant (as applicable)'
+      '• Odor neutralizer when needed',
+      '• Hotel-friendly, low-disruption workflow'
     ].join('\n'),
     incX + 14,
-    row3Y + 32,
-    { width: col3A - 28, lineGap: 2 }
+    infoY + 32,
+    { width: infoW - 28, lineGap: 2 }
   );
   doc.restore();
 
-  // Process & timing (tight + marketing)
   doc.save();
-  doc.font('Helvetica-Bold').fontSize(10).fillColor(C.ink).text('Process & timing', procX + 14, row3Y + 12, { width: col3B - 28 });
+  doc.font('Helvetica-Bold').fontSize(10).fillColor(C.ink).text('Process & timing', procX + 14, infoY + 12, { width: infoW - 28 });
   doc.font('Helvetica').fontSize(9).fillColor(C.sub).text(
     [
-      '• Fast, low-disruption workflow (hotel-friendly)',
       '• Typical: 30–40 minutes per room',
-      '• Areas usable after ~1 hour (depending on airflow)',
+      '• Areas usable after ~1 hour (airflow dependent)',
       '• Scheduling optimized to reduce downtime'
     ].join('\n'),
     procX + 14,
-    row3Y + 32,
-    { width: col3B - 28, lineGap: 2 }
+    infoY + 32,
+    { width: infoW - 28, lineGap: 2 }
   );
-
-  // CTA line
-  doc.fillColor(C.brand).font('Helvetica-Bold').fontSize(9).text('Next step: approve online to lock pricing & schedule.', procX + 14, row3Y + row3H - 22, {
-    width: col3B - 28
+  doc.fillColor(C.brand).font('Helvetica-Bold').fontSize(9).text('Next step: approve online to lock scheduling.', procX + 14, infoY + infoH - 22, {
+    width: infoW - 28
   });
   doc.restore();
 
-  // ---------- Signature / Acceptance (reserved zone, fixed height) ----------
-  const sigH = 92;
-  const sigY = top + H - sigH; // fixed bottom zone (always exists)
+  // ---------- Signature / Acceptance (reserved fixed zone) ----------
   drawCard(left, sigY, W, sigH);
 
   doc.save();
-  doc.font('Helvetica-Bold').fontSize(10).fillColor(C.ink).text(opts.acceptance ? 'Digital signature (record)' : 'Approval', left + 14, sigY + 12, { width: W - 28 });
+  doc.font('Helvetica-Bold').fontSize(10).fillColor(C.ink).text(opts.acceptance ? 'Digital signature (record)' : 'Approval', left + 14, sigY + 12, {
+    width: W - 28
+  });
 
   if (opts.acceptance) {
-    // Keep it compact to not overflow
     const a = opts.acceptance;
     const lines = [
       `Signed by: ${a.signedByName}${a.signedByTitle ? ` (${a.signedByTitle})` : ''}`,
       `Email: ${a.signedByEmail}`,
-      `Accepted offer: ${offerCopy(chosenKey).title}`,
+      `Selected offer: ${offerCopy(chosenKey).title}`,
       `Timestamp (UTC): ${a.acceptedAt.toISOString()}`
     ];
     doc.font('Helvetica').fontSize(9).fillColor(C.sub).text(lines.join('\n'), left + 14, sigY + 32, { width: W - 28, lineGap: 2 });
@@ -498,7 +506,6 @@ export async function renderQuotePdf(opts: {
     doc.font('Helvetica').fontSize(9).fillColor(C.sub).text(lines.join('\n'), left + 14, sigY + 32, { width: W - 28, lineGap: 2 });
   }
 
-  // footer right contact
   doc.font('Helvetica').fontSize(8).fillColor(C.muted).text(`${BRAND.name} • ${BRAND.phone} • ${BRAND.email}`, left + 14, sigY + sigH - 18, {
     width: W - 28,
     align: 'right'
@@ -506,7 +513,6 @@ export async function renderQuotePdf(opts: {
 
   doc.restore();
 
-  // IMPORTANT: Do not add any pages; we keep strict 1-page layout
   doc.end();
   return done;
 }

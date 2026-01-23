@@ -83,6 +83,39 @@ function extractHeader(headers: any[], name: string) {
   return normalizeText(h?.value);
 }
 
+function decodeBase64Url(data: string) {
+  const s = String(data || '').replace(/-/g, '+').replace(/_/g, '/');
+  const pad = s.length % 4 ? '='.repeat(4 - (s.length % 4)) : '';
+  return Buffer.from(s + pad, 'base64').toString('utf8');
+}
+
+function extractBodiesFromPayload(payload: any): { text: string; html: string } {
+  let text = '';
+  let html = '';
+
+  const walk = (part: any) => {
+    if (!part) return;
+    const mimeType = normalizeText(part?.mimeType).toLowerCase();
+    const data = normalizeText(part?.body?.data);
+    if (data) {
+      const decoded = decodeBase64Url(data);
+      if (mimeType === 'text/plain' && !text) text = decoded;
+      if (mimeType === 'text/html' && !html) html = decoded;
+    }
+    const parts = Array.isArray(part?.parts) ? part.parts : [];
+    for (const p of parts) walk(p);
+  };
+
+  walk(payload);
+  return { text: text.trim(), html: html.trim() };
+}
+
+function clampText(s: string, max = 200_000) {
+  const v = String(s || '');
+  if (v.length <= max) return v;
+  return v.slice(0, max);
+}
+
 function parseReplyToLeadCampaignId(toRaw: string) {
   // Expect plus-addressing: eddy+lc_<leadCampaignId>@domain
   const m = String(toRaw || '').match(/\+lc_([a-z0-9]+)@/i);
@@ -186,8 +219,7 @@ export async function processGmailPushNotification(payload: { emailAddress: stri
       const msg = await gmail.users.messages.get({
         userId: 'me',
         id: msgId,
-        format: 'metadata',
-        metadataHeaders: ['From', 'To', 'Cc', 'Subject', 'Date', 'In-Reply-To', 'References', 'Message-Id']
+        format: 'full'
       });
 
       const headers = (msg.data.payload as any)?.headers || [];
@@ -214,6 +246,9 @@ export async function processGmailPushNotification(payload: { emailAddress: stri
 
       const snippet = normalizeText((msg.data as any).snippet);
       const threadId = normalizeText((msg.data as any).threadId);
+      const bodies = extractBodiesFromPayload(msg.data.payload as any);
+      const bodyText = clampText(bodies.text || snippet);
+      const bodyHtml = clampText(bodies.html);
 
       try {
         await prisma.crmInboundEmail.create({
@@ -228,6 +263,8 @@ export async function processGmailPushNotification(payload: { emailAddress: stri
             toEmail: toCombined,
             subject,
             snippet,
+            bodyText,
+            bodyHtml: bodyHtml || undefined,
             receivedAt: date ? new Date(date) : undefined,
             rawHeaders: headers as any
           }

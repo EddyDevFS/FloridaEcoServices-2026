@@ -813,6 +813,8 @@ model CrmInboundEmail {
   toEmail        String   @default("")
   subject        String   @default("")
   snippet        String   @default("")
+  bodyText       String   @default("")
+  bodyHtml       String?
   receivedAt     DateTime?
   rawHeaders     Json?
   createdAt      DateTime @default(now())

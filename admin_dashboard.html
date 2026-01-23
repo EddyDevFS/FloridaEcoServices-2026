@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Dashboard</title>
+  <script>
+    (function () {
+      try {
+        document.documentElement.classList.add('feco-auth-pending');
+        var token = (localStorage.getItem('feco.accessToken') || '').trim();
+        if (!token) document.documentElement.classList.add('feco-locked');
+      } catch {}
+    })();
+  </script>
+  <style>
+    .feco-auth-pending .app-container,
+    .feco-locked .app-container { display: none !important; }
+    .feco-gate{ display:none; min-height: 100vh; padding: 22px; }
+    .feco-locked .feco-gate, .feco-auth-pending .feco-gate{ display:flex; align-items:center; justify-content:center; }
+    .feco-gate-card{ width:min(520px, 100%); border:1px solid rgba(8,20,26,.14); background:rgba(255,255,255,.92); border-radius:16px; padding:16px; box-shadow:0 14px 40px rgba(0,0,0,.12); }
+    .feco-gate-title{ font-weight:950; letter-spacing:-.01em; display:flex; align-items:center; gap:10px; }
+    .feco-gate-sub{ margin-top:6px; color:rgba(8,20,26,.70); font-weight:750; line-height:1.35; }
+    .feco-gate-actions{ margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; }
+    .dash-wrap{ max-width: 1200px; margin: 0 auto; padding: 18px; }
+    .dash-grid{ display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .dash-card{ border:1px solid #e2e8f0; border-radius: 16px; padding: 14px; background: #fff; display:flex; flex-direction:column; gap:8px; text-decoration:none; color:inherit; box-shadow: 0 10px 30px rgba(0,0,0,.05); }
+    .dash-card:hover{ border-color: rgba(37,99,235,.35); }
+    .dash-title{ font-weight: 900; display:flex; gap:10px; align-items:center; }
+    .dash-sub{ color:#64748b; font-size: 13px; }
+    @media (max-width: 980px){ .dash-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 620px){ .dash-grid{ grid-template-columns: 1fr; } }
+  </style>
+  <link rel="stylesheet" href="styles.css?v=20260115" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body>
+  <div class="feco-gate" id="fecoGate" aria-live="polite">
+    <div class="feco-gate-card">
+      <div class="feco-gate-title"><i class="fa-solid fa-shield-halved"></i> Admin access</div>
+      <div class="feco-gate-sub">Login required to access the admin dashboard.</div>
+      <div class="feco-gate-actions">
+        <button class="btn-primary" type="button" id="btnGateLogin"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
+        <a class="btn-secondary" href="index.html" style="text-decoration:none;"><i class="fa-solid fa-house"></i> Back to site</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-container">
+    <header class="header admin-header">
+      <div class="logo">
+        <i class="fas fa-shield"></i>
+        <div>
+          <h1>Admin - Dashboard</h1>
+          <p>Quick access to admin modules</p>
+        </div>
+      </div>
+
+      <nav class="admin-nav">
+        <a class="admin-link active" href="admin_dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+        <a class="admin-link" href="admin_config.html"><i class="fas fa-sitemap"></i> Setup</a>
+        <a class="admin-link" href="admin_hotel.html"><i class="fas fa-file-contract"></i> Hotel & Contract</a>
+        <a class="admin-link" href="admin_quotes.html"><i class="fas fa-file-invoice-dollar"></i> Quotes</a>
+        <a class="admin-link" href="admin_planning.html"><i class="fas fa-calendar-check"></i> Planning</a>
+        <a class="admin-link" href="admin_agenda.html"><i class="fas fa-calendar-alt"></i> Agenda</a>
+        <a class="admin-link" href="admin_reports.html"><i class="fas fa-chart-line"></i> Reports</a>
+        <a class="admin-link" href="admin_settings.html"><i class="fas fa-sliders"></i> Settings</a>
+        <a class="admin-link" href="CRM-hotel.html"><i class="fas fa-envelope"></i> Leads / CRM</a>
+      </nav>
+    </header>
+
+    <main class="dash-wrap">
+      <div class="dash-grid">
+        <a class="dash-card" href="CRM-hotel.html">
+          <div class="dash-title"><i class="fas fa-envelope"></i> Leads / CRM</div>
+          <div class="dash-sub">Leads, campaigns, inbound replies, manual reply.</div>
+        </a>
+
+        <a class="dash-card" href="admin_quotes.html">
+          <div class="dash-title"><i class="fas fa-file-invoice-dollar"></i> Quotes</div>
+          <div class="dash-sub">Create and manage quotes.</div>
+        </a>
+
+        <a class="dash-card" href="admin_planning.html">
+          <div class="dash-title"><i class="fas fa-calendar-check"></i> Planning</div>
+          <div class="dash-sub">Schedule and manage operations.</div>
+        </a>
+
+        <a class="dash-card" href="admin_config.html">
+          <div class="dash-title"><i class="fas fa-sitemap"></i> Setup</div>
+          <div class="dash-sub">Buildings, floors, rooms, spaces.</div>
+        </a>
+
+        <a class="dash-card" href="admin_hotel.html">
+          <div class="dash-title"><i class="fas fa-file-contract"></i> Hotel & Contract</div>
+          <div class="dash-sub">Pricing, offer, signature.</div>
+        </a>
+
+        <a class="dash-card" href="admin_reports.html">
+          <div class="dash-title"><i class="fas fa-chart-line"></i> Reports</div>
+          <div class="dash-sub">KPIs and reporting.</div>
+        </a>
+
+        <a class="dash-card" href="admin_settings.html">
+          <div class="dash-title"><i class="fas fa-sliders"></i> Settings</div>
+          <div class="dash-sub">Admin settings.</div>
+        </a>
+      </div>
+    </main>
+  </div>
+
+  <script src="app-config.js"></script>
+  <script src="shared/db.js"></script>
+  <script src="script.js?v=20260115"></script>
+  <script>
+    (function () {
+      var btn = document.getElementById('btnGateLogin');
+      if (btn) {
+        btn.addEventListener('click', function () {
+          try {
+            if (typeof fecoEnsureLogin === 'function') return fecoEnsureLogin();
+          } catch {}
+          alert('Login UI not available on this page.');
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

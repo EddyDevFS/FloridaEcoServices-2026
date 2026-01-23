@@ -21,6 +21,7 @@ import clientRoutes from './routes/clients';
 import crmLeadRoutes from './routes/crmLeads';
 import crmCampaignRoutes from './routes/crmCampaigns';
 import crmLeadCampaignRoutes from './routes/crmLeadCampaigns';
+import crmInboxRoutes from './routes/crmInbox';
 import crmTrackingRoutes from './routes/crmTracking';
 import googleRoutes from './routes/google';
 import { startCrmEmailWorker } from './services/crmWorker';
@@ -92,6 +93,7 @@ app.use('/api/v1', clientRoutes);
 app.use('/api/v1', crmLeadRoutes);
 app.use('/api/v1', crmCampaignRoutes);
 app.use('/api/v1', crmLeadCampaignRoutes);
+app.use('/api/v1', crmInboxRoutes);
 
 // Google integrations (OAuth + Gmail push)
 app.use('/api/google', googleRoutes);

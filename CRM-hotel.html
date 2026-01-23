@@ -950,6 +950,65 @@
   </div>
 </div>
 
+<!-- Modal messages (inbox minimal) -->
+<div class="modal" id="inboxModal" role="dialog" aria-modal="true" aria-labelledby="inboxTitle">
+  <div class="modal-card" style="width:min(980px,100%);">
+    <div class="modal-head">
+      <h3 id="inboxTitle">Messages</h3>
+      <button class="close-x" type="button" id="closeInboxModal" aria-label="Fermer">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="card" style="padding:12px;margin-bottom:12px;background:rgba(255,255,255,.02);">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-weight:900" id="inboxLeadTitle">—</div>
+            <div style="font-size:13px;color:var(--muted)" id="inboxLeadMeta">—</div>
+          </div>
+          <div class="pill"><i class="fa-regular fa-envelope"></i> Réponses Gmail liées à ce lead</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns: 320px 1fr;gap:12px;align-items:start;">
+        <div class="card" style="padding:10px;">
+          <div style="font-weight:900;margin-bottom:8px;">Derniers messages</div>
+          <div id="inboxList" style="display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto;"></div>
+        </div>
+
+        <div class="card" style="padding:12px;">
+          <div id="inboxEmpty" style="display:none;color:var(--muted);font-weight:800;">
+            Aucun message reçu pour ce lead (pas de réponse détectée).
+          </div>
+
+          <div id="inboxViewer" style="display:none;">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div>
+                <div style="font-weight:900" id="inboxViewSubject">—</div>
+                <div style="font-size:13px;color:var(--muted)" id="inboxViewMeta">—</div>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div id="inboxViewBody" style="white-space:pre-wrap;font-size:13px;line-height:1.4;"></div>
+
+            <div class="divider"></div>
+            <div style="font-weight:900;margin-bottom:6px;">Répondre</div>
+            <textarea id="inboxReplyText" placeholder="Ta réponse…" style="min-height:110px;"></textarea>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap;">
+              <button class="btn btn-outline btn-small" type="button" id="btnInboxCancel">Fermer</button>
+              <button class="btn btn-primary btn-small" type="button" id="btnInboxSend">
+                <i class="fa-solid fa-paper-plane"></i> Envoyer
+              </button>
+            </div>
+            <div class="hint">Envoi via Gmail API (dans le même thread si possible).</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
   <!-- Toast container -->
   <div class="toasts" id="toasts" aria-live="polite" aria-atomic="true"></div>
   <script src="app-config.js"></script>
@@ -1098,6 +1157,9 @@
       openMenuLeadId: null,
       editingCampaignId: null,
       openEmailIndex: null,
+      inboxLeadId: null,
+      inboxEmailId: null,
+      inboxEmails: [],
     }
   };
 
@@ -1568,6 +1630,9 @@
               <button class="dd-item" type="button" data-action="editLead">
                 <i class="fa-solid fa-pen-to-square"></i> Modifier
               </button>
+              <button class="dd-item" type="button" data-action="openInbox">
+                <i class="fa-regular fa-envelope"></i> Messages
+              </button>
               ${status === STATUS.OUT_OF_PIPE ? `
                 <button class="dd-item" type="button" data-action="restoreLead">
                   <i class="fa-solid fa-rotate-left"></i> Réactiver
@@ -1926,6 +1991,117 @@
     $("#errLeadEditCampaign").classList.toggle("show", !okCamp);
 
     return okHotel && okEmail && okCamp;
+  }
+
+  /***************
+   * Inbox modal (Gmail replies)
+   ***************/
+  function openInboxModal(leadId){
+    const lead = state.leads.find(l => l.id === leadId);
+    if(!lead){
+      toast("err","Erreur","Lead introuvable.");
+      return;
+    }
+    state.ui.inboxLeadId = leadId;
+    state.ui.inboxEmailId = null;
+    state.ui.inboxEmails = [];
+
+    $("#inboxLeadTitle").textContent = lead.hotelName || "—";
+    const meta = `${(lead.firstName || "")} ${(lead.lastName || "")}`.trim();
+    $("#inboxLeadMeta").textContent = meta ? `${meta} • ${lead.email1 || "—"}` : (lead.email1 || "—");
+
+    $("#inboxList").innerHTML = `<div style="color:var(--muted);font-weight:800;padding:6px 2px;">Chargement…</div>`;
+    $("#inboxEmpty").style.display = "none";
+    $("#inboxViewer").style.display = "none";
+    $("#inboxReplyText").value = "";
+
+    openModal("#inboxModal");
+
+    (async ()=>{
+      try{
+        const data = await apiJson(`/api/v1/crm/leads/${leadId}/inbox?limit=20`);
+        state.ui.inboxEmails = Array.isArray(data?.emails) ? data.emails : [];
+        state.ui.inboxEmailId = state.ui.inboxEmails[0]?.id || null;
+        renderInboxModal();
+      }catch(err){
+        toast("err","Erreur", err?.message || "Chargement messages impossible");
+        closeInboxModal();
+      }
+    })();
+  }
+
+  function closeInboxModal(){
+    closeModal("#inboxModal");
+    state.ui.inboxLeadId = null;
+    state.ui.inboxEmailId = null;
+    state.ui.inboxEmails = [];
+    $("#inboxReplyText").value = "";
+  }
+
+  function renderInboxModal(){
+    const emails = state.ui.inboxEmails || [];
+    if(!emails.length){
+      $("#inboxList").innerHTML = "";
+      $("#inboxEmpty").style.display = "";
+      $("#inboxViewer").style.display = "none";
+      return;
+    }
+
+    $("#inboxEmpty").style.display = "none";
+    $("#inboxViewer").style.display = "";
+
+    $("#inboxList").innerHTML = emails.map(e => {
+      const active = e.id === state.ui.inboxEmailId;
+      const when = e.receivedAt ? new Date(e.receivedAt).toLocaleString("fr-FR") : "—";
+      const subj = e.subject || "(sans sujet)";
+      const from = e.fromEmail || "—";
+      const snip = e.snippet || "";
+      return `
+        <button type="button" class="btn" data-action="selectInboxEmail" data-inbox-email-id="${e.id}"
+          style="width:100%;justify-content:flex-start;border:1px solid var(--border);background:${active ? "rgba(37,99,235,.08)" : "transparent"};color:inherit;">
+          <div style="display:flex;flex-direction:column;gap:2px;text-align:left;width:100%">
+            <div style="font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(subj)}</div>
+            <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(from)} • ${escapeHtml(when)}</div>
+            <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(snip)}</div>
+          </div>
+        </button>
+      `;
+    }).join("");
+
+    const selected = emails.find(x => x.id === state.ui.inboxEmailId) || emails[0];
+    state.ui.inboxEmailId = selected?.id || null;
+
+    $("#inboxViewSubject").textContent = selected?.subject || "(sans sujet)";
+    const when2 = selected?.receivedAt ? new Date(selected.receivedAt).toLocaleString("fr-FR") : "—";
+    $("#inboxViewMeta").textContent = `${selected?.fromEmail || "—"} • ${when2}`;
+    $("#inboxViewBody").innerHTML = escapeHtml(String(selected?.bodyText || selected?.snippet || "")).replaceAll("\n","<br>");
+  }
+
+  async function sendInboxReply(){
+    const emailId = state.ui.inboxEmailId;
+    if(!emailId){
+      toast("warn","Messages","Aucun message sélectionné.");
+      return;
+    }
+    const text = $("#inboxReplyText").value.trim();
+    if(!text){
+      toast("warn","Validation","Écris une réponse.");
+      return;
+    }
+
+    $("#btnInboxSend").disabled = true;
+    try{
+      await apiJson(`/api/v1/crm/inbound-emails/${emailId}/reply`, {
+        method: "POST",
+        body: JSON.stringify({ text })
+      });
+      $("#inboxReplyText").value = "";
+      toast("ok","Envoyé","Réponse envoyée via Gmail.");
+    }catch(err){
+      toast("err","Erreur", err?.message || "Envoi impossible");
+    }finally{
+      $("#btnInboxSend").disabled = false;
+    }
   }
 
   /***************
@@ -2288,12 +2464,21 @@
       if(e.target === $("#leadEditModal")) closeLeadEditModal();
     });
 
+    // Inbox modal close + send
+    $("#closeInboxModal").addEventListener("click", closeInboxModal);
+    $("#btnInboxCancel").addEventListener("click", closeInboxModal);
+    $("#btnInboxSend").addEventListener("click", sendInboxReply);
+    $("#inboxModal").addEventListener("click", (e)=>{
+      if(e.target === $("#inboxModal")) closeInboxModal();
+    });
+
     // ESC to close modal + close menus
     window.addEventListener("keydown", (e)=>{
       if(e.key === "Escape"){
         if($("#campaignModal").classList.contains("open")) closeModal("#campaignModal");
         if($("#campaignEditorModal").classList.contains("open")) closeCampaignEditor();
         if($("#leadEditModal").classList.contains("open")) closeLeadEditModal();
+        if($("#inboxModal").classList.contains("open")) closeInboxModal();
         closeAllMenus();
       }
     });
@@ -2323,12 +2508,26 @@
         return;
       }
 
+      if(action === "selectInboxEmail"){
+        const id = actionBtn.getAttribute("data-inbox-email-id");
+        if(id){
+          state.ui.inboxEmailId = id;
+          renderInboxModal();
+        }
+        return;
+      }
+
       // Other actions (need leadId)
       const leadId = getLeadIdFromEvent(e);
       if(!leadId) return;
 
       // close menu before applying action
       state.ui.openMenuLeadId = null;
+
+      if(action === "openInbox"){
+        openInboxModal(leadId);
+        return;
+      }
 
       await handleLeadAction(action, leadId);
     });

@@ -8,6 +8,12 @@ import { createGoogleOAuthClient, readGoogleEnv } from '../services/googleGmail'
 
 const router = Router();
 
+const asyncHandler =
+  (fn: any) =>
+  (req: any, res: any, next: any) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+
 function normalizeText(v: any) {
   return String(v || '').trim();
 }
@@ -20,7 +26,18 @@ function base64UrlEncodeUtf8(s: string) {
   return Buffer.from(s, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 
-router.get('/crm/leads', requireAuth, async (req: AuthedRequest, res: Response) => {
+function safeReadGoogleEnv(): ReturnType<typeof readGoogleEnv> | null {
+  try {
+    return readGoogleEnv();
+  } catch {
+    return null;
+  }
+}
+
+router.get(
+  '/crm/leads',
+  requireAuth,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
   const prisma = getPrisma();
   const limitRaw = Number(req.query?.limit || 200);
   const limit = Math.max(1, Math.min(500, Number.isFinite(limitRaw) ? limitRaw : 200));
@@ -50,9 +67,13 @@ router.get('/crm/leads', requireAuth, async (req: AuthedRequest, res: Response) 
   });
 
   res.json({ leads });
-});
+  })
+);
 
-router.get('/crm/leads/:leadId', requireAuth, async (req: AuthedRequest, res: Response) => {
+router.get(
+  '/crm/leads/:leadId',
+  requireAuth,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
   const leadId = normalizeText(req.params.leadId);
   if (!leadId) return res.status(400).json({ error: 'missing_lead_id' });
 
@@ -62,9 +83,14 @@ router.get('/crm/leads/:leadId', requireAuth, async (req: AuthedRequest, res: Re
   });
   if (!lead) return res.status(404).json({ error: 'lead_not_found' });
   res.json({ lead });
-});
+  })
+);
 
-router.post('/crm/leads', requireAuth, requireRole(['SUPER_ADMIN']), async (req: AuthedRequest, res: Response) => {
+router.post(
+  '/crm/leads',
+  requireAuth,
+  requireRole(['SUPER_ADMIN']),
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
   const prisma = getPrisma();
   const hotelName = normalizeText(req.body?.hotelName);
   const firstName = normalizeText(req.body?.firstName);
@@ -91,15 +117,17 @@ router.post('/crm/leads', requireAuth, requireRole(['SUPER_ADMIN']), async (req:
   });
 
   res.status(201).json({ lead });
-});
+  })
+);
 
 router.post(
   '/crm/leads/:leadId/send-email',
   requireAuth,
   requireRole(['SUPER_ADMIN']),
-  async (req: AuthedRequest, res: Response) => {
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
     const prisma = getPrisma();
-    const env = readGoogleEnv();
+    const env = safeReadGoogleEnv();
+    if (!env) return res.status(400).json({ error: 'google_not_configured' });
 
     const leadId = normalizeText(req.params.leadId);
     if (!leadId) return res.status(400).json({ error: 'missing_lead_id' });
@@ -135,20 +163,27 @@ router.post(
     oauth2Client.setCredentials({ refresh_token: account.refreshToken });
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
-    const resp = await gmail.users.messages.send({
-      userId: 'me',
-      requestBody: { raw: base64UrlEncodeUtf8(raw) }
-    });
+    try {
+      const resp = await gmail.users.messages.send({
+        userId: 'me',
+        requestBody: { raw: base64UrlEncodeUtf8(raw) }
+      });
 
-    res.json({ ok: true, gmailMessageId: resp.data.id || null, threadId: resp.data.threadId || null });
-  }
+      res.json({ ok: true, gmailMessageId: resp.data.id || null, threadId: resp.data.threadId || null });
+    } catch (err: any) {
+      console.error('[crm] send-email failed', err);
+      const code = Number(err?.code || err?.response?.status || 0) || 0;
+      const message = normalizeText(err?.message || err?.response?.data?.error || '');
+      return res.status(502).json({ error: 'gmail_send_failed', ...(code ? { code } : {}), ...(message ? { message } : {}) });
+    }
+  })
 );
 
 router.post(
   '/crm/leads/:leadId/trigger-next-email',
   requireAuth,
   requireRole(['SUPER_ADMIN']),
-  async (req: AuthedRequest, res: Response) => {
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
     const prisma = getPrisma();
     const leadId = normalizeText(req.params.leadId);
     if (!leadId) return res.status(400).json({ error: 'missing_lead_id' });
@@ -197,14 +232,14 @@ router.post(
     });
 
     res.json({ ok: true, messageId: updatedMsg.id, stepIndex: nextStepIndex, sendAt: updatedMsg.sendAt });
-  }
+  })
 );
 
 router.patch(
   '/crm/leads/:leadId',
   requireAuth,
   requireRole(['SUPER_ADMIN']),
-  async (req: AuthedRequest, res: Response) => {
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
     const leadId = normalizeText(req.params.leadId);
     if (!leadId) return res.status(400).json({ error: 'missing_lead_id' });
 
@@ -232,14 +267,14 @@ router.patch(
     });
 
     res.json({ lead });
-  }
+  })
 );
 
 router.post(
   '/crm/leads/:leadId/archive',
   requireAuth,
   requireRole(['SUPER_ADMIN']),
-  async (req: AuthedRequest, res: Response) => {
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
     const leadId = normalizeText(req.params.leadId);
     if (!leadId) return res.status(400).json({ error: 'missing_lead_id' });
 
@@ -257,14 +292,14 @@ router.post(
       }
     });
     res.json({ lead: updated });
-  }
+  })
 );
 
 router.post(
   '/crm/leads/:leadId/restore',
   requireAuth,
   requireRole(['SUPER_ADMIN']),
-  async (req: AuthedRequest, res: Response) => {
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
     const leadId = normalizeText(req.params.leadId);
     if (!leadId) return res.status(400).json({ error: 'missing_lead_id' });
 
@@ -282,14 +317,14 @@ router.post(
       }
     });
     res.json({ lead: updated });
-  }
+  })
 );
 
 router.delete(
   '/crm/leads/:leadId',
   requireAuth,
   requireRole(['SUPER_ADMIN']),
-  async (req: AuthedRequest, res: Response) => {
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
     const leadId = normalizeText(req.params.leadId);
     if (!leadId) return res.status(400).json({ error: 'missing_lead_id' });
 
@@ -301,7 +336,7 @@ router.delete(
 
     await prisma.crmLead.delete({ where: { id: lead.id } });
     res.json({ ok: true });
-  }
+  })
 );
 
 export default router;

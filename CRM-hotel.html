@@ -983,7 +983,12 @@
             <div style="font-weight:900" id="inboxLeadTitle">—</div>
             <div style="font-size:13px;color:var(--muted)" id="inboxLeadMeta">—</div>
           </div>
-          <div class="pill"><i class="fa-regular fa-envelope"></i> Réponses Gmail liées à ce lead</div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+            <button class="btn btn-outline btn-small" type="button" id="btnInboxSync">
+              <i class="fa-solid fa-rotate-right"></i> Rafraîchir
+            </button>
+            <div class="pill"><i class="fa-regular fa-envelope"></i> Réponses Gmail liées à ce lead</div>
+          </div>
         </div>
       </div>
 
@@ -2102,6 +2107,7 @@
     $("#inboxEmpty").style.display = "none";
     $("#inboxViewer").style.display = "none";
     $("#inboxReplyText").value = "";
+    setInboxSyncBusy(true);
 
     openModal("#inboxModal");
 
@@ -2109,11 +2115,23 @@
       try{
         const data = await apiJson(`/api/v1/crm/leads/${leadId}/inbox?limit=20`);
         state.ui.inboxEmails = Array.isArray(data?.emails) ? data.emails : [];
+
+        // If push ingestion isn't working (Pub/Sub), fallback to pulling recent replies from Gmail.
+        if(!state.ui.inboxEmails.length){
+          try{
+            await apiJson(`/api/v1/crm/leads/${leadId}/inbox/sync?limit=20`, { method:"POST" });
+            const data2 = await apiJson(`/api/v1/crm/leads/${leadId}/inbox?limit=20`);
+            state.ui.inboxEmails = Array.isArray(data2?.emails) ? data2.emails : [];
+          }catch{}
+        }
+
         state.ui.inboxEmailId = state.ui.inboxEmails[0]?.id || null;
         renderInboxModal();
       }catch(err){
         toast("err","Erreur", err?.message || "Chargement messages impossible");
         closeInboxModal();
+      }finally{
+        setInboxSyncBusy(false);
       }
     })();
   }
@@ -2124,6 +2142,36 @@
     state.ui.inboxEmailId = null;
     state.ui.inboxEmails = [];
     $("#inboxReplyText").value = "";
+    setInboxSyncBusy(false);
+  }
+
+  function setInboxSyncBusy(busy){
+    const btn = $("#btnInboxSync");
+    if(btn) btn.disabled = !!busy;
+  }
+
+  async function syncInboxForCurrentLead(){
+    const leadId = state.ui.inboxLeadId;
+    if(!leadId){
+      toast("warn","Messages","Aucun lead sélectionné.");
+      return;
+    }
+    setInboxSyncBusy(true);
+    try{
+      await apiJson(`/api/v1/crm/leads/${leadId}/inbox/sync?limit=20`, { method:"POST" });
+      const data = await apiJson(`/api/v1/crm/leads/${leadId}/inbox?limit=20`);
+      state.ui.inboxEmails = Array.isArray(data?.emails) ? data.emails : [];
+      state.ui.inboxEmailId = state.ui.inboxEmails[0]?.id || null;
+      renderInboxModal();
+      toast("ok","Messages","Synchronisation effectuée.");
+    }catch(err){
+      const bodyErr = err?.body?.error || "";
+      if(bodyErr === "google_not_configured") toast("warn","Google","Gmail n'est pas configuré côté serveur.");
+      else if(bodyErr === "gmail_not_connected") toast("warn","Google","Connecte d'abord Gmail (compte admin).");
+      else toast("err","Erreur", err?.message || "Sync impossible");
+    }finally{
+      setInboxSyncBusy(false);
+    }
   }
 
   function renderInboxModal(){
@@ -2267,7 +2315,14 @@
       toast("ok","Envoyé","Email envoyé via Gmail.");
       closeComposeModal();
     }catch(err){
-      toast("err","Erreur", err?.message || "Envoi impossible");
+      const code = err?.status || "";
+      const bodyErr = err?.body?.error || "";
+      const bodyMsg = err?.body?.message || "";
+      if(bodyErr === "google_not_configured") toast("warn","Google","Gmail n'est pas configuré côté serveur.");
+      else if(bodyErr === "gmail_not_connected") toast("warn","Google","Connecte d'abord Gmail (compte admin).");
+      else if(bodyErr === "gmail_send_failed") toast("err","Envoi Gmail", bodyMsg || "Envoi impossible (Gmail).");
+      else if(String(code) === "502") toast("err","Serveur","API indisponible (502). Réessaie dans quelques secondes.");
+      else toast("err","Erreur", err?.message || "Envoi impossible");
     }finally{
       $("#btnComposeSend").disabled = false;
     }
@@ -2646,6 +2701,7 @@
     // Inbox modal close + send
     $("#closeInboxModal").addEventListener("click", closeInboxModal);
     $("#btnInboxCancel").addEventListener("click", closeInboxModal);
+    $("#btnInboxSync").addEventListener("click", syncInboxForCurrentLead);
     $("#btnInboxSend").addEventListener("click", sendInboxReply);
     $("#inboxModal").addEventListener("click", (e)=>{
       if(e.target === $("#inboxModal")) closeInboxModal();

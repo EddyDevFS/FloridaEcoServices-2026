@@ -242,6 +242,8 @@
     .table{
       /* IMPORTANT: allow action dropdown to render outside the table box */
       overflow: visible;
+      position: relative;
+      z-index: 5;
     }
 
     .table-grid{
@@ -380,7 +382,7 @@
       box-shadow: var(--shadow);
       overflow:hidden;
       display:none;
-      z-index: 50;
+      z-index: 9999;
     }
     .dropdown.open{ display:block; }
     .dd-item{

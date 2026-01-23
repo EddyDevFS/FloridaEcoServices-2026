@@ -21,9 +21,11 @@ export function readMailEnv(): MailEnv | null {
 export async function sendMail(opts: {
   to: string[];
   cc?: string[];
+  replyTo?: string;
   subject: string;
   text: string;
   html?: string;
+  headers?: Record<string, string>;
   attachments?: Array<{
     filename: string;
     content: Buffer;
@@ -44,9 +46,11 @@ export async function sendMail(opts: {
     from: env.from,
     to: (opts.to || []).filter(Boolean).join(','),
     cc: (opts.cc || []).filter(Boolean).join(',') || undefined,
+    replyTo: String(opts.replyTo || '').trim() || undefined,
     subject: opts.subject,
     text: opts.text,
     html: opts.html,
+    headers: opts.headers || undefined,
     attachments: (opts.attachments || []).map((a) => ({
       filename: a.filename,
       content: a.content,

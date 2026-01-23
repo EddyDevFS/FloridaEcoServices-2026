@@ -128,10 +128,13 @@
   let quoteStatus = 'DRAFT';
   let customerType = 'PROSPECT';
   let customer = { company: '', contact: '', email: '', phone: '' };
+  let linkedLeadId = '';
   let state = freshState();
   let viewTrash = false;
   let quoteSearchTerm = '';
   let cachedQuotes = [];
+  let cachedLeads = [];
+  let suppressLeadUnlink = false;
 
   const steps = [
     { title: 'Hotel Info' },
@@ -804,11 +807,13 @@
     quoteStatus = 'DRAFT';
     customerType = 'PROSPECT';
     customer = { company: '', contact: '', email: '', phone: '' };
+    linkedLeadId = '';
     state = freshState();
     syncCustomerUiFromState();
     updateTopMeta();
     updateUrl();
     await refreshQuoteList({ keepSelection: false });
+    await refreshLeads().catch(() => {});
     render();
     updateTopbarButtons();
   }
@@ -828,7 +833,8 @@
       customerType,
       customer,
       payload: state,
-      title: (state.hotel.name || customer.company || '').trim()
+      title: (state.hotel.name || customer.company || '').trim(),
+      leadId: linkedLeadId || ''
     };
     const res = await apiFetch(`/api/v1/quotes/${encodeURIComponent(quoteId)}`, { method: 'PATCH', body: JSON.stringify(body) });
     if (!res.ok) {
@@ -920,18 +926,66 @@
     quoteStatus = q?.status || 'DRAFT';
     customerType = q?.customerType || 'PROSPECT';
     customer = q?.customer || { company: '', contact: '', email: '', phone: '' };
+    linkedLeadId = q?.leadId || '';
     state = q?.payload && typeof q.payload === 'object' ? q.payload : freshState();
     if (!Array.isArray(state.emailRecipients)) state.emailRecipients = [];
     if (state.emailCc == null) state.emailCc = '';
     state.step = clampInt(state.step, 0, steps.length - 1);
     syncCustomerUiFromState();
+    await refreshLeads().catch(() => {});
     render();
     updateUrl();
     updateTopbarButtons();
   }
 
+  async function refreshLeads() {
+    const select = $('leadSelect');
+    if (!select) return;
+    const res = await apiFetch('/api/v1/crm/leads?limit=500&includeArchived=1', { method: 'GET' });
+    if (!res.ok) {
+      cachedLeads = [];
+      select.innerHTML = `<option value="">— Select a lead —</option>`;
+      select.value = '';
+      return;
+    }
+    const data = await res.json().catch(() => ({}));
+    const leads = Array.isArray(data?.leads) ? data.leads : [];
+    cachedLeads = leads;
+
+    const sorted = [...leads].sort((a, b) => String(a.hotelName || '').localeCompare(String(b.hotelName || '')));
+    select.innerHTML =
+      `<option value="">— Select a lead —</option>` +
+      sorted
+        .map((l) => {
+          const label = `${l.hotelName || '—'} · ${l.email1 || '—'}`;
+          return `<option value="${escapeHtml(l.id)}">${escapeHtml(label)}</option>`;
+        })
+        .join('');
+
+    select.value = linkedLeadId || '';
+  }
+
+  function applyLeadToCustomer(lead) {
+    const contact = `${lead.firstName || ''} ${lead.lastName || ''}`.trim();
+    suppressLeadUnlink = true;
+    linkedLeadId = lead.id;
+    customerType = 'PROSPECT';
+    customer = {
+      company: String(lead.hotelName || ''),
+      contact,
+      email: String(lead.email1 || ''),
+      phone: String(lead.phone || '')
+    };
+    syncCustomerUiFromState();
+    updateSummary();
+    setTimeout(() => {
+      suppressLeadUnlink = false;
+    }, 0);
+  }
+
   async function createNewQuote() {
-    const res = await apiFetch('/api/v1/quotes', { method: 'POST', body: JSON.stringify({ customerType, customer, payload: state }) });
+    const body = { customerType, customer, payload: state, ...(linkedLeadId ? { leadId: linkedLeadId } : {}) };
+    const res = await apiFetch('/api/v1/quotes', { method: 'POST', body: JSON.stringify(body) });
     if (!res.ok) throw new Error('create_failed');
     const data = await res.json().catch(() => ({}));
     const q = data?.quote;
@@ -939,6 +993,7 @@
     quoteNumber = q?.number || '';
     quoteToken = q?.token || '';
     quoteStatus = q?.status || 'DRAFT';
+    linkedLeadId = q?.leadId || linkedLeadId;
     updateTopMeta();
     await refreshQuoteList({ keepSelection: false });
     const select = $('quoteSelect');
@@ -1083,6 +1138,11 @@
 
   function bindCustomerInputs() {
     const upd = () => {
+      if (!suppressLeadUnlink && linkedLeadId) {
+        linkedLeadId = '';
+        const sel = $('leadSelect');
+        if (sel) sel.value = '';
+      }
       customer = {
         company: String($('custCompany').value || ''),
         contact: String($('custContact').value || ''),
@@ -1104,6 +1164,25 @@
     $('clientSelect')?.addEventListener('change', () => linkSelectedClient().catch((e) => toast(e.message || 'Link failed', 'error')));
     $('btnCreateClient')?.addEventListener('click', () => createClientFromCustomer().catch((e) => toast(e.message || 'Client create failed', 'error')));
     $('btnConvertProspect')?.addEventListener('click', () => convertProspectToClient().catch((e) => toast(e.message || 'Convert failed', 'error')));
+
+    $('leadSelect')?.addEventListener('change', async (e) => {
+      const id = String(e.target.value || '').trim();
+      if (!id) {
+        linkedLeadId = '';
+        scheduleSave();
+        return;
+      }
+      const lead = (Array.isArray(cachedLeads) ? cachedLeads : []).find((l) => l.id === id);
+      if (!lead) {
+        await refreshLeads().catch(() => {});
+        const lead2 = (Array.isArray(cachedLeads) ? cachedLeads : []).find((l) => l.id === id);
+        if (!lead2) return;
+        applyLeadToCustomer(lead2);
+      } else {
+        applyLeadToCustomer(lead);
+      }
+      scheduleSave();
+    });
   }
 
   function bindTopbar() {
@@ -1270,6 +1349,7 @@
     bindNav();
 
     await refreshQuoteList({ keepSelection: true });
+    await refreshLeads().catch(() => {});
 
     const params = new URLSearchParams(window.location.search || '');
     const fromUrl = String(params.get('quoteId') || '').trim();

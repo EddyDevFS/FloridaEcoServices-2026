@@ -18,6 +18,12 @@ import reportRoutes from './routes/reports';
 import videoRoutes from './routes/videos';
 import quoteRoutes from './routes/quotes';
 import clientRoutes from './routes/clients';
+import crmLeadRoutes from './routes/crmLeads';
+import crmCampaignRoutes from './routes/crmCampaigns';
+import crmLeadCampaignRoutes from './routes/crmLeadCampaigns';
+import crmTrackingRoutes from './routes/crmTracking';
+import googleRoutes from './routes/google';
+import { startCrmEmailWorker } from './services/crmWorker';
 
 const env = readEnv();
 const app = express();
@@ -83,6 +89,15 @@ app.use('/api/v1', reportRoutes);
 app.use('/api/v1', videoRoutes);
 app.use('/api/v1', quoteRoutes);
 app.use('/api/v1', clientRoutes);
+app.use('/api/v1', crmLeadRoutes);
+app.use('/api/v1', crmCampaignRoutes);
+app.use('/api/v1', crmLeadCampaignRoutes);
+
+// Google integrations (OAuth + Gmail push)
+app.use('/api/google', googleRoutes);
+
+// Public tracking endpoints (open/click)
+app.use('/t', crmTrackingRoutes);
 
 // Final error handler (ensures JSON for API clients)
 app.use((err: any, req: Request, res: Response, next: any) => {
@@ -99,4 +114,5 @@ app.use((err: any, req: Request, res: Response, next: any) => {
 app.listen(env.port, () => {
   // eslint-disable-next-line no-console
   console.log(`[api] listening on :${env.port}`);
+  startCrmEmailWorker();
 });

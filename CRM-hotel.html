@@ -1,0 +1,2457 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LeadHotel — Gestion des campagnes email</title>
+
+  <!-- NOTE PROD: idéalement self-host ces assets (CSP, perf, offline) -->
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root{
+      --primary:#2563eb;
+      --primary-dark:#1d4ed8;
+      --secondary:#10b981;
+      --danger:#ef4444;
+      --warning:#f59e0b;
+
+      --text:#111827;
+      --muted:#6b7280;
+
+      --card:#ffffff;
+      --bg:#f3f4f6;
+      --border:#d1d5db;
+      --soft:#eef2ff;
+
+      --shadow: 0 2px 12px rgba(0,0,0,.05);
+      --r12:12px;
+      --r10:10px;
+      --r8:8px;
+
+      --metro-1:#3b82f6;
+      --metro-2:#8b5cf6;
+      --metro-3:#10b981;
+      --metro-4:#f59e0b;
+
+      --focus: 0 0 0 3px rgba(37,99,235,.25);
+    }
+
+    body.dark{
+      --primary:#3b82f6;
+      --primary-dark:#2563eb;
+      --secondary:#34d399;
+
+      --text:#f9fafb;
+      --muted:#9ca3af;
+
+      --card:#0b1220;
+      --bg:#030712;
+      --border:#1f2a3a;
+      --soft:#0f1a2e;
+
+      --shadow: 0 2px 16px rgba(0,0,0,.35);
+      --focus: 0 0 0 3px rgba(59,130,246,.25);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Helvetica Neue";
+      background:var(--bg);
+      color:var(--text);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    a{ color:inherit; text-decoration:none; }
+    button, input, select, textarea{ font:inherit; color:inherit; }
+    button{ cursor:pointer; }
+    :focus-visible{ outline:none; box-shadow:var(--focus); border-radius:8px; }
+
+    .container{
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* Header */
+    header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding: 6px 0 18px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+
+    .logo{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing:.2px;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .logo i{ font-size: 26px; }
+
+    .header-actions{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .btn{
+      border:1px solid transparent;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 700;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      transition: transform .05s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease;
+      user-select:none;
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btn[disabled]{ opacity:.55; cursor:not-allowed; transform:none; }
+
+    .btn-primary{
+      background: var(--primary);
+      color:#fff;
+    }
+    .btn-primary:hover{ background: var(--primary-dark); }
+
+    .btn-outline{
+      background: transparent;
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+    .btn-outline:hover{
+      background: var(--primary);
+      color:#fff;
+    }
+
+    .icon-btn{
+      width: 42px;
+      height: 42px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+    }
+    .icon-btn:hover{ border-color: rgba(37,99,235,.35); }
+
+    /* Layout */
+    .stats{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin: 18px 0 22px;
+    }
+    @media (max-width: 1024px){
+      .stats{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 560px){
+      .stats{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r12);
+      box-shadow: var(--shadow);
+    }
+
+    .stat-card{
+      padding: 18px;
+    }
+    .stat-label{ font-size: 13px; color: var(--muted); }
+    .stat-value{ font-size: 30px; font-weight: 900; margin: 8px 0 6px; letter-spacing:-.5px; }
+    .stat-sub{ font-size: 13px; color: var(--muted); }
+
+    .main{
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap: 20px;
+      align-items:start;
+    }
+    @media (max-width: 1024px){
+      .main{ grid-template-columns: 1fr; }
+    }
+
+    .section-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom: 12px;
+    }
+    .section-title{
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing:-.2px;
+    }
+
+    /* Controls */
+    .controls{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .select, .search{
+      border: 1px solid var(--border);
+      background: var(--card);
+      border-radius: 10px;
+      padding: 10px 12px;
+      height: 42px;
+    }
+    .search{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width: 260px;
+    }
+    .search input{
+      border:none;
+      background:transparent;
+      width:100%;
+      outline:none;
+      color: var(--text);
+    }
+    .search i{ color: var(--muted); }
+
+    @media (max-width:560px){
+      .search{ min-width: 100%; }
+      .controls{ width:100%; }
+    }
+
+    /* Table */
+    .table{
+      overflow:hidden;
+    }
+
+    .table-grid{
+      display:grid;
+      grid-template-columns: 2.2fr 1.2fr 1.3fr 1fr 1fr 44px;
+      gap: 0;
+      align-items:center;
+    }
+
+    .thead{
+      background: var(--soft);
+      border-bottom: 1px solid var(--border);
+      font-weight: 800;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .thead .cell, .trow .cell{
+      padding: 14px 14px;
+    }
+
+    .trow{
+      border-bottom: 1px solid var(--border);
+      transition: background-color .12s ease;
+    }
+    .trow:hover{ background: rgba(37,99,235,.05); }
+
+    .hname{ font-weight: 900; }
+    .sub{
+      margin-top: 4px;
+      font-size: 13px;
+      color: var(--muted);
+      display:flex;
+      gap: 8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      border-radius: 999px;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+      background: rgba(255,255,255,.02);
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 900;
+      white-space:nowrap;
+    }
+    .b-wait{ background: rgba(59,130,246,.15); color: #1e40af; }
+    body.dark .b-wait{ color:#cfe1ff; }
+
+    .b-active{ background: rgba(16,185,129,.15); color:#065f46; }
+    body.dark .b-active{ color:#b6ffe1; }
+
+    .b-pending{ background: rgba(245,158,11,.2); color:#92400e; }
+    body.dark .b-pending{ color:#ffe6b0; }
+
+    .b-closed{ background: rgba(107,114,128,.18); color:#374151; }
+    body.dark .b-closed{ color:#e5e7eb; }
+
+    .b-out{ background: rgba(99,102,241,.16); color:#3730a3; }
+    body.dark .b-out{ color:#d6d6ff; }
+
+    /* Metro */
+    .metro{
+      display:flex;
+      align-items:center;
+      height: 30px;
+    }
+    .step{
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size: 12px;
+      font-weight: 900;
+      position:relative;
+      background: rgba(107,114,128,.2);
+      color: var(--muted);
+      margin-right: 26px;
+    }
+    .step.active{ background: var(--metro-1); color: #fff; }
+    .step.done{ background: var(--secondary); color:#fff; }
+    .step:not(:last-child)::after{
+      content:"";
+      position:absolute;
+      left: 22px;
+      top: 50%;
+      width: 26px;
+      height: 2px;
+      transform: translateY(-50%);
+      background: rgba(107,114,128,.25);
+    }
+    .step.done:not(:last-child)::after{ background: rgba(16,185,129,.7); }
+
+    /* Actions menu */
+    .menu{
+      position:relative;
+      display:flex;
+      justify-content:flex-end;
+    }
+    .kebab{
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      color: var(--muted);
+    }
+    .kebab:hover{ border-color: rgba(37,99,235,.35); color: var(--text); }
+
+    .dropdown{
+      position:absolute;
+      top: 42px;
+      right: 0;
+      width: 220px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      display:none;
+      z-index: 50;
+    }
+    .dropdown.open{ display:block; }
+    .dd-item{
+      padding: 11px 12px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      font-weight: 800;
+      border-bottom: 1px solid var(--border);
+      background: transparent;
+      width:100%;
+      text-align:left;
+    }
+    .dd-item:last-child{ border-bottom:none; }
+    .dd-item:hover{ background: rgba(37,99,235,.06); }
+    .dd-item i{ width: 18px; color: var(--muted); }
+    .dd-danger{ color: var(--danger); }
+    .dd-danger i{ color: var(--danger); }
+
+    /* Timeline */
+    .timeline{
+      padding: 18px;
+      margin-top: 16px;
+    }
+    .t-title{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight: 900;
+      margin-bottom: 12px;
+    }
+    .t-list{
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+    }
+    .t-item{
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(255,255,255,.02);
+      display:flex;
+      gap: 12px;
+      align-items:flex-start;
+    }
+    .t-when{
+      font-weight: 900;
+      color: var(--primary);
+      min-width: 88px;
+      font-size: 13px;
+    }
+    .t-hotel{ font-weight: 900; margin-bottom: 4px; }
+    .t-desc{ font-size: 13px; color: var(--muted); }
+    .t-actions{
+      display:flex;
+      gap:8px;
+      margin-top: 10px;
+      flex-wrap:wrap;
+    }
+    .btn-small{
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    /* Side form */
+    .side{
+      position: sticky;
+      top: 16px;
+      padding: 18px;
+    }
+    @media (max-width: 1024px){
+      .side{ position:static; }
+    }
+    .side h3{
+      margin: 0 0 14px;
+      font-size: 16px;
+      font-weight: 900;
+    }
+    .field{
+      margin-bottom: 12px;
+    }
+    label{
+      display:block;
+      font-weight: 900;
+      font-size: 13px;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+    input, textarea, select{
+      width:100%;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 11px 12px;
+      outline:none;
+    }
+    textarea{ min-height: 90px; resize: vertical; }
+
+    .row2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width:560px){
+      .row2{ grid-template-columns: 1fr; }
+    }
+
+    .hint{
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    .error{
+      font-size: 12px;
+      color: var(--danger);
+      margin-top: 6px;
+      display:none;
+    }
+    .error.show{ display:block; }
+
+    .divider{
+      margin: 14px 0;
+      height:1px;
+      background: var(--border);
+    }
+
+    /* Modal (accessible) */
+    .modal{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index: 1000;
+      padding: 18px;
+    }
+    .modal.open{ display:flex; }
+    .modal-card{
+      width: min(560px, 100%);
+      border-radius: 14px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .modal-head{
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .modal-head h3{
+      margin:0;
+      font-size: 16px;
+      font-weight: 900;
+    }
+    .modal-body{ padding: 16px; }
+    .close-x{
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--muted);
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .close-x:hover{ color: var(--text); border-color: rgba(37,99,235,.35); }
+
+    /* Toasts */
+    .toasts{
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      z-index: 2000;
+      max-width: min(420px, calc(100vw - 36px));
+    }
+    .toast{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 12px 12px;
+      display:flex;
+      gap: 10px;
+      align-items:flex-start;
+      animation: pop .16s ease-out;
+    }
+    @keyframes pop{ from{ transform: translateY(6px); opacity:.0;} to{ transform:none; opacity:1; } }
+    .toast i{ margin-top: 2px; }
+    .toast .t1{ font-weight: 900; }
+    .toast .t2{ font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .toast .x{
+      margin-left:auto;
+      border:none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1;
+      padding: 0 6px;
+    }
+    .toast.ok i{ color: var(--secondary); }
+    .toast.warn i{ color: var(--warning); }
+    .toast.err i{ color: var(--danger); }
+
+    /* Responsive table simplification */
+    @media (max-width: 860px){
+      .table-grid{
+        grid-template-columns: 1.8fr 1fr 1.2fr 1fr 44px;
+      }
+      .col-hide-md{ display:none; }
+    }
+    @media (max-width: 640px){
+      .table-grid{
+        grid-template-columns: 1.7fr 1fr 44px;
+      }
+      .col-hide-sm{ display:none; }
+    }
+
+    /* Campaign editor templates */
+.tpl-card{ border:1px solid var(--border); border-radius:14px; overflow:hidden; background:rgba(255,255,255,.02); margin-bottom:12px; }
+.tpl-head{ padding:12px; display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer; }
+.tpl-title{ font-weight:900; display:flex; align-items:center; gap:10px; }
+.tpl-dot{ width:10px; height:10px; border-radius:999px; background:rgba(107,114,128,.4); }
+.tpl-dot.ok{ background: var(--secondary); }
+.tpl-dot.open{ background: var(--primary); }
+.tpl-sub{ font-size:13px; color:var(--muted); margin-top:4px; }
+.tpl-body{ padding:12px; border-top:1px solid var(--border); display:none; }
+.tpl-body.open{ display:block; }
+.tpl-row2{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+@media(max-width:720px){ .tpl-row2{ grid-template-columns:1fr; } }
+	.tpl-actions{ display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; margin-top:10px; }
+	.small{ font-size:13px; font-weight:900; }
+	.tpl-toolbar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-top:8px; }
+	.tpl-vars{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+	.chip{ border:1px solid var(--border); background:rgba(255,255,255,.02); color:var(--text); border-radius:999px; padding:6px 10px; font-weight:900; font-size:12px; }
+	.chip:hover{ border-color: rgba(37,99,235,.35); }
+	  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div class="logo" aria-label="LeadHotel">
+        <i class="fa-solid fa-hotel"></i>
+        <span>LeadHotel</span>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn btn-outline" id="btnNewCampaign" type="button">
+          <i class="fa-solid fa-plus"></i> Nouvelle campagne
+        </button>
+        <button class="btn btn-primary" id="btnSeed" type="button" title="Démo" style="display:none">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Seed démo
+        </button>
+        <button class="icon-btn" id="btnTheme" type="button" aria-label="Basculer le thème">
+          <i class="fa-solid fa-moon"></i>
+        </button>
+      </div>
+    </header>
+
+    <section class="stats" aria-label="Statistiques">
+      <div class="card stat-card">
+        <div class="stat-label">Leads actifs</div>
+        <div class="stat-value" id="kpiActive">—</div>
+        <div class="stat-sub">En cours de traitement</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-label">À valider aujourd'hui</div>
+        <div class="stat-value" id="kpiDueToday">—</div>
+        <div class="stat-sub">Statuts en attente</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-label">Emails envoyés</div>
+        <div class="stat-value" id="kpiSentWeek">—</div>
+        <div class="stat-sub">7 derniers jours</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-label">Taux de réponse</div>
+        <div class="stat-value" id="kpiReplyRate">—</div>
+        <div class="stat-sub">30 derniers jours</div>
+      </div>
+    </section>
+
+    <div class="main">
+      <!-- LEFT -->
+      <div>
+        <div class="section-head">
+          <div class="section-title">Suivi des leads</div>
+          <div class="controls">
+            <div class="search" role="search">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input id="q" type="search" placeholder="Rechercher (hôtel, contact, email…)" autocomplete="off" />
+            </div>
+
+            <select class="select" id="filterStatus" aria-label="Filtrer par statut">
+              <option value="all">Tous statuts</option>
+              <option value="ACTIVE">Actif</option>
+              <option value="WAITING_VALIDATION">En attente</option>
+              <option value="PENDING">À valider</option>
+              <option value="OUT_OF_PIPE">Hors pipe</option>
+              <option value="CLOSED">Clos</option>
+            </select>
+
+            <select class="select" id="sortBy" aria-label="Trier">
+              <option value="dueAsc">Tri: prochaine action ↑</option>
+              <option value="dueDesc">Tri: prochaine action ↓</option>
+              <option value="hotelAsc">Tri: hôtel A→Z</option>
+              <option value="hotelDesc">Tri: hôtel Z→A</option>
+              <option value="updatedDesc">Tri: modifié récemment</option>
+            </select>
+          </div>
+        </div>
+
+        <section class="card table" aria-label="Table des leads">
+          <div class="thead table-grid">
+            <div class="cell">Hôtel / Contact</div>
+            <div class="cell col-hide-sm">Campagne</div>
+            <div class="cell">Étape</div>
+            <div class="cell col-hide-md">Prochaine action</div>
+            <div class="cell col-hide-md">Statut</div>
+            <div class="cell"></div>
+          </div>
+
+          <div id="tbody"></div>
+        </section>
+
+        <section class="card timeline" aria-label="Prochaines actions à valider">
+          <div class="t-title">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>Prochaines actions à valider</span>
+          </div>
+          <div class="t-list" id="timeline"></div>
+        </section>
+
+        <section class="card timeline" aria-label="Leads hors pipe">
+          <div class="t-title">
+            <i class="fa-solid fa-box-archive"></i>
+            <span>Leads hors pipe</span>
+          </div>
+          <div class="t-list" id="outbox"></div>
+        </section>
+      </div>
+
+      <!-- RIGHT -->
+      <aside class="card side" aria-label="Formulaire ajout lead">
+        <h3>Ajouter un nouveau lead</h3>
+
+        <form id="leadForm" novalidate>
+          <div class="field">
+            <label for="hotelName">Nom de l'hôtel</label>
+            <input id="hotelName" name="hotelName" type="text" placeholder="Ex: Hôtel du Soleil" required maxlength="120">
+            <div class="error" id="errHotel">Merci de renseigner un nom d'hôtel.</div>
+          </div>
+
+          <div class="row2">
+            <div class="field">
+              <label for="firstName">Prénom</label>
+              <input id="firstName" name="firstName" type="text" placeholder="Paul" maxlength="60">
+            </div>
+            <div class="field">
+              <label for="lastName">Nom</label>
+              <input id="lastName" name="lastName" type="text" placeholder="Martin" maxlength="60">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="email1">Email principal</label>
+            <input id="email1" name="email1" type="email" placeholder="contact@hotel.com" required maxlength="180" autocomplete="email">
+            <div class="error" id="errEmail1">Merci de renseigner un email valide.</div>
+          </div>
+
+          <div class="field">
+            <label for="email2">Email secondaire (optionnel)</label>
+            <input id="email2" name="email2" type="email" placeholder="direction@hotel.com" maxlength="180">
+          </div>
+
+	          <div class="row2">
+	            <div class="field">
+	              <label for="phone">Téléphone (optionnel)</label>
+	              <input id="phone" name="phone" type="tel" placeholder="+1 (xxx) xxx-xxxx" maxlength="30" autocomplete="tel">
+	            </div>
+	            <div class="field">
+	              <label for="campaignId">Campagne assignée</label>
+	              <select id="campaignId" name="campaignId" required></select>
+	              <div class="hint" id="campaignHint">Choisis une campagne prête (✅) pour pouvoir créer le lead.</div>
+	              <button class="btn btn-outline btn-small" type="button" id="btnEditCampaign" style="width:100%;margin-top:8px">
+	                <i class="fa-solid fa-pen-to-square"></i> Éditer la campagne sélectionnée
+	              </button>
+	              <div class="error" id="errCampaign">Merci de choisir une campagne.</div>
+	            </div>
+	          </div>
+
+          <div class="field">
+            <label for="notes">Notes (optionnel)</label>
+            <textarea id="notes" name="notes" placeholder="Ex: à relancer après le week-end…"></textarea>
+          </div>
+
+          <button class="btn btn-primary" type="submit" id="btnCreateLead" style="width:100%">
+            <i class="fa-solid fa-floppy-disk"></i> Créer le lead
+          </button>
+
+          <div class="hint">
+            ⚙️ Prêt pour CODEX : branchement via <b>api.createLead()</b> / <b>api.listLeads()</b> / etc.
+          </div>
+        </form>
+
+        <div class="divider"></div>
+
+        <button class="btn btn-outline" type="button" id="btnScrollTop" style="width:100%">
+          <i class="fa-solid fa-arrow-up"></i> Remonter
+        </button>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Modal nouvelle campagne -->
+  <div class="modal" id="campaignModal" role="dialog" aria-modal="true" aria-labelledby="campaignTitle">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="campaignTitle">Créer une nouvelle campagne</h3>
+        <button class="close-x" type="button" id="closeCampaignModal" aria-label="Fermer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+	      <div class="modal-body">
+	        <form id="campaignForm" novalidate>
+	          <div class="field">
+	            <label for="campName">Nom de la campagne</label>
+	            <input id="campName" name="name" type="text" placeholder="Ex: Campagne Floride Juin 2026" required maxlength="120">
+	            <div class="error" id="errCampName">Nom de campagne requis.</div>
+	          </div>
+
+	          <div class="field">
+	            <label for="stepsCount">Nombre d'emails</label>
+	            <input id="stepsCount" name="stepsCount" type="number" value="4" min="1" max="10" required>
+	            <div class="hint">Après création, tu complètes et valides chaque email (sujet, contenu, heure, délai).</div>
+	          </div>
+
+	          <button class="btn btn-primary" type="submit" style="width:100%">
+	            <i class="fa-solid fa-check"></i> Créer la campagne
+	          </button>
+	        </form>
+      </div>
+    </div>
+  </div>
+  <!-- Modal édition campagne (templates emails) -->
+<div class="modal" id="campaignEditorModal" role="dialog" aria-modal="true" aria-labelledby="campaignEditorTitle">
+  <div class="modal-card" style="width:min(860px,100%);">
+    <div class="modal-head">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <h3 id="campaignEditorTitle">Éditer la campagne</h3>
+        <span class="pill" id="campaignEditorBadge">DRAFT</span>
+      </div>
+      <button class="close-x" type="button" id="closeCampaignEditor" aria-label="Fermer">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="card" style="padding:12px;margin-bottom:12px;background:rgba(255,255,255,.02);">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-weight:900" id="ceName">—</div>
+            <div style="font-size:13px;color:var(--muted)" id="ceMeta">—</div>
+          </div>
+
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <div class="pill"><i class="fa-regular fa-lightbulb"></i> Variables: <b>{{firstName}}</b> <b>{{lastName}}</b> <b>{{hotelName}}</b></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tplList"></div>
+
+      <div class="divider"></div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
+        <button class="btn btn-outline" type="button" id="btnCloseCampaignEditor">
+          Fermer
+        </button>
+        <button class="btn btn-primary" type="button" id="btnFinalizeCampaign" disabled>
+          <i class="fa-solid fa-circle-check"></i> Valider la campagne
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal édition lead -->
+<div class="modal" id="leadEditModal" role="dialog" aria-modal="true" aria-labelledby="leadEditTitle">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="leadEditTitle">Modifier le lead</h3>
+      <button class="close-x" type="button" id="closeLeadEditModal" aria-label="Fermer">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <form id="leadEditForm" novalidate>
+        <input type="hidden" id="leadEditId">
+
+        <div class="field">
+          <label for="leadEditHotelName">Nom de l'hôtel</label>
+          <input id="leadEditHotelName" type="text" required maxlength="120">
+          <div class="error" id="errLeadEditHotel">Merci de renseigner un nom d'hôtel.</div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label for="leadEditFirstName">Prénom</label>
+            <input id="leadEditFirstName" type="text" maxlength="60">
+          </div>
+          <div class="field">
+            <label for="leadEditLastName">Nom</label>
+            <input id="leadEditLastName" type="text" maxlength="60">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="leadEditEmail1">Email principal</label>
+          <input id="leadEditEmail1" type="email" required maxlength="180" autocomplete="email">
+          <div class="error" id="errLeadEditEmail1">Merci de renseigner un email valide.</div>
+        </div>
+
+        <div class="field">
+          <label for="leadEditEmail2">Email secondaire (optionnel)</label>
+          <input id="leadEditEmail2" type="email" maxlength="180">
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label for="leadEditPhone">Téléphone (optionnel)</label>
+            <input id="leadEditPhone" type="tel" maxlength="30" autocomplete="tel">
+          </div>
+          <div class="field">
+            <label for="leadEditCampaignId">Campagne assignée</label>
+            <select id="leadEditCampaignId" required></select>
+            <div class="error" id="errLeadEditCampaign">Merci de choisir une campagne prête (✅).</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="leadEditNotes">Notes (optionnel)</label>
+          <textarea id="leadEditNotes"></textarea>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
+          <button class="btn btn-outline" type="button" id="btnCancelLeadEdit">Annuler</button>
+          <button class="btn btn-primary" type="submit">
+            <i class="fa-solid fa-check"></i> Enregistrer
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+  <!-- Toast container -->
+  <div class="toasts" id="toasts" aria-live="polite" aria-atomic="true"></div>
+  <script src="app-config.js"></script>
+<script>
+  /************************************************************
+   *  LeadHotel — “presque prod” UI + Adapter API
+   ************************************************************/
+  /************************************************************
+   * THEME (required by wire())
+   ************************************************************/
+  const THEME_KEY = "leadhotel_theme"; // "dark" | "light"
+
+  function applyTheme(){
+    const saved = localStorage.getItem(THEME_KEY);
+    const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const wantsDark = saved ? (saved === "dark") : prefersDark;
+
+    document.body.classList.toggle("dark", wantsDark);
+
+    const icon = document.querySelector("#btnTheme i");
+    if(icon){
+      icon.classList.remove("fa-moon","fa-sun");
+      icon.classList.add(wantsDark ? "fa-sun" : "fa-moon");
+    }
+  }
+
+  function toggleTheme(){
+    const isDark = document.body.classList.toggle("dark");
+    localStorage.setItem(THEME_KEY, isDark ? "dark" : "light");
+
+    const icon = document.querySelector("#btnTheme i");
+    if(icon){
+      icon.classList.remove("fa-moon","fa-sun");
+      icon.classList.add(isDark ? "fa-sun" : "fa-moon");
+    }
+  }
+
+  const $ = (sel, root=document) => root.querySelector(sel);
+  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+  function nowISO(){ return new Date().toISOString(); }
+  function toISO(d){ return new Date(d).toISOString(); }
+  function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+  function formatDue(iso){
+    if(!iso) return "—";
+    const d = new Date(iso);
+    const now = new Date();
+    const sameDay = d.toDateString() === now.toDateString();
+    const hh = String(d.getHours()).padStart(2,"0");
+    const mm = String(d.getMinutes()).padStart(2,"0");
+
+    if(sameDay) return `Aujourd'hui, ${hh}:${mm}`;
+    const tomorrow = new Date(now); tomorrow.setDate(now.getDate()+1);
+    if(d.toDateString() === tomorrow.toDateString()) return `Demain, ${hh}:${mm}`;
+
+    return d.toLocaleDateString("fr-FR",{ day:"2-digit", month:"short" }) + `, ${hh}:${mm}`;
+  }
+
+  function isValidEmail(v){
+    if(!v) return false;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(v.trim());
+  }
+
+  function escapeHtml(str){
+    return String(str ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function uid(){
+  const c = globalThis.crypto;
+  if (c && typeof c.randomUUID === "function") return c.randomUUID();
+  return `id_${Math.random().toString(16).slice(2)}_${Date.now()}`;
+}
+
+  function toast(type, title, msg){
+    const icon = type === "ok" ? "fa-circle-check" :
+                 type === "warn" ? "fa-triangle-exclamation" :
+                 "fa-circle-xmark";
+    const el = document.createElement("div");
+    el.className = `toast ${type}`;
+    el.innerHTML = `
+      <i class="fa-solid ${icon}"></i>
+      <div>
+        <div class="t1">${escapeHtml(title)}</div>
+        <div class="t2">${escapeHtml(msg || "")}</div>
+      </div>
+      <button class="x" aria-label="Fermer">×</button>
+    `;
+    el.querySelector(".x").addEventListener("click", ()=> el.remove());
+    $("#toasts").appendChild(el);
+    setTimeout(()=> { el.remove(); }, 3800);
+  }
+
+  /***************
+   * Domain model
+   ***************/
+  const STATUS = {
+    ACTIVE: "ACTIVE",
+    WAITING_VALIDATION: "WAITING_VALIDATION",
+    PENDING: "PENDING",
+    OUT_OF_PIPE: "OUT_OF_PIPE",
+    CLOSED: "CLOSED",
+  };
+
+  function computeLeadStatus(lead){
+    if(lead.archivedAt) return STATUS.OUT_OF_PIPE;
+    if(lead.closedAt) return STATUS.CLOSED;
+    if(lead.awaitingValidation) return STATUS.PENDING;
+    if((lead.lastSentStep || 0) >= 1 && lead.awaitingValidation === false) return STATUS.WAITING_VALIDATION;
+    return STATUS.ACTIVE;
+  }
+
+  function outReasonLabel(lead){
+    const r = lead?.archiveReason;
+    if(r === "NO_RESPONSE_END") return "Campagne terminée (sans réponse)";
+    if(r === "REPLIED_MANUAL") return "Réponse reçue (reprise en manuel)";
+    if(r === "REPLIED_AUTO") return "Réponse reçue (auto)";
+    if(r === "MANUAL_TAKEOVER") return "Sorti du pipe (manuel)";
+    return "Hors pipe";
+  }
+
+  function statusBadge(s){
+    if(s === STATUS.ACTIVE) return `<span class="badge b-active"><i class="fa-solid fa-bolt"></i> Actif</span>`;
+    if(s === STATUS.WAITING_VALIDATION) return `<span class="badge b-wait"><i class="fa-solid fa-hourglass-half"></i> En attente</span>`;
+    if(s === STATUS.PENDING) return `<span class="badge b-pending"><i class="fa-solid fa-clipboard-check"></i> À valider</span>`;
+    if(s === STATUS.OUT_OF_PIPE) return `<span class="badge b-out"><i class="fa-solid fa-box-archive"></i> Hors pipe</span>`;
+    return `<span class="badge b-closed"><i class="fa-solid fa-circle-minus"></i> Clos</span>`;
+  }
+
+  /************************************************************
+   * API ADAPTER (PROD) — /api/v1/crm/*
+   ************************************************************/
+  let state = {
+    campaigns: [],
+    leads: [],
+    leadCampaigns: [],
+    ui: {
+      q: "",
+      filterStatus: "all",
+      sortBy: "dueAsc",
+      openMenuLeadId: null,
+      editingCampaignId: null,
+      openEmailIndex: null,
+    }
+  };
+
+  function apiBase(){
+    try{
+      if(typeof fecoApiBase === "function") return fecoApiBase();
+    }catch{}
+    const cfg = window.FECO || {};
+    return (cfg.API_BASE || localStorage.getItem("feco.apiBase") || window.location.origin)
+      .toString()
+      .trim()
+      .replace(/\/+$/, "");
+  }
+
+  async function apiFetch(path, init = {}){
+    const token = String(localStorage.getItem("feco.accessToken") || "").trim();
+    const res = await fetch(`${apiBase()}${path}`, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(init.headers || {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      credentials: "include",
+    });
+
+    if(res.status !== 401) return res;
+
+    // Try refresh once (cookie-based refresh token).
+    try{
+      const refresh = await fetch(`${apiBase()}/api/v1/auth/refresh`, { method:"POST", credentials:"include" });
+      if(refresh.ok){
+        const body = await refresh.json().catch(()=> ({}));
+        if(body?.accessToken) localStorage.setItem("feco.accessToken", String(body.accessToken));
+      }
+    }catch{}
+
+    const token2 = String(localStorage.getItem("feco.accessToken") || "").trim();
+    return fetch(`${apiBase()}${path}`, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(init.headers || {}),
+        ...(token2 ? { Authorization: `Bearer ${token2}` } : {}),
+      },
+      credentials: "include",
+    });
+  }
+
+  async function apiJson(path, init = {}){
+    const res = await apiFetch(path, init);
+    if(res.ok) return res.json().catch(()=> ({}));
+    const body = await res.json().catch(()=> ({}));
+    const err = new Error(body?.error || `HTTP_${res.status}`);
+    err.status = res.status;
+    err.body = body;
+    throw err;
+  }
+
+  function persist(){
+    renderAll();
+    updateCampaignHintUI();
+    if(state.ui.editingCampaignId && $("#campaignEditorModal")?.classList.contains("open")){
+      renderCampaignEditor();
+    }
+  }
+
+  function saveOnly(){
+    // no-op: keep for compatibility with UI code paths
+  }
+
+  function isValidSendTime(v){
+    return typeof v === "string" && /^\d{2}:\d{2}$/.test(v);
+  }
+
+  function emailIsComplete(email, stepsCount){
+    const subjectOk = !!String(email?.subject || "").trim();
+    const bodyOk = !!String(email?.body || "").trim();
+    const timeOk = isValidSendTime(email?.sendTime || "");
+    const isLast = Number(email?.index) === Number(stepsCount);
+    const delayOk = isLast ? true : Number(email?.delayDaysAfter) >= 1;
+    return subjectOk && bodyOk && timeOk && delayOk;
+  }
+
+  function normalizeCampaign(raw){
+    const emailsRaw = Array.isArray(raw?.emails) ? raw.emails : [];
+    const steps = clamp(Number(emailsRaw.length || 0), 0, 10);
+
+    const timezone = raw?.timezone || "America/New_York";
+    const emails = emailsRaw
+      .slice()
+      .sort((a,b)=> Number(a.stepIndex) - Number(b.stepIndex))
+      .map((src)=> {
+        const idx = Number(src?.stepIndex || 0);
+        const e = {
+          index: idx,
+          subject: String(src?.subjectTemplate || ""),
+          body: String(src?.bodyTemplate || ""),
+          sendTime: isValidSendTime(src?.sendTime) ? String(src.sendTime) : "09:00",
+          delayDaysAfter: idx === steps ? 0 : clamp(Number(src?.delayDaysAfter ?? 2), 1, 30),
+          status: "EMPTY",
+          validatedAt: null,
+        };
+        if(emailIsComplete(e, steps)){
+          e.status = "VALID";
+          e.validatedAt = null;
+        }
+        return e;
+      });
+
+    const allValid = steps > 0 && emails.every(e => e.status === "VALID");
+    const rawStatus = String(raw?.status || "DRAFT").toUpperCase();
+    const status = rawStatus === "READY" ? (allValid ? "READY" : "DRAFT") : "DRAFT";
+
+    return {
+      id: String(raw?.id || uid()),
+      name: String(raw?.name || "Campagne").trim() || "Campagne",
+      timezone,
+      stepsCount: steps,
+      status, // DRAFT | READY
+      emails,
+      createdAt: raw?.createdAt || null,
+      updatedAt: raw?.updatedAt || null,
+    };
+  }
+
+  function getActiveLeadCampaignForLead(leadId){
+    const active = state.leadCampaigns
+      .filter(lc => lc && lc.leadId === leadId && !lc.archivedAt)
+      .sort((a,b)=> new Date(b.updatedAt||0) - new Date(a.updatedAt||0));
+    return active[0] || null;
+  }
+
+  function getLatestLeadCampaignForLead(leadId){
+    const all = state.leadCampaigns
+      .filter(lc => lc && lc.leadId === leadId)
+      .sort((a,b)=> new Date(b.updatedAt||0) - new Date(a.updatedAt||0));
+    return all[0] || null;
+  }
+
+  async function refreshAllFromApi(){
+    const [camps, leads, leadCampaigns] = await Promise.all([
+      apiJson("/api/v1/crm/campaigns"),
+      apiJson("/api/v1/crm/leads?includeArchived=1&limit=500"),
+      apiJson("/api/v1/crm/lead-campaigns?includeArchived=1&limit=500&includeStats=1"),
+    ]);
+
+    state.campaigns = (camps?.campaigns || []).map(normalizeCampaign);
+    state.leadCampaigns = Array.isArray(leadCampaigns?.leadCampaigns) ? leadCampaigns.leadCampaigns : [];
+
+    const campaignById = new Map(state.campaigns.map(c => [c.id, c]));
+    const leadsRaw = Array.isArray(leads?.leads) ? leads.leads : [];
+
+    state.leads = leadsRaw.map(l => {
+      const activeLc = getActiveLeadCampaignForLead(l.id);
+      const lastLc = activeLc || getLatestLeadCampaignForLead(l.id);
+      const lc = activeLc || (l.archivedAt ? lastLc : null);
+      const campaignId = lc?.campaignId || "";
+      const campaign = campaignById.get(campaignId) || null;
+      const stepsCount = campaign?.stepsCount || 0;
+      const awaitingValidation = !!activeLc?.awaitingValidation;
+      const lastMessageStats = lc?.lastMessageStats || null;
+      const dueAt = awaitingValidation ? (activeLc?.updatedAt || l.updatedAt || null) : (activeLc?.nextSendAt || null);
+
+      return {
+        id: l.id,
+        createdAt: l.createdAt || null,
+        updatedAt: l.updatedAt || null,
+        hotelName: l.hotelName || "",
+        firstName: l.firstName || "",
+        lastName: l.lastName || "",
+        email1: l.email1 || "",
+        email2: l.email2 || "",
+        phone: l.phone || "",
+        notes: l.notes || "",
+        campaignId,
+
+        lastSentStep: lc?.lastSentStep || 0,
+        stepsCount,
+        awaitingValidation,
+        dueAt,
+        closedAt: null,
+
+        archivedAt: l.archivedAt || null,
+        archiveReason: l.archiveReason || null,
+
+        _leadCampaignId: activeLc?.id || null,
+
+        opensCount: Number(lastMessageStats?.opensCount || 0),
+        lastOpenedAt: lastMessageStats?.lastOpenedAt || null,
+        clicksCount: Number(lastMessageStats?.clicksCount || 0),
+        lastClickedAt: lastMessageStats?.lastClickedAt || null,
+      };
+    });
+
+    persist();
+  }
+
+  const api = {
+    async bootstrap(){
+      await refreshAllFromApi();
+      return { ok: true };
+    },
+
+    async createCampaign(payload){
+      const created = await apiJson("/api/v1/crm/campaigns", {
+        method:"POST",
+        body: JSON.stringify({
+          name: String(payload?.name || "").trim(),
+          stepsCount: Number(payload?.stepsCount || 4),
+          timezone: "America/New_York",
+        })
+      });
+      await refreshAllFromApi();
+      return normalizeCampaign(created?.campaign);
+    },
+
+    async createLead(payload){
+      const leadRes = await apiJson("/api/v1/crm/leads", {
+        method:"POST",
+        body: JSON.stringify({
+          hotelName: String(payload?.hotelName || "").trim(),
+          firstName: String(payload?.firstName || "").trim(),
+          lastName: String(payload?.lastName || "").trim(),
+          email1: String(payload?.email1 || "").trim(),
+          email2: String(payload?.email2 || "").trim(),
+          phone: String(payload?.phone || "").trim(),
+          notes: String(payload?.notes || "").trim(),
+        })
+      });
+
+      const leadId = leadRes?.lead?.id;
+      if(!leadId) throw new Error("Création lead impossible");
+
+      await apiJson(`/api/v1/crm/leads/${leadId}/start-campaign`, {
+        method:"POST",
+        body: JSON.stringify({ campaignId: String(payload?.campaignId || "") })
+      });
+
+      await refreshAllFromApi();
+      return state.leads.find(x => x.id === leadId) || null;
+    },
+
+    async updateLead(leadId, payload){
+      await apiJson(`/api/v1/crm/leads/${leadId}`, {
+        method:"PATCH",
+        body: JSON.stringify({
+          hotelName: String(payload?.hotelName || "").trim(),
+          firstName: String(payload?.firstName || "").trim(),
+          lastName: String(payload?.lastName || "").trim(),
+          email1: String(payload?.email1 || "").trim(),
+          email2: String(payload?.email2 || "").trim(),
+          phone: String(payload?.phone || "").trim(),
+          notes: String(payload?.notes || "").trim(),
+        })
+      });
+
+      const current = state.leads.find(l => l.id === leadId);
+      const currentCampaignId = String(current?.campaignId || "");
+      const nextCampaignId = String(payload?.campaignId || "");
+
+      if(nextCampaignId && nextCampaignId !== currentCampaignId){
+        const activeLc = getActiveLeadCampaignForLead(leadId);
+        if(activeLc?.id){
+          await apiJson(`/api/v1/crm/lead-campaigns/${activeLc.id}/archive`, {
+            method:"POST",
+            body: JSON.stringify({ reason: "MANUAL_TAKEOVER" })
+          });
+        }
+        await apiJson(`/api/v1/crm/leads/${leadId}/start-campaign`, {
+          method:"POST",
+          body: JSON.stringify({ campaignId: nextCampaignId })
+        });
+      }
+
+      await refreshAllFromApi();
+      return state.leads.find(l => l.id === leadId) || null;
+    },
+
+    async archiveLead(leadId, reason){
+      const activeLc = getActiveLeadCampaignForLead(leadId);
+      if(activeLc?.id){
+        await apiJson(`/api/v1/crm/lead-campaigns/${activeLc.id}/archive`, {
+          method:"POST",
+          body: JSON.stringify({ reason: String(reason || "MANUAL_TAKEOVER") })
+        });
+      }else{
+        await apiJson(`/api/v1/crm/leads/${leadId}/archive`, { method:"POST" });
+      }
+      await refreshAllFromApi();
+    },
+
+    async restoreLead(leadId){
+      await apiJson(`/api/v1/crm/leads/${leadId}/restore`, { method:"POST" });
+      await refreshAllFromApi();
+    },
+
+    async markValidation(leadId, result){
+      const activeLc = getActiveLeadCampaignForLead(leadId);
+      if(!activeLc?.id) throw new Error("Ce lead n'a pas de campagne active.");
+      await apiJson(`/api/v1/crm/lead-campaigns/${activeLc.id}/validation`, {
+        method:"POST",
+        body: JSON.stringify({ result: String(result || "").toUpperCase() })
+      });
+      await refreshAllFromApi();
+    },
+
+    async scheduleValidation(leadId){
+      const activeLc = getActiveLeadCampaignForLead(leadId);
+      if(!activeLc?.id) throw new Error("Ce lead n'a pas de campagne active.");
+      await apiJson(`/api/v1/crm/lead-campaigns/${activeLc.id}/mark-awaiting-validation`, { method:"POST" });
+      await refreshAllFromApi();
+    },
+
+    async deleteLead(leadId){
+      await apiJson(`/api/v1/crm/leads/${leadId}`, { method:"DELETE" });
+      await refreshAllFromApi();
+    },
+
+    async seedDemo(){
+      // Optional: backend may not expose it yet.
+      await apiJson(`/api/v1/crm/seed-demo`, { method:"POST" });
+      await refreshAllFromApi();
+    }
+  };
+
+  /***************
+   * Rendering
+   ***************/
+  function getCampaignName(id){
+    const c = state.campaigns.find(x => x.id === id);
+    return c ? c.name : "—";
+  }
+
+  function renderCampaignSelectInto(selectEl, selectedId){
+    if(!selectEl) return;
+    const sorted = [...state.campaigns].sort((a,b)=>{
+      const av = a.status === "READY" ? 0 : 1;
+      const bv = b.status === "READY" ? 0 : 1;
+      return av - bv;
+    });
+
+    selectEl.innerHTML =
+      `<option value="">— Choisir —</option>` +
+      sorted.map(c => {
+        const label = `${c.status === "READY" ? "✅" : "📝"} ${c.name}`;
+        return `<option value="${c.id}">${escapeHtml(label)}</option>`;
+      }).join("");
+
+    if(selectedId) selectEl.value = selectedId;
+  }
+
+  function buildMetro(lead){
+    const steps = lead.stepsCount || 4;
+    const last = lead.lastSentStep || 0;
+    let html = `<div class="metro" aria-label="Étapes">`;
+    for(let i=1;i<=steps;i++){
+      const cls = (i < last) ? "step done" : (i === last && last > 0) ? "step active" : "step";
+      html += `<div class="${cls}" title="Email #${i}">${i}</div>`;
+    }
+    html += `</div>`;
+    return html;
+  }
+
+  function computeKPIs(){
+    const leads = state.leads;
+    const activeCount = leads.filter(l => {
+      const st = computeLeadStatus(l);
+      return st !== STATUS.CLOSED && st !== STATUS.OUT_OF_PIPE;
+    }).length;
+
+    const now = new Date();
+    const dueToday = leads.filter(l => {
+      const st = computeLeadStatus(l);
+      if(st !== STATUS.PENDING && st !== STATUS.WAITING_VALIDATION) return false;
+      if(!l.dueAt) return false;
+      const d = new Date(l.dueAt);
+      return d.toDateString() === now.toDateString();
+    }).length;
+
+    $("#kpiActive").textContent = String(activeCount);
+    $("#kpiDueToday").textContent = String(dueToday);
+    $("#kpiSentWeek").textContent = "—";
+    $("#kpiReplyRate").textContent = "—";
+  }
+
+  function getFilteredSortedLeads(){
+    const q = state.ui.q.trim().toLowerCase();
+    const f = state.ui.filterStatus;
+    const s = state.ui.sortBy;
+
+    let arr = [...state.leads].map(l => ({...l, _status: computeLeadStatus(l)}));
+
+    if(f !== "all") arr = arr.filter(l => l._status === f);
+    else arr = arr.filter(l => l._status !== STATUS.OUT_OF_PIPE);
+
+    if(q){
+      arr = arr.filter(l => {
+        const hay = [
+          l.hotelName, l.firstName, l.lastName, l.email1, l.email2, l.phone, l.notes, getCampaignName(l.campaignId)
+        ].join(" ").toLowerCase();
+        return hay.includes(q);
+      });
+    }
+
+    const dueVal = (x) => x.dueAt ? new Date(x.dueAt).getTime() : Number.POSITIVE_INFINITY;
+    const updVal = (x) => x.updatedAt ? new Date(x.updatedAt).getTime() : 0;
+
+    arr.sort((a,b)=>{
+      if(s === "dueAsc") return dueVal(a) - dueVal(b);
+      if(s === "dueDesc") return dueVal(b) - dueVal(a);
+      if(s === "hotelAsc") return a.hotelName.localeCompare(b.hotelName);
+      if(s === "hotelDesc") return b.hotelName.localeCompare(a.hotelName);
+      if(s === "updatedDesc") return updVal(b) - updVal(a);
+      return 0;
+    });
+
+    return arr;
+  }
+
+  function renderCampaignSelect(){
+    const select = $("#campaignId");
+    const prev = select.value;
+    renderCampaignSelectInto(select, prev);
+}
+
+  function renderTable(){
+    const leads = getFilteredSortedLeads();
+    if(leads.length === 0){
+      $("#tbody").innerHTML = `
+        <div style="padding:18px; color: var(--muted); font-weight:800;">
+          Aucun lead. Ajoute un lead à droite.
+        </div>
+      `;
+      return;
+    }
+
+    $("#tbody").innerHTML = leads.map(lead => {
+      const name = `${lead.firstName || ""} ${lead.lastName || ""}`.trim() || "—";
+      const camp = getCampaignName(lead.campaignId);
+      const due = formatDue(lead.dueAt);
+      const status = lead._status;
+
+      return `
+        <div class="trow table-grid" data-lead-id="${lead.id}">
+          <div class="cell">
+            <div class="hname">${escapeHtml(lead.hotelName)}</div>
+            <div class="sub">
+              <span>${escapeHtml(name)}</span>
+              <span class="pill"><i class="fa-regular fa-envelope"></i> ${escapeHtml(lead.email1)}</span>
+              ${Number(lead.opensCount || 0) > 0 ? `<span class="pill" title="${escapeHtml(String(lead.lastOpenedAt || ''))}"><i class="fa-regular fa-eye"></i> OPENED${Number(lead.opensCount) > 1 ? ` (${Number(lead.opensCount)})` : ""}</span>` : ""}
+              ${Number(lead.clicksCount || 0) > 0 ? `<span class="pill" title="${escapeHtml(String(lead.lastClickedAt || ''))}"><i class="fa-solid fa-arrow-up-right-from-square"></i> CLICKED${Number(lead.clicksCount) > 1 ? ` (${Number(lead.clicksCount)})` : ""}</span>` : ""}
+              ${lead.phone ? `<span class="pill"><i class="fa-solid fa-phone"></i> ${escapeHtml(lead.phone)}</span>` : ""}
+            </div>
+          </div>
+
+          <div class="cell col-hide-sm">${escapeHtml(camp)}</div>
+          <div class="cell">${buildMetro(lead)}</div>
+          <div class="cell col-hide-md">${escapeHtml(due)}</div>
+          <div class="cell col-hide-md">${statusBadge(status)}</div>
+
+          <div class="cell menu">
+            <button class="kebab" type="button" aria-label="Actions" data-action="menu">
+              <i class="fa-solid fa-ellipsis-vertical"></i>
+            </button>
+
+            <div class="dropdown ${state.ui.openMenuLeadId === lead.id ? "open" : ""}" role="menu">
+              <button class="dd-item" type="button" data-action="editLead">
+                <i class="fa-solid fa-pen-to-square"></i> Modifier
+              </button>
+              ${status === STATUS.OUT_OF_PIPE ? `
+                <button class="dd-item" type="button" data-action="restoreLead">
+                  <i class="fa-solid fa-rotate-left"></i> Réactiver
+                </button>
+              ` : `
+                <button class="dd-item" type="button" data-action="archiveLead">
+                  <i class="fa-solid fa-box-archive"></i> Sortir du pipe (manuel)
+                </button>
+              `}
+              <button class="dd-item" type="button" data-action="scheduleValidation">
+                <i class="fa-solid fa-clipboard-check"></i> Marquer “à valider”
+              </button>
+              <button class="dd-item" type="button" data-action="markReplied">
+                <i class="fa-solid fa-reply"></i> Réponse reçue (manuel)
+              </button>
+              <button class="dd-item" type="button" data-action="markNoReply">
+                <i class="fa-solid fa-forward"></i> Pas de réponse (avancer)
+              </button>
+              <button class="dd-item dd-danger" type="button" data-action="deleteLead">
+                <i class="fa-solid fa-trash"></i> Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function renderTimeline(){
+    const pending = state.leads
+      .map(l => ({...l, _status: computeLeadStatus(l)}))
+      .filter(l => l._status === STATUS.PENDING)
+      .sort((a,b)=> (new Date(a.dueAt||0)) - (new Date(b.dueAt||0)));
+
+    if(pending.length === 0){
+      $("#timeline").innerHTML = `
+        <div style="color:var(--muted); font-weight:800; padding:6px 2px;">
+          Rien à valider pour le moment.
+        </div>
+      `;
+      return;
+    }
+
+    $("#timeline").innerHTML = pending.map(l => {
+      const when = formatDue(l.dueAt);
+      const camp = getCampaignName(l.campaignId);
+      const step = l.lastSentStep || 1;
+
+      return `
+        <div class="t-item" data-lead-id="${l.id}">
+          <div class="t-when">${escapeHtml(when)}</div>
+          <div style="flex:1;">
+            <div class="t-hotel">
+              ${escapeHtml(l.hotelName)}
+              <span class="pill" style="margin-left:8px">${escapeHtml(camp)}</span>
+            </div>
+            <div class="t-desc">Email #${step} envoyé. Statut à valider.</div>
+            <div class="t-actions">
+              <button class="btn btn-primary btn-small" type="button" data-action="markReplied">
+                <i class="fa-solid fa-reply"></i> Réponse reçue (manuel)
+              </button>
+              <button class="btn btn-outline btn-small" type="button" data-action="markNoReply">
+                <i class="fa-solid fa-forward"></i> Pas de réponse
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function renderOutbox(){
+    const out = state.leads
+      .map(l => ({...l, _status: computeLeadStatus(l)}))
+      .filter(l => l._status === STATUS.OUT_OF_PIPE)
+      .sort((a,b)=> (new Date(b.archivedAt||0)) - (new Date(a.archivedAt||0)));
+
+    if(out.length === 0){
+      $("#outbox").innerHTML = `
+        <div style="color:var(--muted); font-weight:800; padding:6px 2px;">
+          Aucun lead hors pipe.
+        </div>
+      `;
+      return;
+    }
+
+    $("#outbox").innerHTML = out.map(l => {
+      const camp = getCampaignName(l.campaignId);
+      const when = l.archivedAt ? new Date(l.archivedAt).toLocaleDateString("fr-FR",{ day:"2-digit", month:"short" }) : "—";
+      const reason = outReasonLabel(l);
+      return `
+        <div class="t-item" data-lead-id="${l.id}">
+          <div class="t-when">${escapeHtml(when)}</div>
+          <div style="flex:1;">
+            <div class="t-hotel">
+              ${escapeHtml(l.hotelName)}
+              <span class="pill" style="margin-left:8px">${escapeHtml(camp)}</span>
+            </div>
+            <div class="t-desc">${escapeHtml(reason)}</div>
+            <div class="t-actions">
+              <button class="btn btn-outline btn-small" type="button" data-action="restoreLead">
+                <i class="fa-solid fa-rotate-left"></i> Réactiver
+              </button>
+              <button class="btn btn-outline btn-small" type="button" data-action="editLead">
+                <i class="fa-solid fa-pen-to-square"></i> Modifier
+              </button>
+              <button class="btn btn-outline btn-small" type="button" data-action="deleteLead">
+                <i class="fa-solid fa-trash"></i> Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function renderAll(){
+    computeKPIs();
+    renderCampaignSelect();
+    renderTable();
+    renderTimeline();
+    renderOutbox();
+  }
+
+  /***************
+   * Campaign editor (templates)
+   ***************/
+  let editorLastField = null;
+  const pendingCampaignEmailPatches = new Map(); // key -> { timer, data }
+
+  function queueCampaignEmailPatch(campaignId, stepIndex, patch){
+    const key = `${campaignId}:${stepIndex}`;
+    const prev = pendingCampaignEmailPatches.get(key);
+    if(prev?.timer) clearTimeout(prev.timer);
+
+    const next = { ...(prev?.data || {}), ...(patch || {}) };
+    const timer = setTimeout(async ()=>{
+      try{
+        pendingCampaignEmailPatches.delete(key);
+        await apiJson(`/api/v1/crm/campaigns/${campaignId}/emails/${stepIndex}`, {
+          method:"PATCH",
+          body: JSON.stringify(next),
+        });
+      }catch(err){
+        toast("err","Erreur", err?.message || "Sauvegarde email impossible");
+      }
+    }, 420);
+
+    pendingCampaignEmailPatches.set(key, { timer, data: next });
+  }
+
+  function getCampaignById(id){
+    return state.campaigns.find(c => c.id === id) || null;
+  }
+
+  function campaignAllEmailsValid(c){
+    return !!c && Array.isArray(c.emails) && c.emails.length > 0 && c.emails.every(e => e.status === "VALID");
+  }
+
+  function ensureCampaignDraftIfNeeded(c){
+    if(!campaignAllEmailsValid(c)) c.status = "DRAFT";
+  }
+
+  function updateCampaignEditorHeaderUI(c){
+    if(!c) return;
+    $("#campaignEditorBadge").textContent = c.status;
+    $("#ceMeta").textContent = `${c.stepsCount} emails • ${c.timezone} • ${c.status === "READY" ? "Prête" : "Brouillon"}`;
+    const allValid = campaignAllEmailsValid(c);
+    $("#btnFinalizeCampaign").disabled = !allValid || c.status === "READY";
+  }
+
+  function openCampaignEditor(campaignId){
+    const c = getCampaignById(campaignId);
+    if(!c){
+      toast("err","Erreur","Campagne introuvable.");
+      return;
+    }
+    state.ui.editingCampaignId = c.id;
+    const firstNotValid = (c.emails || []).find(e => e.status !== "VALID");
+    state.ui.openEmailIndex = firstNotValid ? firstNotValid.index : (c.emails?.[0]?.index || 1);
+    renderCampaignEditor();
+    openModal("#campaignEditorModal");
+  }
+
+  function closeCampaignEditor(){
+    closeModal("#campaignEditorModal");
+    state.ui.editingCampaignId = null;
+    state.ui.openEmailIndex = null;
+    editorLastField = null;
+  }
+
+  function renderCampaignEditor(){
+    const c = getCampaignById(state.ui.editingCampaignId);
+    if(!c){
+      $("#tplList").innerHTML = "";
+      $("#ceName").textContent = "—";
+      $("#ceMeta").textContent = "—";
+      $("#campaignEditorBadge").textContent = "—";
+      $("#btnFinalizeCampaign").disabled = true;
+      return;
+    }
+
+    $("#ceName").textContent = c.name;
+    updateCampaignEditorHeaderUI(c);
+
+    $("#tplList").innerHTML = (c.emails || []).map(e => {
+      const open = Number(state.ui.openEmailIndex) === Number(e.index);
+      const isLast = e.index === c.stepsCount;
+      const dotCls = e.status === "VALID" ? "ok" : (open ? "open" : "");
+      const subStatus = e.status === "VALID" ? "VALIDÉ" : "VIDE";
+      const delayLabel = isLast ? "Fin" : `+${Number(e.delayDaysAfter || 0)}j`;
+      const sub = `Sujet: ${e.subject ? escapeHtml(e.subject) : "—"} • Envoi: ${escapeHtml(e.sendTime || "—")} • ${delayLabel}`;
+
+      return `
+        <div class="tpl-card" data-email-index="${e.index}">
+          <div class="tpl-head" data-action="toggleEmail" data-email-index="${e.index}">
+            <div>
+              <div class="tpl-title">
+                <span class="tpl-dot ${dotCls}"></span>
+                <span>Email #${e.index} <span class="pill" style="margin-left:8px">${subStatus}</span></span>
+              </div>
+              <div class="tpl-sub">${sub}</div>
+            </div>
+            <i class="fa-solid ${open ? "fa-chevron-up" : "fa-chevron-down"}"></i>
+          </div>
+
+          <div class="tpl-body ${open ? "open" : ""}">
+            <div class="tpl-row2">
+              <div class="field">
+                <label>Heure d'envoi</label>
+                <input type="time" value="${escapeHtml(e.sendTime || "09:00")}" data-field="sendTime" data-email-index="${e.index}">
+              </div>
+              <div class="field">
+                <label>Délai avant le prochain (jours)</label>
+                <input type="number" min="1" max="30" value="${escapeHtml(String(isLast ? 0 : Number(e.delayDaysAfter || 2)))}" data-field="delayDaysAfter" data-email-index="${e.index}" ${isLast ? "disabled" : ""}>
+                <div class="hint">${isLast ? "Dernier email → fin de séquence (pas de délai)." : "Délais avant l'envoi du prochain email."}</div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Sujet</label>
+              <input type="text" maxlength="160" placeholder="Ex: Petite question rapide" value="${escapeHtml(e.subject || "")}" data-field="subject" data-email-index="${e.index}">
+            </div>
+
+            <div class="field">
+              <label>Contenu</label>
+              <textarea placeholder="Ton email… (tu peux utiliser {{firstName}}, {{lastName}}, {{hotelName}})" data-field="body" data-email-index="${e.index}">${escapeHtml(e.body || "")}</textarea>
+            </div>
+
+            <div class="tpl-toolbar">
+              <div class="tpl-vars" aria-label="Variables">
+                <button class="chip" type="button" data-action="insertVar" data-var="{{firstName}}">+ {{firstName}}</button>
+                <button class="chip" type="button" data-action="insertVar" data-var="{{lastName}}">+ {{lastName}}</button>
+                <button class="chip" type="button" data-action="insertVar" data-var="{{hotelName}}">+ {{hotelName}}</button>
+              </div>
+
+              <div class="tpl-actions" style="margin-top:0">
+                <button class="btn btn-outline btn-small" type="button" data-action="resetEmail" data-email-index="${e.index}">
+                  Réinitialiser
+                </button>
+                <button class="btn btn-primary btn-small" type="button" data-action="validateEmail" data-email-index="${e.index}">
+                  <i class="fa-solid fa-circle-check"></i> Valider l'email
+                </button>
+              </div>
+            </div>
+
+            ${e.status === "VALID" ? `<div class="hint">✅ Email validé. Toute modification le repasse en brouillon.</div>` : `<div class="hint">Complète puis clique sur “Valider l'email”.</div>`}
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function insertAtCursor(el, text){
+    if(!el) return;
+    const start = typeof el.selectionStart === "number" ? el.selectionStart : el.value.length;
+    const end = typeof el.selectionEnd === "number" ? el.selectionEnd : el.value.length;
+    const before = el.value.slice(0, start);
+    const after = el.value.slice(end);
+    el.value = before + text + after;
+    const pos = start + text.length;
+    if(el.setSelectionRange) el.setSelectionRange(pos, pos);
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.focus();
+  }
+
+  function updateCampaignHintUI(){
+    const hint = $("#campaignHint");
+    const btn = $("#btnEditCampaign");
+    const select = $("#campaignId");
+    const btnCreateLead = $("#btnCreateLead");
+    if(!hint || !btn || !select) return;
+
+    const id = select.value;
+    const c = getCampaignById(id);
+    btn.disabled = !id;
+    if(btnCreateLead) btnCreateLead.disabled = !!c && c.status !== "READY";
+    if(!c){
+      hint.textContent = "Choisis une campagne prête (✅) pour pouvoir créer le lead.";
+      return;
+    }
+    if(c.status === "READY"){
+      hint.textContent = `✅ Campagne prête: ${c.stepsCount} emails.`;
+    }else{
+      hint.textContent = "📝 Campagne en brouillon: complète/valide les emails puis “Valider la campagne”.";
+    }
+  }
+
+  /***************
+   * Lead editor (CRUD)
+   ***************/
+  function openLeadEditModal(leadId){
+    const lead = state.leads.find(l => l.id === leadId);
+    if(!lead){
+      toast("err","Erreur","Lead introuvable.");
+      return;
+    }
+
+    $("#leadEditId").value = lead.id;
+    $("#leadEditHotelName").value = lead.hotelName || "";
+    $("#leadEditFirstName").value = lead.firstName || "";
+    $("#leadEditLastName").value = lead.lastName || "";
+    $("#leadEditEmail1").value = lead.email1 || "";
+    $("#leadEditEmail2").value = lead.email2 || "";
+    $("#leadEditPhone").value = lead.phone || "";
+    $("#leadEditNotes").value = lead.notes || "";
+
+    renderCampaignSelectInto($("#leadEditCampaignId"), lead.campaignId || "");
+
+    $("#errLeadEditHotel").classList.remove("show");
+    $("#errLeadEditEmail1").classList.remove("show");
+    $("#errLeadEditCampaign").classList.remove("show");
+
+    openModal("#leadEditModal");
+  }
+
+  function closeLeadEditModal(){
+    closeModal("#leadEditModal");
+    $("#leadEditForm").reset();
+    $("#leadEditId").value = "";
+  }
+
+  function validateLeadEditForm(){
+    const hotel = $("#leadEditHotelName").value.trim();
+    const email1 = $("#leadEditEmail1").value.trim();
+    const campaignId = $("#leadEditCampaignId").value;
+    const campaign = state.campaigns.find(c => c.id === campaignId);
+    const okCampaignReady = campaign && campaign.status === "READY";
+
+    const okHotel = hotel.length > 0;
+    const okEmail = isValidEmail(email1);
+    const okCamp = !!campaignId && okCampaignReady;
+
+    $("#errLeadEditHotel").classList.toggle("show", !okHotel);
+    $("#errLeadEditEmail1").classList.toggle("show", !okEmail);
+    $("#errLeadEditCampaign").classList.toggle("show", !okCamp);
+
+    return okHotel && okEmail && okCamp;
+  }
+
+  /***************
+   * Modal helpers
+   ***************/
+  let lastFocus = null;
+  function openModal(selector){
+    lastFocus = document.activeElement;
+    const m = $(selector);
+    m.classList.add("open");
+    const f = m.querySelector("input,select,textarea,button");
+    if(f) f.focus();
+    document.body.style.overflow = "hidden";
+  }
+  function closeModal(selector){
+    const m = $(selector);
+    m.classList.remove("open");
+    document.body.style.overflow = "";
+    if(lastFocus && lastFocus.focus) lastFocus.focus();
+    lastFocus = null;
+  }
+
+  /***************
+   * Events / Wire
+   ***************/
+  function closeAllMenus(){
+    state.ui.openMenuLeadId = null;
+    renderTable();
+  }
+
+  function getLeadIdFromEvent(e){
+    const row = e.target.closest("[data-lead-id]");
+    return row ? row.getAttribute("data-lead-id") : null;
+  }
+
+  async function handleLeadAction(action, leadId){
+    try{
+      if(action === "editLead"){
+        openLeadEditModal(leadId);
+        return;
+      }
+      if(action === "archiveLead"){
+        await api.archiveLead(leadId, "MANUAL_TAKEOVER");
+        toast("ok","OK","Lead sorti du pipe.");
+        return;
+      }
+      if(action === "restoreLead"){
+        await api.restoreLead(leadId);
+        toast("ok","OK","Lead réactivé.");
+        return;
+      }
+      if(action === "scheduleValidation"){
+        await api.scheduleValidation(leadId);
+        toast("ok","Mise à jour","Lead marqué “à valider”.");
+        return;
+      }
+      if(action === "markReplied"){
+        await api.archiveLead(leadId, "REPLIED_MANUAL");
+        toast("ok","OK","Réponse reçue → lead sorti du pipe.");
+        return;
+      }
+      if(action === "markNoReply"){
+        await api.markValidation(leadId, "NO_REPLY");
+        const updated = state.leads.find(l => l.id === leadId);
+        if(updated?.archivedAt && updated?.archiveReason === "NO_RESPONSE_END"){
+          toast("warn","Fin","Dernier email envoyé → lead non atteint (hors pipe).");
+        }else{
+          toast("warn","Suivi","Pas de réponse → étape suivante planifiée.");
+        }
+        return;
+      }
+      if(action === "deleteLead"){
+        if(!confirm("Supprimer ce lead ?")) return;
+        await api.deleteLead(leadId);
+        toast("ok","Supprimé","Lead supprimé.");
+        return;
+      }
+    }catch(err){
+      toast("err","Erreur", err?.message || "Action impossible");
+    }
+  }
+
+  function validateLeadForm(){
+    const hotel = $("#hotelName").value.trim();
+    const email1 = $("#email1").value.trim();
+    const campaignId = $("#campaignId").value;
+    const campaign = state.campaigns.find(c => c.id === campaignId);
+    const okCampaignReady = campaign && campaign.status === "READY";
+
+    const okHotel = hotel.length > 0;
+    const okEmail = isValidEmail(email1);
+    const okCamp = !!campaignId && okCampaignReady;
+
+    $("#errHotel").classList.toggle("show", !okHotel);
+    $("#errEmail1").classList.toggle("show", !okEmail);
+    $("#errCampaign").textContent = "Merci de choisir une campagne prête (✅).";
+    $("#errCampaign").classList.toggle("show", !okCamp);
+
+    return okHotel && okEmail && okCamp;
+  }
+
+  function validateCampaignForm(){
+    const name = $("#campName").value.trim();
+    const steps = Number($("#stepsCount").value || 0);
+    const okName = name.length > 0;
+    const okSteps = Number.isFinite(steps) && steps >= 1 && steps <= 10;
+    $("#errCampName").classList.toggle("show", !okName);
+    if(!okSteps) toast("warn","Validation","Le nombre d'emails doit être entre 1 et 10.");
+    return okName && okSteps;
+  }
+
+  function resetLeadForm(){
+    $("#leadForm").reset();
+    $("#errHotel").classList.remove("show");
+    $("#errEmail1").classList.remove("show");
+    $("#errCampaign").classList.remove("show");
+  }
+
+  function resetCampaignForm(){
+    $("#campaignForm").reset();
+    $("#errCampName").classList.remove("show");
+    $("#stepsCount").value = 4;
+  }
+
+  function wire(){
+    // Theme (persist)
+    applyTheme();
+    $("#btnTheme").addEventListener("click", toggleTheme);
+
+    // Hide Seed demo in prod (keep only for local/dev)
+    const host = String(window.location.hostname || "").toLowerCase();
+    const isLocal = host === "localhost" || host === "127.0.0.1" || host.endsWith(".local");
+    const seedBtn = $("#btnSeed");
+    if(seedBtn){
+      if(isLocal) seedBtn.style.display = "";
+      else seedBtn.remove();
+    }
+
+    // Campaign select helpers
+    updateCampaignHintUI();
+    $("#campaignId").addEventListener("change", updateCampaignHintUI);
+    $("#btnEditCampaign").addEventListener("click", ()=>{
+      const id = $("#campaignId").value;
+      if(!id){
+        toast("warn","Campagne","Sélectionne une campagne à éditer.");
+        return;
+      }
+      openCampaignEditor(id);
+    });
+
+    // Controls
+    $("#q").addEventListener("input", (e)=>{
+      state.ui.q = e.target.value || "";
+      renderTable();
+    });
+    $("#filterStatus").addEventListener("change", (e)=>{
+      state.ui.filterStatus = e.target.value;
+      renderTable();
+      renderTimeline();
+      computeKPIs();
+    });
+    $("#sortBy").addEventListener("change", (e)=>{
+      state.ui.sortBy = e.target.value;
+      renderTable();
+    });
+
+    // Scroll top
+    $("#btnScrollTop").addEventListener("click", ()=>{
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    // Open campaign modal
+    $("#btnNewCampaign").addEventListener("click", ()=>{
+      resetCampaignForm();
+      openModal("#campaignModal");
+    });
+    $("#closeCampaignModal").addEventListener("click", ()=> closeModal("#campaignModal"));
+
+    // Click outside modal content closes
+    $("#campaignModal").addEventListener("click", (e)=>{
+      if(e.target === $("#campaignModal")) closeModal("#campaignModal");
+    });
+
+    // Campaign editor modal close
+    $("#closeCampaignEditor").addEventListener("click", closeCampaignEditor);
+    $("#btnCloseCampaignEditor").addEventListener("click", closeCampaignEditor);
+    $("#campaignEditorModal").addEventListener("click", (e)=>{
+      if(e.target === $("#campaignEditorModal")) closeCampaignEditor();
+    });
+    $("#campaignEditorModal").addEventListener("focusin", (e)=>{
+      const t = e.target;
+      if(t && (t.matches("input") || t.matches("textarea"))) editorLastField = t;
+    });
+    $("#campaignEditorModal").addEventListener("input", (e)=>{
+      const fieldEl = e.target.closest("[data-field]");
+      if(!fieldEl) return;
+
+      const c = getCampaignById(state.ui.editingCampaignId);
+      if(!c) return;
+
+      const emailIndex = Number(fieldEl.getAttribute("data-email-index"));
+      const email = (c.emails || []).find(x => Number(x.index) === emailIndex);
+      if(!email) return;
+
+      const field = fieldEl.getAttribute("data-field");
+      const value = fieldEl.value ?? "";
+
+      if(c.status === "READY") c.status = "DRAFT";
+
+      if(field === "subject") email.subject = String(value);
+      if(field === "body") email.body = String(value);
+      if(field === "sendTime") email.sendTime = String(value);
+      if(field === "delayDaysAfter"){
+        if(email.index === c.stepsCount){
+          email.delayDaysAfter = 0;
+        }else{
+          email.delayDaysAfter = clamp(Number(value || 2), 1, 30);
+        }
+      }
+
+      email.status = emailIsComplete(email, c.stepsCount) ? "VALID" : "EMPTY";
+      email.validatedAt = null;
+
+      c.updatedAt = nowISO();
+      saveOnly();
+      updateCampaignHintUI();
+      updateCampaignEditorHeaderUI(c);
+
+      // Persist to backend (debounced)
+      const patch = {};
+      if(field === "subject") patch.subjectTemplate = String(value);
+      if(field === "body") patch.bodyTemplate = String(value);
+      if(field === "sendTime") patch.sendTime = String(value);
+      if(field === "delayDaysAfter") patch.delayDaysAfter = Number(email.delayDaysAfter || 0);
+      queueCampaignEmailPatch(c.id, emailIndex, patch);
+    });
+    $("#campaignEditorModal").addEventListener("click", (e)=>{
+      const btn = e.target.closest("[data-action]");
+      if(!btn) return;
+
+      const action = btn.getAttribute("data-action");
+      const c = getCampaignById(state.ui.editingCampaignId);
+      if(!c) return;
+
+      if(action === "toggleEmail"){
+        const idx = Number(btn.getAttribute("data-email-index"));
+        state.ui.openEmailIndex = (Number(state.ui.openEmailIndex) === idx) ? null : idx;
+        renderCampaignEditor();
+        return;
+      }
+
+      if(action === "insertVar"){
+        const v = btn.getAttribute("data-var") || "";
+        if(editorLastField){
+          insertAtCursor(editorLastField, v);
+          return;
+        }
+        const fallback = $(`#tplList [data-field="body"][data-email-index="${state.ui.openEmailIndex}"]`);
+        if(fallback) insertAtCursor(fallback, v);
+        return;
+      }
+
+      if(action === "resetEmail"){
+        (async ()=>{
+          const idx = Number(btn.getAttribute("data-email-index"));
+          const email = (c.emails || []).find(x => Number(x.index) === idx);
+          if(!email) return;
+          if(!confirm(`Réinitialiser l'email #${idx} ?`)) return;
+
+          email.subject = "";
+          email.body = "";
+          email.sendTime = "09:00";
+          email.delayDaysAfter = (idx === c.stepsCount) ? 0 : 2;
+          email.status = "EMPTY";
+          email.validatedAt = null;
+          if(c.status === "READY") c.status = "DRAFT";
+          c.updatedAt = nowISO();
+          persist();
+
+          try{
+            await apiJson(`/api/v1/crm/campaigns/${c.id}/emails/${idx}`, {
+              method:"PATCH",
+              body: JSON.stringify({
+                sendTime: "09:00",
+                delayDaysAfter: Number(email.delayDaysAfter || 0),
+                subjectTemplate: "",
+                bodyTemplate: "",
+              })
+            });
+          }catch(err){
+            toast("err","Erreur", err?.message || "Réinitialisation impossible");
+            return;
+          }
+
+          toast("ok","Réinitialisé",`Email #${idx} remis à zéro.`);
+        })();
+        return;
+      }
+
+      if(action === "validateEmail"){
+        const idx = Number(btn.getAttribute("data-email-index"));
+        const email = (c.emails || []).find(x => Number(x.index) === idx);
+        if(!email) return;
+
+        const missing = [];
+        if(!String(email.subject || "").trim()) missing.push("Sujet");
+        if(!String(email.body || "").trim()) missing.push("Contenu");
+        if(!isValidSendTime(email.sendTime || "")) missing.push("Heure d'envoi");
+        const isLast = idx === c.stepsCount;
+        if(!isLast && !(Number(email.delayDaysAfter) >= 1)) missing.push("Délai");
+
+        if(missing.length){
+          toast("warn","Validation",`Email #${idx}: ${missing.join(", ")} requis.`);
+          return;
+        }
+
+        if(isLast) email.delayDaysAfter = 0;
+        email.status = "VALID";
+        email.validatedAt = nowISO();
+        c.updatedAt = nowISO();
+        ensureCampaignDraftIfNeeded(c);
+
+        const next = (c.emails || []).find(x => x.status !== "VALID");
+        state.ui.openEmailIndex = next ? next.index : null;
+        persist();
+
+        if(!next){
+          toast("ok","OK","Tous les emails sont validés. Tu peux maintenant valider la campagne.");
+        }else{
+          toast("ok","OK",`Email #${idx} validé. Passe au suivant.`);
+        }
+        return;
+      }
+    });
+
+    $("#btnFinalizeCampaign").addEventListener("click", ()=>{
+      (async ()=>{
+        const c = getCampaignById(state.ui.editingCampaignId);
+        if(!c) return;
+        if(!campaignAllEmailsValid(c)){
+          toast("warn","Validation","Complète tous les emails avant de valider la campagne.");
+          return;
+        }
+        try{
+          await apiJson(`/api/v1/crm/campaigns/${c.id}/publish`, { method:"POST" });
+          await refreshAllFromApi();
+          toast("ok","Campagne prête","La campagne est maintenant assignable aux leads.");
+          closeCampaignEditor();
+          updateCampaignHintUI();
+        }catch(err){
+          toast("err","Erreur", err?.message || "Validation impossible");
+        }
+      })();
+    });
+
+    // Lead editor modal close
+    $("#closeLeadEditModal").addEventListener("click", closeLeadEditModal);
+    $("#btnCancelLeadEdit").addEventListener("click", closeLeadEditModal);
+    $("#leadEditModal").addEventListener("click", (e)=>{
+      if(e.target === $("#leadEditModal")) closeLeadEditModal();
+    });
+
+    // ESC to close modal + close menus
+    window.addEventListener("keydown", (e)=>{
+      if(e.key === "Escape"){
+        if($("#campaignModal").classList.contains("open")) closeModal("#campaignModal");
+        if($("#campaignEditorModal").classList.contains("open")) closeCampaignEditor();
+        if($("#leadEditModal").classList.contains("open")) closeLeadEditModal();
+        closeAllMenus();
+      }
+    });
+
+    // Global click: close dropdown menus when clicking outside
+    window.addEventListener("click", (e)=>{
+      const clickedMenu = e.target.closest(".menu");
+      if(!clickedMenu && state.ui.openMenuLeadId){
+        closeAllMenus();
+      }
+    });
+
+    // Table + timeline actions (event delegation)
+    document.addEventListener("click", async (e)=>{
+      const actionBtn = e.target.closest("[data-action]");
+      if(!actionBtn) return;
+
+      const action = actionBtn.getAttribute("data-action");
+
+      // kebab menu toggle
+      if(action === "menu"){
+        const leadId = getLeadIdFromEvent(e);
+        if(!leadId) return;
+
+        state.ui.openMenuLeadId = (state.ui.openMenuLeadId === leadId) ? null : leadId;
+        renderTable();
+        return;
+      }
+
+      // Other actions (need leadId)
+      const leadId = getLeadIdFromEvent(e);
+      if(!leadId) return;
+
+      // close menu before applying action
+      state.ui.openMenuLeadId = null;
+
+      await handleLeadAction(action, leadId);
+    });
+
+    // Lead form submit
+    $("#leadForm").addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      if(!validateLeadForm()){
+        toast("warn","Validation","Vérifie les champs requis.");
+        return;
+      }
+
+      const campaignId = $("#campaignId").value;
+      const campaign = state.campaigns.find(c => c.id === campaignId);
+
+      const payload = {
+        hotelName: $("#hotelName").value,
+        firstName: $("#firstName").value,
+        lastName: $("#lastName").value,
+        email1: $("#email1").value,
+        email2: $("#email2").value,
+        phone: $("#phone").value,
+        notes: $("#notes").value,
+        campaignId,
+        stepsCount: campaign?.stepsCount || 4,
+      };
+
+      try{
+        await api.createLead(payload);
+        resetLeadForm();
+        toast("ok","Créé","Lead ajouté.");
+      }catch(err){
+        toast("err","Erreur", err?.message || "Création impossible");
+      }
+    });
+
+    // Lead edit submit
+    $("#leadEditForm").addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      if(!validateLeadEditForm()){
+        toast("warn","Validation","Vérifie les champs requis.");
+        return;
+      }
+
+      const leadId = $("#leadEditId").value;
+      const campaignId = $("#leadEditCampaignId").value;
+      const campaign = state.campaigns.find(c => c.id === campaignId);
+
+      const payload = {
+        hotelName: $("#leadEditHotelName").value,
+        firstName: $("#leadEditFirstName").value,
+        lastName: $("#leadEditLastName").value,
+        email1: $("#leadEditEmail1").value,
+        email2: $("#leadEditEmail2").value,
+        phone: $("#leadEditPhone").value,
+        notes: $("#leadEditNotes").value,
+        campaignId,
+        stepsCount: campaign?.stepsCount || 4,
+      };
+
+      try{
+        await api.updateLead(leadId, payload);
+        toast("ok","Mis à jour","Lead modifié.");
+        closeLeadEditModal();
+      }catch(err){
+        toast("err","Erreur", err?.message || "Modification impossible");
+      }
+    });
+
+    // Campaign form submit
+    $("#campaignForm").addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      if(!validateCampaignForm()){
+        toast("warn","Validation","Nom de campagne requis.");
+        return;
+      }
+
+      const payload = {
+        name: $("#campName").value.trim(),
+        stepsCount: Number($("#stepsCount").value || 4),
+      };
+
+      try{
+        const created = await api.createCampaign(payload);
+        closeModal("#campaignModal");
+        renderCampaignSelect();
+        $("#campaignId").value = created.id;
+        toast("ok","Créé","Campagne ajoutée.");
+        updateCampaignHintUI();
+        openCampaignEditor(created.id);
+      }catch(err){
+        toast("err","Erreur", err?.message || "Création impossible");
+      }
+    });
+
+    // Seed demo (local only; button removed in prod)
+    if(isLocal && seedBtn){
+      seedBtn.addEventListener("click", async ()=>{
+        try{
+          await api.seedDemo();
+          toast("ok","Démo","Données démo ajoutées.");
+        }catch(err){
+          toast("err","Erreur", err?.message || "Seed impossible");
+        }
+      });
+    }
+  }
+
+  /***************
+   * Boot
+   ***************/
+  (async function init(){
+  try{
+    await api.bootstrap();
+    wire();
+  }catch(err){
+    console.error(err);
+    if(err?.status === 401){
+      toast("warn","Connexion","Connecte-toi pour accéder au CRM.");
+      try{ if(typeof fecoEnsureLogin === "function") fecoEnsureLogin(); }catch{}
+      return;
+    }
+    alert("Erreur au chargement CRM. Ouvre la console (F12) pour voir le détail.");
+  }
+})();
+</script>

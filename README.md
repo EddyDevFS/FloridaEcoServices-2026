@@ -42,6 +42,29 @@ FECO_EMAIL="eddy@floridaecoservices.com" FECO_PASSWORD="your-password" \
 python3 scripts/api_smoke_test.py
 ```
 
+CRM API smoke test (creates campaign + lead and schedules first email):
+
+```bash
+FECO_EMAIL="eddy@floridaecoservices.com" FECO_PASSWORD="your-password" \
+python3 scripts/crm_smoke_test.py
+```
+
+## CRM leads + email campaigns (backend)
+
+The backend now exposes a CRM layer (leads + multi-step email campaigns) that reuses the existing SMTP sender (`backend/src/email/mailer.ts`) and can link a lead to a quote to avoid retyping customer info.
+
+- API:
+  - `GET/POST /api/v1/crm/leads`
+  - `GET/POST /api/v1/crm/campaigns` (publish via `POST /api/v1/crm/campaigns/:id/publish`)
+  - `POST /api/v1/crm/leads/:leadId/start-campaign`
+  - `POST /api/v1/crm/lead-campaigns/:leadCampaignId/validation` (`NO_REPLY` / `REPLIED`)
+- Tracking:
+  - `GET /t/pixel?mid=...` (open)
+  - `GET /t/click?mid=...&url=...` (click)
+- Quote integration:
+  - `POST /api/v1/quotes` accepts optional `leadId` and auto-fills customer fields.
+  - `PATCH /api/v1/quotes/:id` accepts `leadId` to (re)link a quote to a lead.
+
 ## Storage (current state)
 
 - Admin hotel setup: `localStorage` key `hmp.config.v1` (multiple hotels, selected via dropdown).

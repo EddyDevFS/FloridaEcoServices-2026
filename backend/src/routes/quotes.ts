@@ -157,17 +157,37 @@ router.post(
     const customerType = normalizeCustomerType(req.body?.customerType);
     const customer = normalizeCustomer(req.body?.customer);
     const payload = normalizePayload(req.body?.payload);
-    const title = normalizeText(req.body?.title) || customer.company || '';
+    const leadId = normalizeText(req.body?.leadId);
+
+    let leadCustomerType = customerType;
+    let leadCustomer = customer;
+    let leadRef: { id: string } | null = null;
+    if (leadId) {
+      const lead = await prisma.crmLead.findFirst({
+        where: { id: leadId, organizationId: req.auth!.organizationId }
+      });
+      if (!lead) return res.status(404).json({ error: 'lead_not_found' });
+
+      const contact = `${lead.firstName || ''} ${lead.lastName || ''}`.trim();
+      leadCustomerType = 'PROSPECT';
+      leadCustomer = normalizeCustomer({
+        company: lead.hotelName,
+        contact,
+        email: lead.email1,
+        phone: lead.phone
+      });
+      leadRef = { id: lead.id };
+    }
 
     let prospectId: string | undefined;
-    if (customerType === 'PROSPECT' && shouldPersistProspect(customer)) {
+    if (leadCustomerType === 'PROSPECT' && shouldPersistProspect(leadCustomer)) {
       const created = await prisma.prospect.create({
         data: {
           organizationId: req.auth!.organizationId,
-          company: customer.company,
-          contact: customer.contact,
-          email: customer.email,
-          phone: customer.phone
+          company: leadCustomer.company,
+          contact: leadCustomer.contact,
+          email: leadCustomer.email,
+          phone: leadCustomer.phone
         }
       });
       prospectId = created.id;
@@ -175,12 +195,13 @@ router.post(
 
     const quote = await createQuoteWithNextNumber(prisma, req.auth!.organizationId, {
       status: 'DRAFT',
-      customerType,
-      customer,
-      title,
+      customerType: leadCustomerType,
+      customer: leadCustomer,
+      title: normalizeText(req.body?.title) || leadCustomer.company || '',
       payload,
       currency: 'USD',
-      prospectId
+      prospectId,
+      ...(leadRef ? { leadId: leadRef.id } : {})
     });
 
     res.status(201).json({ quote });
@@ -286,6 +307,30 @@ router.patch(
     if (req.body?.payload !== undefined) patch.payload = normalizePayload(req.body.payload) as any;
     if (req.body?.customerType !== undefined) patch.customerType = normalizeCustomerType(req.body.customerType);
     if (req.body?.customer !== undefined) patch.customer = normalizeCustomer(req.body.customer) as any;
+    if (req.body?.leadId !== undefined) {
+      const nextLeadId = String(req.body.leadId || '').trim();
+      if (!nextLeadId) {
+        (patch as any).lead = { disconnect: true };
+      } else {
+        const lead = await prisma.crmLead.findFirst({
+          where: { id: nextLeadId, organizationId: req.auth!.organizationId }
+        });
+        if (!lead) return res.status(404).json({ error: 'lead_not_found' });
+
+        const contact = `${lead.firstName || ''} ${lead.lastName || ''}`.trim();
+        const leadCustomer = normalizeCustomer({
+          company: lead.hotelName,
+          contact,
+          email: lead.email1,
+          phone: lead.phone
+        });
+
+        (patch as any).lead = { connect: { id: lead.id } };
+        patch.customerType = 'PROSPECT';
+        patch.customer = leadCustomer as any;
+        if (!patch.title) patch.title = leadCustomer.company || '';
+      }
+    }
 
     const nextCustomerType = (patch.customerType as any) || existing.customerType;
     const nextCustomer = (patch.customer as any) || (existing.customer as any) || {};

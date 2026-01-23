@@ -24,6 +24,33 @@ enum ContractFrequency {
   TWICE_YEAR
 }
 
+enum CrmCampaignStatus {
+  DRAFT
+  READY
+}
+
+enum CrmLeadArchiveReason {
+  NO_RESPONSE_END
+  REPLIED_MANUAL
+  REPLIED_AUTO
+  MANUAL_TAKEOVER
+}
+
+enum CrmEmailMessageStatus {
+  SCHEDULED
+  SENDING
+  SENT
+  FAILED
+  CANCELED
+}
+
+enum CrmEmailEventType {
+  SENT
+  OPENED
+  CLICKED
+  ERROR
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String
@@ -43,6 +70,14 @@ model Organization {
   prospects Prospect[]
   clients Client[]
   quotes Quote[]
+
+  crmLeads CrmLead[]
+  crmCampaigns CrmCampaign[]
+  crmLeadCampaigns CrmLeadCampaign[]
+  crmEmailMessages CrmEmailMessage[]
+
+  googleGmailAccounts GoogleGmailAccount[]
+  crmInboundEmails    CrmInboundEmail[]
 }
 
 model User {
@@ -586,6 +621,7 @@ model Quote {
   currency       String            @default("USD")
   prospectId     String?
   clientId       String?
+  leadId         String?
   sentAt         DateTime?
   deletedAt      DateTime?
   createdAt      DateTime          @default(now())
@@ -594,10 +630,199 @@ model Quote {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   prospect     Prospect?    @relation(fields: [prospectId], references: [id], onDelete: SetNull)
   client       Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  lead         CrmLead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
   @@index([status])
   @@index([deletedAt])
   @@index([updatedAt])
+  @@index([leadId])
   @@unique([organizationId, number])
+}
+
+model CrmLead {
+  id             String   @id @default(cuid())
+  organizationId String
+
+  hotelName String @default("")
+  firstName String @default("")
+  lastName  String @default("")
+  email1    String @default("")
+  email2    String @default("")
+  phone     String @default("")
+  notes     String @default("")
+
+  archivedAt    DateTime?
+  archiveReason CrmLeadArchiveReason?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  campaigns     CrmLeadCampaign[]
+  emailMessages CrmEmailMessage[]
+  inboundEmails CrmInboundEmail[]
+  quotes        Quote[]
+
+  @@index([organizationId])
+  @@index([email1])
+  @@index([hotelName])
+}
+
+model CrmCampaign {
+  id             String            @id @default(cuid())
+  organizationId String
+  name           String
+  timezone       String            @default("America/New_York")
+  status         CrmCampaignStatus @default(DRAFT)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  emails        CrmCampaignEmail[]
+  leadCampaigns CrmLeadCampaign[]
+
+  @@index([organizationId])
+}
+
+model CrmCampaignEmail {
+  id            String   @id @default(cuid())
+  campaignId    String
+  stepIndex     Int
+  sendTime      String   @default("09:00") // local time in campaign timezone (HH:MM)
+  delayDaysAfter Int     @default(2) // ignored on last step
+  subjectTemplate String @default("")
+  bodyTemplate    String @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  campaign CrmCampaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  messages CrmEmailMessage[]
+
+  @@unique([campaignId, stepIndex])
+  @@index([campaignId])
+}
+
+model CrmLeadCampaign {
+  id             String   @id @default(cuid())
+  organizationId String
+  leadId         String
+  campaignId     String
+  startedAt      DateTime @default(now())
+  archivedAt     DateTime?
+  archiveReason  CrmLeadArchiveReason?
+  lastSentStep   Int      @default(0)
+  awaitingValidation Boolean @default(false)
+  nextSendAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  lead         CrmLead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  campaign     CrmCampaign  @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  emailMessages CrmEmailMessage[]
+  inboundEmails CrmInboundEmail[]
+
+  @@index([organizationId])
+  @@index([leadId])
+  @@index([campaignId])
+  @@index([archivedAt])
+  @@unique([leadId, campaignId, startedAt])
+}
+
+model CrmEmailMessage {
+  id             String               @id @default(cuid())
+  organizationId String
+  leadId         String
+  leadCampaignId String
+  campaignEmailId String
+  stepIndex      Int
+
+  toEmail   String
+  subject   String
+  bodyText  String
+  bodyHtml  String?
+
+  sendAt    DateTime
+  status    CrmEmailMessageStatus @default(SCHEDULED)
+  attempts  Int                  @default(0)
+  lockedAt  DateTime?
+  lockedBy  String?
+  sentAt    DateTime?
+  providerMessageId String?
+  lastError Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  lead         CrmLead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadCampaign CrmLeadCampaign  @relation(fields: [leadCampaignId], references: [id], onDelete: Cascade)
+  campaignEmail CrmCampaignEmail @relation(fields: [campaignEmailId], references: [id], onDelete: Restrict)
+  events       CrmEmailEvent[]
+
+  @@index([organizationId])
+  @@index([leadId])
+  @@index([leadCampaignId])
+  @@index([sendAt])
+  @@index([status, sendAt])
+  @@index([providerMessageId])
+  @@unique([leadCampaignId, stepIndex])
+}
+
+model CrmEmailEvent {
+  id        String           @id @default(cuid())
+  messageId String
+  type      CrmEmailEventType
+  at        DateTime         @default(now())
+  ip        String @default("")
+  userAgent String @default("")
+  url       String @default("")
+
+  message CrmEmailMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@index([type, at])
+}
+
+model GoogleGmailAccount {
+  id             String   @id @default(cuid())
+  organizationId String
+  email          String   @unique
+  refreshToken   String
+  lastHistoryId  String?
+  watchExpiration DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model CrmInboundEmail {
+  id             String   @id @default(cuid())
+  organizationId String
+  leadId         String?
+  leadCampaignId String?
+
+  provider       String   @default("gmail")
+  providerMessageId String
+  threadId       String?
+  fromEmail      String   @default("")
+  toEmail        String   @default("")
+  subject        String   @default("")
+  snippet        String   @default("")
+  receivedAt     DateTime?
+  rawHeaders     Json?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lead         CrmLead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  leadCampaign CrmLeadCampaign? @relation(fields: [leadCampaignId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([leadId])
+  @@index([leadCampaignId])
+  @@unique([provider, providerMessageId])
 }

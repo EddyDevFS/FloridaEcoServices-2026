@@ -1,7 +1,10 @@
 import { Router, type Response } from 'express';
+import { google } from 'googleapis';
 import { getPrisma } from '../db';
 import { requireAuth, type AuthedRequest } from '../auth/middleware';
 import { requireRole } from '../auth/roles';
+import { scheduleCampaignStepMessage } from '../services/crmScheduling';
+import { createGoogleOAuthClient, readGoogleEnv } from '../services/googleGmail';
 
 const router = Router();
 
@@ -11,6 +14,10 @@ function normalizeText(v: any) {
 
 function normalizeEmail(v: any) {
   return normalizeText(v).toLowerCase();
+}
+
+function base64UrlEncodeUtf8(s: string) {
+  return Buffer.from(s, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 
 router.get('/crm/leads', requireAuth, async (req: AuthedRequest, res: Response) => {
@@ -85,6 +92,113 @@ router.post('/crm/leads', requireAuth, requireRole(['SUPER_ADMIN']), async (req:
 
   res.status(201).json({ lead });
 });
+
+router.post(
+  '/crm/leads/:leadId/send-email',
+  requireAuth,
+  requireRole(['SUPER_ADMIN']),
+  async (req: AuthedRequest, res: Response) => {
+    const prisma = getPrisma();
+    const env = readGoogleEnv();
+
+    const leadId = normalizeText(req.params.leadId);
+    if (!leadId) return res.status(400).json({ error: 'missing_lead_id' });
+
+    const lead = await prisma.crmLead.findFirst({
+      where: { id: leadId, organizationId: req.auth!.organizationId }
+    });
+    if (!lead) return res.status(404).json({ error: 'lead_not_found' });
+
+    const toEmail = normalizeEmail(req.body?.toEmail || lead.email1);
+    const subject = normalizeText(req.body?.subject);
+    const text = normalizeText(req.body?.text);
+
+    if (!toEmail) return res.status(400).json({ error: 'missing_to_email' });
+    if (!subject) return res.status(400).json({ error: 'missing_subject' });
+    if (!text) return res.status(400).json({ error: 'missing_text' });
+
+    const account = await prisma.googleGmailAccount.findFirst({
+      where: { email: env.workspaceEmail, organizationId: req.auth!.organizationId }
+    });
+    if (!account) return res.status(400).json({ error: 'gmail_not_connected' });
+
+    const headers: string[] = [];
+    headers.push(`From: ${env.workspaceEmail}`);
+    headers.push(`To: ${toEmail}`);
+    headers.push(`Subject: ${subject}`);
+    headers.push('MIME-Version: 1.0');
+    headers.push('Content-Type: text/plain; charset="UTF-8"');
+
+    const raw = `${headers.join('\r\n')}\r\n\r\n${text}\r\n`;
+
+    const oauth2Client = createGoogleOAuthClient(env);
+    oauth2Client.setCredentials({ refresh_token: account.refreshToken });
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+    const resp = await gmail.users.messages.send({
+      userId: 'me',
+      requestBody: { raw: base64UrlEncodeUtf8(raw) }
+    });
+
+    res.json({ ok: true, gmailMessageId: resp.data.id || null, threadId: resp.data.threadId || null });
+  }
+);
+
+router.post(
+  '/crm/leads/:leadId/trigger-next-email',
+  requireAuth,
+  requireRole(['SUPER_ADMIN']),
+  async (req: AuthedRequest, res: Response) => {
+    const prisma = getPrisma();
+    const leadId = normalizeText(req.params.leadId);
+    if (!leadId) return res.status(400).json({ error: 'missing_lead_id' });
+
+    const lead = await prisma.crmLead.findFirst({
+      where: { id: leadId, organizationId: req.auth!.organizationId },
+      select: { id: true }
+    });
+    if (!lead) return res.status(404).json({ error: 'lead_not_found' });
+
+    const lc = await prisma.crmLeadCampaign.findFirst({
+      where: { organizationId: req.auth!.organizationId, leadId, archivedAt: null },
+      include: { campaign: { include: { emails: { orderBy: { stepIndex: 'asc' } } } } }
+    });
+    if (!lc) return res.status(400).json({ error: 'no_active_lead_campaign' });
+    if (lc.campaign.status !== 'READY') return res.status(400).json({ error: 'campaign_not_ready' });
+
+    const stepsCount = lc.campaign.emails.length;
+    if (!stepsCount) return res.status(400).json({ error: 'campaign_has_no_emails' });
+
+    const nextStepIndex = Math.max(1, Number(lc.lastSentStep || 0) + 1);
+    if (nextStepIndex > stepsCount) return res.status(400).json({ error: 'no_next_step' });
+
+    const now = new Date();
+    const updatedMsg = await prisma.$transaction(async (tx) => {
+      if (lc.awaitingValidation) {
+        await tx.crmLeadCampaign.update({
+          where: { id: lc.id },
+          data: { awaitingValidation: false }
+        });
+      }
+
+      const msg = await scheduleCampaignStepMessage(tx, lc.id, nextStepIndex);
+
+      const patched = await tx.crmEmailMessage.update({
+        where: { id: msg.id },
+        data: { sendAt: now, status: 'SCHEDULED' }
+      });
+
+      await tx.crmLeadCampaign.update({
+        where: { id: lc.id },
+        data: { nextSendAt: now }
+      });
+
+      return patched;
+    });
+
+    res.json({ ok: true, messageId: updatedMsg.id, stepIndex: nextStepIndex, sendAt: updatedMsg.sendAt });
+  }
+);
 
 router.patch(
   '/crm/leads/:leadId',
@@ -191,4 +305,3 @@ router.delete(
 );
 
 export default router;
-

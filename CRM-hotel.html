@@ -402,6 +402,16 @@
     .dd-danger{ color: var(--danger); }
     .dd-danger i{ color: var(--danger); }
 
+    /* Compose (send email) */
+    .compose-row2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width:720px){
+      .compose-row2{ grid-template-columns: 1fr; }
+    }
+
     /* Timeline */
     .timeline{
       padding: 18px;
@@ -1015,6 +1025,56 @@
   </div>
 </div>
 
+<!-- Modal envoyer email (manuel) -->
+<div class="modal" id="composeModal" role="dialog" aria-modal="true" aria-labelledby="composeTitle">
+  <div class="modal-card" style="width:min(780px,100%);">
+    <div class="modal-head">
+      <h3 id="composeTitle">Envoyer un email</h3>
+      <button class="close-x" type="button" id="closeComposeModal" aria-label="Fermer">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="card" style="padding:12px;margin-bottom:12px;background:rgba(255,255,255,.02);">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-weight:900" id="composeLeadTitle">—</div>
+            <div style="font-size:13px;color:var(--muted)" id="composeLeadMeta">—</div>
+          </div>
+          <div class="pill"><i class="fa-solid fa-paper-plane"></i> Envoi direct via Gmail</div>
+        </div>
+      </div>
+
+      <div class="compose-row2">
+        <div class="field">
+          <label for="composeTo">À</label>
+          <input id="composeTo" type="email" placeholder="contact@hotel.com" autocomplete="email">
+          <div class="error" id="errComposeTo">Email destinataire invalide.</div>
+        </div>
+        <div class="field">
+          <label for="composeSubject">Sujet</label>
+          <input id="composeSubject" type="text" maxlength="160" placeholder="Ex: Petite question rapide">
+          <div class="error" id="errComposeSubject">Sujet requis.</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="composeBody">Message</label>
+        <textarea id="composeBody" placeholder="Ton email…" style="min-height:160px;"></textarea>
+        <div class="error" id="errComposeBody">Message requis.</div>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
+        <button class="btn btn-outline" type="button" id="btnComposeCancel">Annuler</button>
+        <button class="btn btn-primary" type="button" id="btnComposeSend">
+          <i class="fa-solid fa-paper-plane"></i> Envoyer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
   <!-- Toast container -->
   <div class="toasts" id="toasts" aria-live="polite" aria-atomic="true"></div>
   <script src="app-config.js"></script>
@@ -1166,6 +1226,7 @@
       inboxLeadId: null,
       inboxEmailId: null,
       inboxEmails: [],
+      composeLeadId: null,
     }
   };
 
@@ -1485,6 +1546,21 @@
       await refreshAllFromApi();
     },
 
+    async sendLeadEmail(leadId, payload){
+      return apiJson(`/api/v1/crm/leads/${leadId}/send-email`, {
+        method:"POST",
+        body: JSON.stringify({
+          toEmail: String(payload?.toEmail || "").trim(),
+          subject: String(payload?.subject || "").trim(),
+          text: String(payload?.text || "").trim(),
+        })
+      });
+    },
+
+    async triggerNextEmail(leadId){
+      return apiJson(`/api/v1/crm/leads/${leadId}/trigger-next-email`, { method:"POST" });
+    },
+
     async seedDemo(){
       // Optional: backend may not expose it yet.
       await apiJson(`/api/v1/crm/seed-demo`, { method:"POST" });
@@ -1638,6 +1714,12 @@
               </button>
               <button class="dd-item" type="button" data-action="openInbox">
                 <i class="fa-regular fa-envelope"></i> Messages
+              </button>
+              <button class="dd-item" type="button" data-action="sendEmail">
+                <i class="fa-solid fa-paper-plane"></i> Envoyer un email
+              </button>
+              <button class="dd-item" type="button" data-action="triggerNextEmail">
+                <i class="fa-solid fa-forward"></i> Déclencher le prochain email
               </button>
               ${status === STATUS.OUT_OF_PIPE ? `
                 <button class="dd-item" type="button" data-action="restoreLead">
@@ -2111,6 +2193,87 @@
   }
 
   /***************
+   * Compose modal (manual send)
+   ***************/
+  function openComposeModal(leadId){
+    const lead = state.leads.find(l => l.id === leadId);
+    if(!lead){
+      toast("err","Erreur","Lead introuvable.");
+      return;
+    }
+
+    state.ui.composeLeadId = leadId;
+
+    $("#composeLeadTitle").textContent = lead.hotelName || "—";
+    const meta = `${(lead.firstName || "")} ${(lead.lastName || "")}`.trim();
+    $("#composeLeadMeta").textContent = meta ? `${meta} • ${lead.email1 || "—"}` : (lead.email1 || "—");
+
+    $("#composeTo").value = lead.email1 || "";
+    $("#composeSubject").value = "";
+    $("#composeBody").value = "";
+
+    $("#errComposeTo").classList.remove("show");
+    $("#errComposeSubject").classList.remove("show");
+    $("#errComposeBody").classList.remove("show");
+
+    openModal("#composeModal");
+  }
+
+  function closeComposeModal(){
+    closeModal("#composeModal");
+    state.ui.composeLeadId = null;
+    $("#composeTo").value = "";
+    $("#composeSubject").value = "";
+    $("#composeBody").value = "";
+    $("#errComposeTo").classList.remove("show");
+    $("#errComposeSubject").classList.remove("show");
+    $("#errComposeBody").classList.remove("show");
+  }
+
+  function validateComposeForm(){
+    const to = $("#composeTo").value.trim();
+    const subject = $("#composeSubject").value.trim();
+    const text = $("#composeBody").value.trim();
+
+    const okTo = isValidEmail(to);
+    const okSubject = subject.length > 0;
+    const okText = text.length > 0;
+
+    $("#errComposeTo").classList.toggle("show", !okTo);
+    $("#errComposeSubject").classList.toggle("show", !okSubject);
+    $("#errComposeBody").classList.toggle("show", !okText);
+
+    return okTo && okSubject && okText;
+  }
+
+  async function sendComposeEmail(){
+    const leadId = state.ui.composeLeadId;
+    if(!leadId){
+      toast("err","Erreur","Lead manquant.");
+      return;
+    }
+    if(!validateComposeForm()){
+      toast("warn","Validation","Vérifie les champs.");
+      return;
+    }
+
+    const toEmail = $("#composeTo").value.trim();
+    const subject = $("#composeSubject").value.trim();
+    const text = $("#composeBody").value.trim();
+
+    $("#btnComposeSend").disabled = true;
+    try{
+      await api.sendLeadEmail(leadId, { toEmail, subject, text });
+      toast("ok","Envoyé","Email envoyé via Gmail.");
+      closeComposeModal();
+    }catch(err){
+      toast("err","Erreur", err?.message || "Envoi impossible");
+    }finally{
+      $("#btnComposeSend").disabled = false;
+    }
+  }
+
+  /***************
    * Modal helpers
    ***************/
   let lastFocus = null;
@@ -2147,6 +2310,16 @@
     try{
       if(action === "editLead"){
         openLeadEditModal(leadId);
+        return;
+      }
+      if(action === "sendEmail"){
+        openComposeModal(leadId);
+        return;
+      }
+      if(action === "triggerNextEmail"){
+        await api.triggerNextEmail(leadId);
+        toast("ok","OK","Prochain email déclenché (envoi imminent).");
+        await refreshAllFromApi();
         return;
       }
       if(action === "archiveLead"){
@@ -2478,6 +2651,14 @@
       if(e.target === $("#inboxModal")) closeInboxModal();
     });
 
+    // Compose modal close + send
+    $("#closeComposeModal").addEventListener("click", closeComposeModal);
+    $("#btnComposeCancel").addEventListener("click", closeComposeModal);
+    $("#btnComposeSend").addEventListener("click", sendComposeEmail);
+    $("#composeModal").addEventListener("click", (e)=>{
+      if(e.target === $("#composeModal")) closeComposeModal();
+    });
+
     // ESC to close modal + close menus
     window.addEventListener("keydown", (e)=>{
       if(e.key === "Escape"){
@@ -2485,6 +2666,7 @@
         if($("#campaignEditorModal").classList.contains("open")) closeCampaignEditor();
         if($("#leadEditModal").classList.contains("open")) closeLeadEditModal();
         if($("#inboxModal").classList.contains("open")) closeInboxModal();
+        if($("#composeModal").classList.contains("open")) closeComposeModal();
         closeAllMenus();
       }
     });

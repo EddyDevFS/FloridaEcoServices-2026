@@ -81,82 +81,103 @@ router.get(
 router.get(
   '/oauth/callback',
   asyncHandler(async (req: Request, res: Response) => {
-  const env = readGoogleEnv();
-  const code = normalizeText(req.query?.code);
-  const stateRaw = normalizeText(req.query?.state);
-  if (!code) return res.status(400).send('Missing code');
-  if (!stateRaw) return res.status(400).send('Missing state');
+    try {
+      const env = readGoogleEnv();
+      const code = normalizeText(req.query?.code);
+      const stateRaw = normalizeText(req.query?.state);
+      if (!code) return res.status(400).send('Missing code');
+      if (!stateRaw) return res.status(400).send('Missing state');
 
-  let state: { organizationId: string; userId: string };
-  try {
-    state = verifyGoogleOauthState(stateRaw);
-  } catch {
-    return res.status(400).send('Invalid state');
-  }
+      let state: { organizationId: string; userId: string };
+      try {
+        state = verifyGoogleOauthState(stateRaw);
+      } catch {
+        return res.status(400).send('Invalid state');
+      }
 
-  const oauth2Client = createGoogleOAuthClient(env);
-  const tokenRes = await oauth2Client.getToken(code);
-  oauth2Client.setCredentials(tokenRes.tokens);
+      const oauth2Client = createGoogleOAuthClient(env);
+      let tokenRes: any;
+      try {
+        tokenRes = await oauth2Client.getToken(code);
+      } catch (err: any) {
+        console.error('[google][oauth] getToken failed', err?.response?.data || err);
+        return res.status(400).send('Google OAuth failed. Retry the flow.');
+      }
+      oauth2Client.setCredentials(tokenRes.tokens);
 
-  const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-  const profile = await gmail.users.getProfile({ userId: 'me' });
-  const emailAddress = normalizeText(profile.data.emailAddress);
-  if (!emailAddress) return res.status(400).send('Gmail profile has no emailAddress');
+      const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+      const profile = await gmail.users.getProfile({ userId: 'me' });
+      const emailAddress = normalizeText(profile.data.emailAddress);
+      if (!emailAddress) return res.status(400).send('Gmail profile has no emailAddress');
 
-  if (emailAddress.toLowerCase() !== env.workspaceEmail.toLowerCase()) {
-    return res
-      .status(400)
-      .send(`Unexpected Gmail account: ${emailAddress}. Expected: ${env.workspaceEmail}.`);
-  }
+      if (emailAddress.toLowerCase() !== env.workspaceEmail.toLowerCase()) {
+        return res.status(400).send(`Unexpected Gmail account: ${emailAddress}. Expected: ${env.workspaceEmail}.`);
+      }
 
-  const refreshToken = normalizeText(tokenRes.tokens.refresh_token);
-  const prisma = getPrisma();
+      const refreshToken = normalizeText(tokenRes.tokens.refresh_token);
+      const prisma = getPrisma();
 
-  const existing = await prisma.googleGmailAccount.findFirst({ where: { email: emailAddress } });
-  if (!refreshToken && !existing) {
-    return res
-      .status(400)
-      .send('No refresh token received. Revoke access in Google Account and retry with prompt=consent.');
-  }
+      const existing = await prisma.googleGmailAccount.findFirst({ where: { email: emailAddress } });
+      if (!refreshToken && !existing) {
+        return res
+          .status(400)
+          .send('No refresh token received. Revoke access in Google Account and retry with prompt=consent.');
+      }
 
-  const saved = await prisma.googleGmailAccount.upsert({
-    where: { email: emailAddress },
-    create: {
-      organizationId: state.organizationId,
-      email: emailAddress,
-      refreshToken: refreshToken || ''
-    },
-    update: {
-      organizationId: state.organizationId,
-      refreshToken: refreshToken || existing!.refreshToken
+      const saved = await prisma.googleGmailAccount.upsert({
+        where: { email: emailAddress },
+        create: {
+          organizationId: state.organizationId,
+          email: emailAddress,
+          refreshToken: refreshToken || ''
+        },
+        update: {
+          organizationId: state.organizationId,
+          refreshToken: refreshToken || existing!.refreshToken
+        }
+      });
+
+      // Start/refresh Gmail watch -> Pub/Sub
+      oauth2Client.setCredentials({ refresh_token: saved.refreshToken });
+      const gmail2 = google.gmail({ version: 'v1', auth: oauth2Client });
+      try {
+        const watch = await gmail2.users.watch({
+          userId: 'me',
+          requestBody: {
+            topicName: env.pubsubTopic,
+            labelIds: ['INBOX'],
+            labelFilterAction: 'include'
+          }
+        });
+
+        const historyId = normalizeText(watch.data.historyId);
+        const expirationMs = Number(watch.data.expiration || 0);
+        await prisma.googleGmailAccount.update({
+          where: { id: saved.id },
+          data: {
+            lastHistoryId: historyId || saved.lastHistoryId,
+            watchExpiration: expirationMs ? new Date(expirationMs) : saved.watchExpiration
+          }
+        });
+      } catch (err: any) {
+        const status = Number(err?.response?.status || 0);
+        const data = err?.response?.data;
+        console.error('[google][gmail] users.watch failed', status, data || err);
+        return res
+          .status(502)
+          .send(
+            'Gmail connecté, mais activation du watch Pub/Sub a échoué. Vérifie que le topic Pub/Sub existe et que Gmail a les droits publisher.'
+          );
+      }
+
+      return res
+        .status(200)
+        .send('✅ Gmail connecté. Tu peux fermer cette page et revenir dans le CRM (les réponses seront détectées).');
+    } catch (err) {
+      if (isGoogleNotConfiguredError(err)) return res.status(400).json({ error: 'google_not_configured' });
+      console.error('[google][oauth] callback error', err);
+      throw err;
     }
-  });
-
-  // Start/refresh Gmail watch -> Pub/Sub
-  oauth2Client.setCredentials({ refresh_token: saved.refreshToken });
-  const gmail2 = google.gmail({ version: 'v1', auth: oauth2Client });
-  const watch = await gmail2.users.watch({
-    userId: 'me',
-    requestBody: {
-      topicName: env.pubsubTopic,
-      labelIds: ['INBOX'],
-      labelFilterAction: 'include'
-    }
-  });
-
-  const historyId = normalizeText(watch.data.historyId);
-  const expirationMs = Number(watch.data.expiration || 0);
-  await prisma.googleGmailAccount.update({
-    where: { id: saved.id },
-    data: {
-      lastHistoryId: historyId || saved.lastHistoryId,
-      watchExpiration: expirationMs ? new Date(expirationMs) : saved.watchExpiration
-    }
-  });
-
-  return res
-    .status(200)
-    .send('✅ Gmail connecté. Tu peux fermer cette page et revenir dans le CRM (les réponses seront détectées).');
   })
 );
 

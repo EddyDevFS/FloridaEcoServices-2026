@@ -14,6 +14,8 @@
 
   # API reverse proxy (same-origin: /api/v1/*)
   reverse_proxy /api/* api:3001
+  # Public tracking endpoints (open/click pixels)
+  reverse_proxy /t/* api:3001
   reverse_proxy /health api:3001
 }
 

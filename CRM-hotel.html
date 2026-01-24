@@ -2318,7 +2318,9 @@
       const code = err?.status || "";
       const bodyErr = err?.body?.error || "";
       const bodyMsg = err?.body?.message || "";
-      if(bodyErr === "google_not_configured") toast("warn","Google","Gmail n'est pas configuré côté serveur.");
+      if(bodyErr === "smtp_not_configured") toast("warn","Email","SMTP n'est pas configuré côté serveur.");
+      else if(bodyErr === "smtp_send_failed") toast("err","Email", "Envoi impossible (SMTP).");
+      else if(bodyErr === "google_not_configured") toast("warn","Google","Gmail n'est pas configuré côté serveur.");
       else if(bodyErr === "gmail_not_connected") toast("warn","Google","Connecte d'abord Gmail (compte admin).");
       else if(bodyErr === "gmail_send_failed") toast("err","Envoi Gmail", bodyMsg || "Envoi impossible (Gmail).");
       else if(String(code) === "502") toast("err","Serveur","API indisponible (502). Réessaie dans quelques secondes.");

@@ -1,10 +1,9 @@
 import { Router, type Response } from 'express';
-import { google } from 'googleapis';
 import { getPrisma } from '../db';
 import { requireAuth, type AuthedRequest } from '../auth/middleware';
 import { requireRole } from '../auth/roles';
 import { scheduleCampaignStepMessage } from '../services/crmScheduling';
-import { createGoogleOAuthClient, readGoogleEnv } from '../services/googleGmail';
+import { sendMail } from '../email/mailer';
 
 const router = Router();
 
@@ -22,16 +21,12 @@ function normalizeEmail(v: any) {
   return normalizeText(v).toLowerCase();
 }
 
-function base64UrlEncodeUtf8(s: string) {
-  return Buffer.from(s, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-}
-
-function safeReadGoogleEnv(): ReturnType<typeof readGoogleEnv> | null {
-  try {
-    return readGoogleEnv();
-  } catch {
-    return null;
-  }
+function buildReplyToForLeadCampaign(leadCampaignId: string) {
+  const smtpUser = normalizeText(process.env.SMTP_USER);
+  if (!smtpUser || !smtpUser.includes('@')) return null;
+  const [local, domain] = smtpUser.split('@');
+  if (!local || !domain) return null;
+  return `${local}+lc_${leadCampaignId}@${domain}`;
 }
 
 router.get(
@@ -126,8 +121,6 @@ router.post(
   requireRole(['SUPER_ADMIN']),
   asyncHandler(async (req: AuthedRequest, res: Response) => {
     const prisma = getPrisma();
-    const env = safeReadGoogleEnv();
-    if (!env) return res.status(400).json({ error: 'google_not_configured' });
 
     const leadId = normalizeText(req.params.leadId);
     if (!leadId) return res.status(400).json({ error: 'missing_lead_id' });
@@ -145,36 +138,33 @@ router.post(
     if (!subject) return res.status(400).json({ error: 'missing_subject' });
     if (!text) return res.status(400).json({ error: 'missing_text' });
 
-    const account = await prisma.googleGmailAccount.findFirst({
-      where: { email: env.workspaceEmail, organizationId: req.auth!.organizationId }
+    const lc = await prisma.crmLeadCampaign.findFirst({
+      where: { organizationId: req.auth!.organizationId, leadId, archivedAt: null },
+      select: { id: true }
     });
-    if (!account) return res.status(400).json({ error: 'gmail_not_connected' });
 
-    const headers: string[] = [];
-    headers.push(`From: ${env.workspaceEmail}`);
-    headers.push(`To: ${toEmail}`);
-    headers.push(`Subject: ${subject}`);
-    headers.push('MIME-Version: 1.0');
-    headers.push('Content-Type: text/plain; charset="UTF-8"');
-
-    const raw = `${headers.join('\r\n')}\r\n\r\n${text}\r\n`;
-
-    const oauth2Client = createGoogleOAuthClient(env);
-    oauth2Client.setCredentials({ refresh_token: account.refreshToken });
-    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    const replyTo = lc?.id ? buildReplyToForLeadCampaign(String(lc.id)) : null;
 
     try {
-      const resp = await gmail.users.messages.send({
-        userId: 'me',
-        requestBody: { raw: base64UrlEncodeUtf8(raw) }
+      const info = await sendMail({
+        to: [toEmail],
+        subject,
+        text,
+        replyTo: replyTo || undefined,
+        headers: {
+          ...(lc?.id ? { 'X-Crm-Lead-Campaign-Id': String(lc.id) } : {}),
+          'X-Crm-Lead-Id': String(lead.id)
+        }
       });
 
-      res.json({ ok: true, gmailMessageId: resp.data.id || null, threadId: resp.data.threadId || null });
+      const providerMessageId = normalizeText((info as any)?.messageId || '') || null;
+      res.json({ ok: true, provider: 'smtp', providerMessageId });
     } catch (err: any) {
       console.error('[crm] send-email failed', err);
-      const code = Number(err?.code || err?.response?.status || 0) || 0;
-      const message = normalizeText(err?.message || err?.response?.data?.error || '');
-      return res.status(502).json({ error: 'gmail_send_failed', ...(code ? { code } : {}), ...(message ? { message } : {}) });
+      const message = normalizeText(err?.message || '');
+      if (message === 'smtp_not_configured') return res.status(400).json({ error: 'smtp_not_configured' });
+      const code = normalizeText(err?.code || err?.responseCode || '');
+      return res.status(502).json({ error: 'smtp_send_failed', ...(code ? { code } : {}) });
     }
   })
 );

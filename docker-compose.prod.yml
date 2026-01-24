@@ -28,11 +28,24 @@ services:
       COOKIE_SECURE: "1"
       UPLOADS_DIR: "/app/uploads"
       PUBLIC_APP_URL: ${PUBLIC_APP_URL:-https://app.floridaecoservices.com}
+      # Base URL publique utilisée dans les emails (tracking open/click)
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-https://floridaecoservices.com}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-}
+      # Google OAuth / PubSub (inbox replies + sync). Optional; required only if you want inbox ingestion.
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-}
+      GOOGLE_WORKSPACE_EMAIL: ${GOOGLE_WORKSPACE_EMAIL:-}
+      GOOGLE_GMAIL_PUBSUB_TOPIC: ${GOOGLE_GMAIL_PUBSUB_TOPIC:-}
+      GOOGLE_PUBSUB_PUSH_AUDIENCE: ${GOOGLE_PUBSUB_PUSH_AUDIENCE:-}
+      GOOGLE_PUBSUB_PUSH_SA_EMAIL: ${GOOGLE_PUBSUB_PUSH_SA_EMAIL:-}
+      # Optionnel (uniquement si on veut que le code gère/valide la sub)
+      GOOGLE_GMAIL_PUBSUB_SUBSCRIPTION: ${GOOGLE_GMAIL_PUBSUB_SUBSCRIPTION:-}
+      GOOGLE_CLOUD_PROJECT_ID: ${GOOGLE_CLOUD_PROJECT_ID:-}
     depends_on:
       - db
     volumes:

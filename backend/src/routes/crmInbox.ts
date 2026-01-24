@@ -87,6 +87,28 @@ function parseReplyToLeadCampaignId(toRaw: string) {
   return m ? normalizeText(m[1]) : '';
 }
 
+async function markLeadCampaignReplied(organizationId: string, leadCampaignId: string) {
+  const prisma = getPrisma();
+  const lc = await prisma.crmLeadCampaign.findFirst({ where: { id: leadCampaignId, organizationId } });
+  if (!lc) return;
+  if (lc.archivedAt) return;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.crmLead.update({
+      where: { id: lc.leadId },
+      data: { archivedAt: new Date(), archiveReason: 'REPLIED_AUTO' as any }
+    });
+    await tx.crmLeadCampaign.update({
+      where: { id: lc.id },
+      data: { archivedAt: new Date(), archiveReason: 'REPLIED_AUTO' as any, awaitingValidation: false, nextSendAt: null }
+    });
+    await tx.crmEmailMessage.updateMany({
+      where: { leadCampaignId: lc.id, status: { in: ['SCHEDULED', 'SENDING'] } },
+      data: { status: 'CANCELED' }
+    });
+  });
+}
+
 router.get(
   '/crm/leads/:leadId/inbox',
   requireAuth,
@@ -219,6 +241,10 @@ router.post(
           }
         });
         createdCount++;
+
+        if (leadCampaignId) {
+          await markLeadCampaignReplied(req.auth!.organizationId, leadCampaignId);
+        }
       } catch {
         // ignore per-message errors / duplicates
       }

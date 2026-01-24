@@ -661,6 +661,9 @@
         <button class="icon-btn" id="btnTheme" type="button" aria-label="Basculer le thème">
           <i class="fa-solid fa-moon"></i>
         </button>
+        <button class="icon-btn" id="btnConnectGmail" type="button" aria-label="Connecter Gmail" title="Connecter Gmail">
+          <i class="fa-brands fa-google"></i>
+        </button>
         <a class="icon-btn" href="admin_dashboard.html" aria-label="Retour admin" title="Retour admin">
           <i class="fa-solid fa-house"></i>
         </a>
@@ -2466,6 +2469,33 @@
     // Theme (persist)
     applyTheme();
     $("#btnTheme").addEventListener("click", toggleTheme);
+
+    // Gmail connect (SUPER_ADMIN only)
+    const btnConnect = $("#btnConnectGmail");
+    if(btnConnect){
+      btnConnect.addEventListener("click", async ()=>{
+        try{
+          const status = await apiJson(`/api/google/gmail/status`).catch(()=> ({ configured: false, connected: false }));
+          if(status && status.configured === false){
+            toast("warn","Google","Gmail n'est pas configuré côté serveur.");
+            return;
+          }
+          const data = await apiJson(`/api/google/oauth/url`);
+          const url = data?.url;
+          if(!url){
+            toast("err","Google","URL OAuth introuvable.");
+            return;
+          }
+          window.location.href = String(url);
+        }catch(err){
+          if(err?.status === 401){
+            toast("warn","Connexion","Connecte-toi (SUPER_ADMIN) puis réessaie.");
+            return;
+          }
+          toast("err","Erreur", err?.message || "Connexion Google impossible");
+        }
+      });
+    }
 
     // Hide Seed demo in prod (keep only for local/dev)
     const host = String(window.location.hostname || "").toLowerCase();

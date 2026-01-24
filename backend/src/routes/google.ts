@@ -18,7 +18,11 @@ function normalizeText(v: any) {
   return String(v || '').trim();
 }
 
-router.get('/oauth/start', requireAuth, requireRole(['SUPER_ADMIN']), async (req: AuthedRequest, res: Response) => {
+function asyncHandler(fn: (req: any, res: any, next: any) => Promise<any>) {
+  return (req: any, res: any, next: any) => void Promise.resolve(fn(req, res, next)).catch(next);
+}
+
+function buildOauthUrl(req: AuthedRequest) {
   const env = readGoogleEnv();
   const oauth2Client = createGoogleOAuthClient(env);
 
@@ -36,10 +40,47 @@ router.get('/oauth/start', requireAuth, requireRole(['SUPER_ADMIN']), async (req
     ]
   });
 
-  return res.redirect(302, url);
-});
+  return url;
+}
 
-router.get('/oauth/callback', async (req: Request, res: Response) => {
+function isGoogleNotConfiguredError(err: any) {
+  const msg = normalizeText(err?.message);
+  return msg.startsWith('Missing GOOGLE_');
+}
+
+router.get(
+  '/oauth/url',
+  requireAuth,
+  requireRole(['SUPER_ADMIN']),
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    try {
+      const url = buildOauthUrl(req);
+      return res.json({ url });
+    } catch (err) {
+      if (isGoogleNotConfiguredError(err)) return res.status(400).json({ error: 'google_not_configured' });
+      throw err;
+    }
+  })
+);
+
+router.get(
+  '/oauth/start',
+  requireAuth,
+  requireRole(['SUPER_ADMIN']),
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    try {
+      const url = buildOauthUrl(req);
+      return res.redirect(302, url);
+    } catch (err) {
+      if (isGoogleNotConfiguredError(err)) return res.status(400).json({ error: 'google_not_configured' });
+      throw err;
+    }
+  })
+);
+
+router.get(
+  '/oauth/callback',
+  asyncHandler(async (req: Request, res: Response) => {
   const env = readGoogleEnv();
   const code = normalizeText(req.query?.code);
   const stateRaw = normalizeText(req.query?.state);
@@ -116,23 +157,37 @@ router.get('/oauth/callback', async (req: Request, res: Response) => {
   return res
     .status(200)
     .send('✅ Gmail connecté. Tu peux fermer cette page et revenir dans le CRM (les réponses seront détectées).');
-});
+  })
+);
 
-router.get('/gmail/status', requireAuth, requireRole(['SUPER_ADMIN']), async (req: AuthedRequest, res: Response) => {
-  const env = readGoogleEnv();
-  const prisma = getPrisma();
-  const account = await prisma.googleGmailAccount.findFirst({
-    where: { email: env.workspaceEmail, organizationId: req.auth!.organizationId }
-  });
-  res.json({
-    connected: !!account,
-    email: env.workspaceEmail,
-    watchExpiration: account?.watchExpiration || null,
-    lastHistoryId: account?.lastHistoryId || null
-  });
-});
+router.get(
+  '/gmail/status',
+  requireAuth,
+  requireRole(['SUPER_ADMIN']),
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    try {
+      const env = readGoogleEnv();
+      const prisma = getPrisma();
+      const account = await prisma.googleGmailAccount.findFirst({
+        where: { email: env.workspaceEmail, organizationId: req.auth!.organizationId }
+      });
+      res.json({
+        configured: true,
+        connected: !!account,
+        email: env.workspaceEmail,
+        watchExpiration: account?.watchExpiration || null,
+        lastHistoryId: account?.lastHistoryId || null
+      });
+    } catch (err) {
+      if (isGoogleNotConfiguredError(err)) return res.json({ configured: false, connected: false });
+      throw err;
+    }
+  })
+);
 
-router.post('/gmail/push', async (req: Request, res: Response) => {
+router.post(
+  '/gmail/push',
+  asyncHandler(async (req: Request, res: Response) => {
   try {
     await verifyPubSubOidc({ authorization: String(req.headers.authorization || '') });
   } catch {
@@ -163,7 +218,7 @@ router.post('/gmail/push', async (req: Request, res: Response) => {
   }
 
   return res.status(200).json({ ok: true });
-});
+  })
+);
 
 export default router;
-

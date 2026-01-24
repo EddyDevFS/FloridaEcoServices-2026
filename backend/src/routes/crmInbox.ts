@@ -124,8 +124,22 @@ router.get(
     });
     if (!lead) return res.status(404).json({ error: 'lead_not_found' });
 
+    // Some ingestion paths (Pub/Sub push) may not know the leadId and only attach leadCampaignId.
+    const leadCampaignIds = await prisma.crmLeadCampaign
+      .findMany({
+        where: { organizationId: req.auth!.organizationId, leadId },
+        select: { id: true }
+      })
+      .then((rows) => rows.map((r) => r.id));
+
     const emails = await prisma.crmInboundEmail.findMany({
-      where: { organizationId: req.auth!.organizationId, leadId },
+      where: {
+        organizationId: req.auth!.organizationId,
+        OR: [
+          { leadId },
+          ...(leadCampaignIds.length ? [{ leadCampaignId: { in: leadCampaignIds } }] : [])
+        ]
+      },
       orderBy: [{ receivedAt: 'desc' }, { createdAt: 'desc' }],
       take: limit
     });
@@ -222,8 +236,9 @@ router.post(
         const bodyText = clampText(bodies.text || snippet);
         const bodyHtml = clampText(bodies.html);
 
-        await prisma.crmInboundEmail.create({
-          data: {
+        await prisma.crmInboundEmail.upsert({
+          where: { provider_providerMessageId: { provider: 'gmail', providerMessageId: msgId } },
+          create: {
             organizationId: req.auth!.organizationId,
             leadId: lead.id,
             leadCampaignId: leadCampaignId || undefined,
@@ -238,9 +253,22 @@ router.post(
             bodyHtml: bodyHtml || undefined,
             receivedAt: date ? new Date(date) : undefined,
             rawHeaders: headers as any
+          },
+          update: {
+            leadId: lead.id,
+            leadCampaignId: leadCampaignId || undefined,
+            threadId: threadId || undefined,
+            fromEmail: from,
+            toEmail: toCombined,
+            subject,
+            snippet,
+            bodyText,
+            bodyHtml: bodyHtml || undefined,
+            receivedAt: date ? new Date(date) : undefined,
+            rawHeaders: headers as any
           }
         });
-        createdCount++;
+        createdCount += 1;
 
         if (leadCampaignId) {
           await markLeadCampaignReplied(req.auth!.organizationId, leadCampaignId);

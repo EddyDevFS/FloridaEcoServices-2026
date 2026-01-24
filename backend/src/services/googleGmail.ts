@@ -244,34 +244,53 @@ export async function processGmailPushNotification(payload: { emailAddress: stri
         }
       }
 
+      // If we got a leadCampaignId (via plus-addressing) but not leadId, resolve it.
+      if (leadCampaignId && !leadId) {
+        const lc = await prisma.crmLeadCampaign.findFirst({
+          where: { id: leadCampaignId, organizationId: account.organizationId },
+          select: { leadId: true }
+        });
+        leadId = lc?.leadId || null;
+      }
+
       const snippet = normalizeText((msg.data as any).snippet);
       const threadId = normalizeText((msg.data as any).threadId);
       const bodies = extractBodiesFromPayload(msg.data.payload as any);
       const bodyText = clampText(bodies.text || snippet);
       const bodyHtml = clampText(bodies.html);
 
-      try {
-        await prisma.crmInboundEmail.create({
-          data: {
-            organizationId: account.organizationId,
-            leadId: leadId || undefined,
-            leadCampaignId: leadCampaignId || undefined,
-            provider: 'gmail',
-            providerMessageId: msgId,
-            threadId: threadId || undefined,
-            fromEmail: from,
-            toEmail: toCombined,
-            subject,
-            snippet,
-            bodyText,
-            bodyHtml: bodyHtml || undefined,
-            receivedAt: date ? new Date(date) : undefined,
-            rawHeaders: headers as any
-          }
-        });
-      } catch {
-        // duplicate push / already ingested
-      }
+      await prisma.crmInboundEmail.upsert({
+        where: { provider_providerMessageId: { provider: 'gmail', providerMessageId: msgId } },
+        create: {
+          organizationId: account.organizationId,
+          leadId: leadId || undefined,
+          leadCampaignId: leadCampaignId || undefined,
+          provider: 'gmail',
+          providerMessageId: msgId,
+          threadId: threadId || undefined,
+          fromEmail: from,
+          toEmail: toCombined,
+          subject,
+          snippet,
+          bodyText,
+          bodyHtml: bodyHtml || undefined,
+          receivedAt: date ? new Date(date) : undefined,
+          rawHeaders: headers as any
+        },
+        update: {
+          leadId: leadId || undefined,
+          leadCampaignId: leadCampaignId || undefined,
+          threadId: threadId || undefined,
+          fromEmail: from,
+          toEmail: toCombined,
+          subject,
+          snippet,
+          bodyText,
+          bodyHtml: bodyHtml || undefined,
+          receivedAt: date ? new Date(date) : undefined,
+          rawHeaders: headers as any
+        }
+      });
 
       if (leadCampaignId) {
         await markLeadCampaignReplied(account.organizationId, leadCampaignId, leadId);

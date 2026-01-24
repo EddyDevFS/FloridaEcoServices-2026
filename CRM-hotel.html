@@ -1083,6 +1083,49 @@
   </div>
 </div>
 
+<!-- Modal historique lead -->
+<div class="modal" id="leadHistoryModal" role="dialog" aria-modal="true" aria-labelledby="leadHistoryTitle">
+  <div class="modal-card" style="width:min(980px,100%);">
+    <div class="modal-head">
+      <h3 id="leadHistoryTitle">Historique</h3>
+      <button class="close-x" type="button" id="closeLeadHistoryModal" aria-label="Fermer">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="card" style="padding:12px;margin-bottom:12px;background:rgba(255,255,255,.02);">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-weight:900" id="historyLeadTitle">—</div>
+            <div style="font-size:13px;color:var(--muted)" id="historyLeadMeta">—</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+            <button class="btn btn-outline btn-small" type="button" id="btnHistoryOpenInbox">
+              <i class="fa-regular fa-envelope"></i> Ouvrir Messages
+            </button>
+            <button class="btn btn-outline btn-small" type="button" id="btnHistoryRefresh">
+              <i class="fa-solid fa-rotate-right"></i> Rafraîchir
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+          <div style="font-weight:900">Emails envoyés</div>
+          <div class="pill" id="historyCampaignPill">—</div>
+        </div>
+        <div class="divider"></div>
+        <div id="historyList" style="display:flex;flex-direction:column;gap:10px;"></div>
+        <div class="hint" style="margin-top:10px;">
+          Astuce: si le lead a été “sorti du pipe”, tu peux toujours consulter ici l’historique des emails (SENT/OPENED/CLICKED).
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
   <!-- Toast container -->
   <div class="toasts" id="toasts" aria-live="polite" aria-atomic="true"></div>
   <script src="app-config.js"></script>
@@ -1235,6 +1278,8 @@
       inboxEmailId: null,
       inboxEmails: [],
       composeLeadId: null,
+      historyLeadId: null,
+      historyMessages: [],
     }
   };
 
@@ -1421,7 +1466,8 @@
         archivedAt: l.archivedAt || null,
         archiveReason: l.archiveReason || null,
 
-        _leadCampaignId: activeLc?.id || null,
+        // Use latest lead-campaign id (even if archived) so we can show full history.
+        _leadCampaignId: lc?.id || null,
 
         opensCount: Number(lastMessageStats?.opensCount || 0),
         lastOpenedAt: lastMessageStats?.lastOpenedAt || null,
@@ -1723,6 +1769,9 @@
               <button class="dd-item" type="button" data-action="openInbox">
                 <i class="fa-regular fa-envelope"></i> Messages
               </button>
+              <button class="dd-item" type="button" data-action="openHistory">
+                <i class="fa-solid fa-clock-rotate-left"></i> Historique
+              </button>
               <button class="dd-item" type="button" data-action="sendEmail">
                 <i class="fa-solid fa-paper-plane"></i> Envoyer un email
               </button>
@@ -1829,6 +1878,12 @@
             </div>
             <div class="t-desc">${escapeHtml(reason)}</div>
             <div class="t-actions">
+              <button class="btn btn-outline btn-small" type="button" data-action="openInbox">
+                <i class="fa-regular fa-envelope"></i> Messages
+              </button>
+              <button class="btn btn-outline btn-small" type="button" data-action="openHistory">
+                <i class="fa-solid fa-clock-rotate-left"></i> Historique
+              </button>
               <button class="btn btn-outline btn-small" type="button" data-action="restoreLead">
                 <i class="fa-solid fa-rotate-left"></i> Réactiver
               </button>
@@ -2334,6 +2389,117 @@
   }
 
   /***************
+   * Lead history modal
+   ***************/
+  function openLeadHistoryModal(leadId){
+    const lead = state.leads.find(l => l.id === leadId);
+    if(!lead){
+      toast("err","Erreur","Lead introuvable.");
+      return;
+    }
+    state.ui.historyLeadId = leadId;
+    state.ui.historyMessages = [];
+
+    $("#historyLeadTitle").textContent = lead.hotelName || "—";
+    const name = `${(lead.firstName || "")} ${(lead.lastName || "")}`.trim();
+    const reason = lead.archivedAt ? outReasonLabel(lead) : "";
+    const metaParts = [
+      (name ? name : null),
+      (lead.email1 ? lead.email1 : null),
+      (lead.archivedAt ? `Hors pipe: ${reason}` : null),
+    ].filter(Boolean);
+    $("#historyLeadMeta").textContent = metaParts.join(" • ") || "—";
+    $("#historyCampaignPill").textContent = lead.campaignId ? getCampaignName(lead.campaignId) : "—";
+
+    $("#historyList").innerHTML = `<div style="color:var(--muted);font-weight:800;">Chargement…</div>`;
+    openModal("#leadHistoryModal");
+    refreshLeadHistory();
+  }
+
+  function closeLeadHistoryModal(){
+    closeModal("#leadHistoryModal");
+    state.ui.historyLeadId = null;
+    state.ui.historyMessages = [];
+    $("#historyList").innerHTML = "";
+  }
+
+  function setHistoryBusy(busy){
+    const b1 = $("#btnHistoryRefresh");
+    const b2 = $("#btnHistoryOpenInbox");
+    if(b1) b1.disabled = !!busy;
+    if(b2) b2.disabled = !!busy;
+  }
+
+  function renderLeadHistory(){
+    const leadId = state.ui.historyLeadId;
+    const lead = state.leads.find(l => l.id === leadId);
+    const msgs = state.ui.historyMessages || [];
+    if(!lead){
+      $("#historyList").innerHTML = `<div style="color:var(--muted);font-weight:800;">Lead introuvable.</div>`;
+      return;
+    }
+    if(!lead._leadCampaignId){
+      $("#historyList").innerHTML = `<div style="color:var(--muted);font-weight:800;">Aucune campagne associée à ce lead.</div>`;
+      return;
+    }
+    if(!msgs.length){
+      $("#historyList").innerHTML = `<div style="color:var(--muted);font-weight:800;">Aucun email enregistré.</div>`;
+      return;
+    }
+
+    $("#historyList").innerHTML = msgs.map(m => {
+      const sentAt = m.sentAt ? new Date(m.sentAt).toLocaleString("fr-FR") : "—";
+      const status = m.status || "—";
+      const opens = Number(m.opensCount || 0);
+      const clicks = Number(m.clicksCount || 0);
+      const lastOpened = m.lastOpenedAt ? new Date(m.lastOpenedAt).toLocaleString("fr-FR") : "";
+      const lastClicked = m.lastClickedAt ? new Date(m.lastClickedAt).toLocaleString("fr-FR") : "";
+      return `
+        <div class="card" style="padding:10px;border-radius:12px;background:rgba(255,255,255,.02);">
+          <div style="display:flex;gap:10px;align-items:flex-start;justify-content:space-between;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                Email #${escapeHtml(String(m.stepIndex || ""))} — ${escapeHtml(String(m.subject || "(sans sujet)"))}
+              </div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                Statut: ${escapeHtml(status)} • Envoyé: ${escapeHtml(sentAt)}
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+              <span class="pill" title="${escapeHtml(lastOpened || "")}"><i class="fa-regular fa-eye"></i> OPENED${opens ? ` (${opens})` : ""}</span>
+              <span class="pill" title="${escapeHtml(lastClicked || "")}"><i class="fa-solid fa-arrow-up-right-from-square"></i> CLICKED${clicks ? ` (${clicks})` : ""}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  async function refreshLeadHistory(){
+    const leadId = state.ui.historyLeadId;
+    const lead = state.leads.find(l => l.id === leadId);
+    if(!leadId || !lead){
+      toast("warn","Historique","Aucun lead sélectionné.");
+      return;
+    }
+    if(!lead._leadCampaignId){
+      renderLeadHistory();
+      return;
+    }
+    setHistoryBusy(true);
+    try{
+      const data = await apiJson(`/api/v1/crm/lead-campaigns/${lead._leadCampaignId}/messages`);
+      state.ui.historyMessages = Array.isArray(data?.messages) ? data.messages : [];
+      renderLeadHistory();
+    }catch(err){
+      toast("err","Erreur", err?.message || "Chargement historique impossible");
+      $("#historyList").innerHTML = `<div style="color:var(--muted);font-weight:800;">Chargement impossible.</div>`;
+    }finally{
+      setHistoryBusy(false);
+    }
+  }
+
+  /***************
    * Modal helpers
    ***************/
   let lastFocus = null;
@@ -2374,6 +2540,10 @@
       }
       if(action === "sendEmail"){
         openComposeModal(leadId);
+        return;
+      }
+      if(action === "openHistory"){
+        openLeadHistoryModal(leadId);
         return;
       }
       if(action === "triggerNextEmail"){
@@ -2747,6 +2917,21 @@
       if(e.target === $("#composeModal")) closeComposeModal();
     });
 
+    // History modal
+    $("#closeLeadHistoryModal").addEventListener("click", closeLeadHistoryModal);
+    $("#btnHistoryRefresh").addEventListener("click", refreshLeadHistory);
+    $("#btnHistoryOpenInbox").addEventListener("click", ()=>{
+      const leadId = state.ui.historyLeadId;
+      if(!leadId){
+        toast("warn","Messages","Aucun lead sélectionné.");
+        return;
+      }
+      openInboxModal(leadId);
+    });
+    $("#leadHistoryModal").addEventListener("click", (e)=>{
+      if(e.target === $("#leadHistoryModal")) closeLeadHistoryModal();
+    });
+
     // ESC to close modal + close menus
     window.addEventListener("keydown", (e)=>{
       if(e.key === "Escape"){
@@ -2755,6 +2940,7 @@
         if($("#leadEditModal").classList.contains("open")) closeLeadEditModal();
         if($("#inboxModal").classList.contains("open")) closeInboxModal();
         if($("#composeModal").classList.contains("open")) closeComposeModal();
+        if($("#leadHistoryModal").classList.contains("open")) closeLeadHistoryModal();
         closeAllMenus();
       }
     });

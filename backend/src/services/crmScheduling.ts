@@ -1,5 +1,34 @@
 import { Prisma } from '@prisma/client';
 
+function readSendJitterMaxSeconds() {
+  const s1 = Number(String(process.env.CRM_SEND_JITTER_MAX_SECONDS || '').trim() || 0);
+  const s2 = Number(String(process.env.CRM_SEND_JITTER_MAX_MINUTES || '').trim() || 0) * 60;
+  const raw = Math.max(0, Math.trunc(Number.isFinite(s1) && s1 > 0 ? s1 : s2));
+  // Keep a reasonable cap to avoid accidental multi-day delays.
+  return Math.min(raw, 6 * 60 * 60);
+}
+
+function randomIntInclusive(min: number, max: number) {
+  const a = Math.min(min, max);
+  const b = Math.max(min, max);
+  // Prefer crypto where available.
+  const c = (globalThis as any).crypto;
+  if (c && typeof c.getRandomValues === 'function') {
+    const range = b - a + 1;
+    const buf = new Uint32Array(1);
+    c.getRandomValues(buf);
+    return a + (buf[0] % range);
+  }
+  return a + Math.floor(Math.random() * (b - a + 1));
+}
+
+function applySendJitter(sendAt: Date) {
+  const maxSeconds = readSendJitterMaxSeconds();
+  if (!maxSeconds) return sendAt;
+  const jitterSeconds = randomIntInclusive(0, maxSeconds);
+  return new Date(sendAt.getTime() + jitterSeconds * 1000);
+}
+
 function parseSendTime(sendTime: string): { hour: number; minute: number } {
   const [hh, mm] = String(sendTime || '').split(':');
   const hour = Number(hh);
@@ -131,6 +160,10 @@ export async function scheduleCampaignStepMessage(tx: Prisma.TransactionClient, 
     }
   }
 
+  // Spread sends over time to reduce burstiness (deliverability).
+  // Jitter is additive only (never earlier than the configured send time).
+  sendAt = applySendJitter(sendAt);
+
   const vars = {
     firstName: String(lc.lead.firstName || '').trim(),
     lastName: String(lc.lead.lastName || '').trim(),
@@ -168,4 +201,3 @@ export async function scheduleCampaignStepMessage(tx: Prisma.TransactionClient, 
 
   return msg;
 }
-

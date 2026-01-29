@@ -124,7 +124,22 @@ router.get(
 
     const messages = await prisma.crmEmailMessage.findMany({
       where: { leadCampaignId: lc.id },
-      orderBy: { stepIndex: 'asc' }
+      orderBy: { stepIndex: 'asc' },
+      select: {
+        id: true,
+        stepIndex: true,
+        toEmail: true,
+        subject: true,
+        status: true,
+        sendAt: true,
+        sentAt: true,
+        providerMessageId: true,
+        videoId: true,
+        thumbnailId: true,
+        videoLabel: true,
+        createdAt: true,
+        updatedAt: true
+      }
     });
 
     const messageIds = messages.map((m) => m.id);

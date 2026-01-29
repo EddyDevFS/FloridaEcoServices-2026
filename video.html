@@ -227,6 +227,37 @@
       <div class="admin-list" id="adminCommentsList"></div>
       <div class="planning-item" id="adminCommentsEmpty" style="display:none; margin-top:12px;">No comments.</div>
     </section>
+
+    <section class="admin-comments" id="adminThumbnails" aria-label="Admin thumbnails">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+        <div>
+          <div style="font-weight:950; letter-spacing:-0.01em;"><i class="fa-regular fa-image"></i> Thumbnails (admin)</div>
+          <div style="margin-top:4px; color:#64748b; font-weight:650;">Upload lightweight images for email video cards.</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <button class="btn-secondary" id="thumbRefreshBtn" type="button"><i class="fa-solid fa-rotate"></i> Refresh</button>
+        </div>
+      </div>
+
+      <div class="upload-grid" style="margin-top:12px;">
+        <div class="form-field" style="grid-column:1/-1;">
+          <label for="thumbTitle">Title</label>
+          <input id="thumbTitle" type="text" placeholder="Floor Care specific hotel — Watch the video">
+        </div>
+        <div class="form-field" style="grid-column:1/-1;">
+          <label for="thumbFile">Image file</label>
+          <input id="thumbFile" type="file" accept="image/*">
+          <div class="field-hint">Recommended: WebP/JPG, ~1200×675, &lt; 200KB.</div>
+        </div>
+      </div>
+      <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <button class="btn-primary" id="thumbUploadBtn" type="button"><i class="fa-solid fa-upload"></i> Upload thumbnail</button>
+        <div class="field-hint" id="thumbUploadStatus" style="margin:0;"></div>
+      </div>
+
+      <div class="admin-list" id="thumbList"></div>
+      <div class="planning-item" id="thumbEmpty" style="display:none; margin-top:12px;">No thumbnails.</div>
+    </section>
   </div>
 
   <script src="app-config.js?v=20260116"></script>

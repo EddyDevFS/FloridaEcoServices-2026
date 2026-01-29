@@ -46,8 +46,77 @@ function withClickTrackingUrl(url: string, messageId: string) {
   return u;
 }
 
-function linkifyTextToHtml(text: string, messageId: string) {
+type VideoCardToken = {
+  thumbUrl: string;
+  destUrl: string;
+  label: string;
+};
+
+function parseVideoCardTokens(text: string): { textWithoutTokens: string; tokens: { start: number; end: number; token: VideoCardToken }[] } {
   const raw = String(text || '');
+  const re = /\{\{videoCard:([^|}]+)\|([^|}]+)(?:\|([^}]+))?\}\}/gi;
+  const tokens: { start: number; end: number; token: VideoCardToken }[] = [];
+  for (;;) {
+    const m = re.exec(raw);
+    if (!m) break;
+    const thumbUrl = String(m[1] || '').trim();
+    const destUrl = String(m[2] || '').trim();
+    const label = String(m[3] || 'Watch the video').trim() || 'Watch the video';
+    if (!thumbUrl || !destUrl) continue;
+    tokens.push({ start: m.index, end: m.index + m[0].length, token: { thumbUrl, destUrl, label } });
+  }
+  return { textWithoutTokens: raw, tokens };
+}
+
+function extractVideoMetadataFromToken(t: VideoCardToken): { videoId: string | null; thumbnailId: string | null; label: string } {
+  let videoId: string | null = null;
+  try {
+    const u = new URL(t.destUrl);
+    const v = String(u.searchParams.get('vid') || u.searchParams.get('videoId') || '').trim();
+    if (v) videoId = v;
+  } catch {}
+
+  let thumbnailId: string | null = null;
+  // We generate thumbnail URLs as: /api/v1/public/thumbnails/:id/file
+  // Accept both absolute and relative URLs.
+  try {
+    const u2 = new URL(t.thumbUrl, 'https://x.invalid');
+    const m = /\/api\/v1\/public\/thumbnails\/([^/]+)\/file/i.exec(u2.pathname);
+    if (m && m[1]) thumbnailId = String(m[1]).trim();
+  } catch {}
+
+  const label = String(t.label || '').trim();
+  return { videoId, thumbnailId, label };
+}
+
+function renderVideoCardHtml(t: VideoCardToken, messageId: string) {
+  const href = withClickTrackingUrl(t.destUrl, messageId);
+  const thumb = escapeHtml(t.thumbUrl);
+  const label = escapeHtml(t.label);
+  const tracked = escapeHtml(href);
+
+  return `
+    <div style="margin:14px 0;">
+      <a href="${tracked}" target="_blank" rel="noopener noreferrer" style="display:block;text-decoration:none;">
+        <img src="${thumb}" alt="${label}" style="display:block;width:100%;max-width:560px;border-radius:14px;border:1px solid rgba(0,0,0,.12);" />
+      </a>
+      <div style="margin-top:8px;font-size:12px;color:#64748b;font-weight:700;">${label}</div>
+    </div>
+  `.trim();
+}
+
+function renderVideoCardsToText(text: string) {
+  const raw = String(text || '');
+  return raw.replace(/\{\{videoCard:([^|}]+)\|([^|}]+)(?:\|([^}]+))?\}\}/gi, (_m, _thumb, dest, label) => {
+    const u = String(dest || '').trim();
+    const l = String(label || '').trim();
+    if (!u) return '';
+    return l ? `${l}: ${u}` : u;
+  });
+}
+
+function linkifyChunkToHtml(chunk: string, messageId: string) {
+  const raw = String(chunk || '');
   const urlRe = /\bhttps?:\/\/[^\s<>"')]+/gi;
   let out = '';
   let lastIndex = 0;
@@ -64,8 +133,27 @@ function linkifyTextToHtml(text: string, messageId: string) {
   }
   out += escapeHtml(raw.slice(lastIndex));
   out = out.replace(/\n/g, '<br>');
+  return out;
+}
 
-  return `<div style="font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial; font-size:14px; line-height:1.5;">${out}</div>`;
+function linkifyTextToHtml(text: string, messageId: string) {
+  const raw = String(text || '');
+
+  const parsed = parseVideoCardTokens(raw);
+  if (!parsed.tokens.length) {
+    return `<div style="font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial; font-size:14px; line-height:1.5;">${linkifyChunkToHtml(raw, messageId)}</div>`;
+  }
+
+  let html = '';
+  let cursor = 0;
+  for (const entry of parsed.tokens) {
+    html += linkifyChunkToHtml(raw.slice(cursor, entry.start), messageId);
+    html += renderVideoCardHtml(entry.token, messageId);
+    cursor = entry.end;
+  }
+  html += linkifyChunkToHtml(raw.slice(cursor), messageId);
+
+  return `<div style="font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial; font-size:14px; line-height:1.5;">${html}</div>`;
 }
 
 function rewriteHtmlLinks(html: string, messageId: string) {
@@ -222,11 +310,31 @@ async function sendOne(message: any) {
     return;
   }
 
+  // If the template contains a video card token, persist it on the message so CRM can display "what was sent".
+  const parsed = parseVideoCardTokens(String(full.bodyText || ''));
+  if (parsed.tokens.length) {
+    const meta = extractVideoMetadataFromToken(parsed.tokens[0].token);
+    try {
+      await prisma.crmEmailMessage.update({
+        where: { id: full.id },
+        data: {
+          videoId: meta.videoId,
+          thumbnailId: meta.thumbnailId,
+          videoLabel: meta.label
+        }
+      });
+      // keep local copy in case callers use it later
+      (full as any).videoId = meta.videoId;
+      (full as any).thumbnailId = meta.thumbnailId;
+      (full as any).videoLabel = meta.label;
+    } catch {}
+  }
+
   const baseHtml = full.bodyHtml
     ? rewriteHtmlLinks(String(full.bodyHtml), String(full.id))
     : linkifyTextToHtml(String(full.bodyText || ''), String(full.id));
   const html = withOpenTracking(baseHtml, String(full.id));
-  const text = String(full.bodyText || '');
+  const text = renderVideoCardsToText(String(full.bodyText || ''));
 
   const replyTo = buildReplyToForLeadCampaign(String(full.leadCampaignId));
   const info = await sendMail({

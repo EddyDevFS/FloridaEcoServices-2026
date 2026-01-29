@@ -12,6 +12,15 @@
   const descEl = document.getElementById('videoDescription');
   const fileEl = document.getElementById('videoFile');
 
+  const adminThumbnails = document.getElementById('adminThumbnails');
+  const thumbTitleEl = document.getElementById('thumbTitle');
+  const thumbFileEl = document.getElementById('thumbFile');
+  const thumbUploadBtn = document.getElementById('thumbUploadBtn');
+  const thumbUploadStatus = document.getElementById('thumbUploadStatus');
+  const thumbRefreshBtn = document.getElementById('thumbRefreshBtn');
+  const thumbList = document.getElementById('thumbList');
+  const thumbEmpty = document.getElementById('thumbEmpty');
+
   const nowPlayingTitle = document.getElementById('nowPlayingTitle');
   const nowPlayingSub = document.getElementById('nowPlayingSub');
 
@@ -80,6 +89,62 @@
     if (!el) return;
     el.textContent = text || '';
     el.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#0b6b55' : '#64748b';
+  }
+
+  async function fetchThumbnails() {
+    const res = await fetch(`${apiBase}/api/v1/public/thumbnails`);
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body?.error || 'load_failed');
+    return Array.isArray(body?.thumbnails) ? body.thumbnails : [];
+  }
+
+  async function renderThumbnails() {
+    if (!thumbList) return;
+    thumbList.innerHTML = '';
+    if (thumbEmpty) thumbEmpty.style.display = 'none';
+
+    try {
+      const items = await fetchThumbnails();
+      if (!items.length) {
+        if (thumbEmpty) thumbEmpty.style.display = '';
+        return;
+      }
+
+      thumbList.innerHTML = items
+        .map((t) => {
+          const url = `${window.location.origin}/api/v1/public/thumbnails/${encodeURIComponent(t.id)}/file`;
+          const title = String(t.title || '').trim() || `Thumbnail ${t.id}`;
+          return `
+            <div class="planning-item" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+              <div style="display:flex;gap:12px;align-items:center;min-width:260px;flex:1;">
+                <img src="${url}" alt="" style="width:120px;height:68px;object-fit:cover;border-radius:12px;border:1px solid #e2e8f0;background:#fff;" />
+                <div>
+                  <div style="font-weight:900;">${escapeHtml(title)}</div>
+                  <div class="field-hint" style="margin-top:4px;">${escapeHtml(url)}</div>
+                </div>
+              </div>
+              <button class="btn-secondary" data-thumb-copy="${escapeHtml(url)}"><i class="fa-regular fa-copy"></i> Copy URL</button>
+            </div>
+          `;
+        })
+        .join('');
+
+      thumbList.querySelectorAll('[data-thumb-copy]').forEach((b) => {
+        b.addEventListener('click', async () => {
+          const u = b.getAttribute('data-thumb-copy') || '';
+          try {
+            await navigator.clipboard.writeText(u);
+            setHint(thumbUploadStatus, 'Copied.', 'success');
+            setTimeout(() => setHint(thumbUploadStatus, '', 'info'), 900);
+          } catch {
+            setHint(thumbUploadStatus, 'Copy failed.', 'error');
+          }
+        });
+      });
+    } catch (e) {
+      setHint(thumbUploadStatus, String(e?.message || e), 'error');
+      if (thumbEmpty) thumbEmpty.style.display = '';
+    }
   }
 
   async function refreshMe() {
@@ -703,11 +768,67 @@
     }
   }
 
+  async function uploadThumbnail() {
+    const file = thumbFileEl?.files?.[0];
+    const title = (thumbTitleEl?.value || '').trim();
+    if (!file) return setHint(thumbUploadStatus, 'Choose an image file first.', 'error');
+    if (!title) return setHint(thumbUploadStatus, 'Title is required.', 'error');
+
+    setHint(thumbUploadStatus, 'Uploading…', 'info');
+    thumbUploadBtn.disabled = true;
+    try {
+      const token = (localStorage.getItem('feco.accessToken') || '').trim();
+      const fd = new FormData();
+      fd.append('title', title);
+      fd.append('file', file);
+
+      const doUpload = async (bearer) => {
+        const r = await fetch(`${apiBase}/api/v1/thumbnails`, {
+          method: 'POST',
+          headers: bearer ? { Authorization: `Bearer ${bearer}` } : {},
+          credentials: 'include',
+          body: fd
+        });
+        const body = await r.json().catch(() => ({}));
+        return { r, body };
+      };
+
+      let { r: res, body } = await doUpload(token);
+      if (res.status === 401) {
+        try {
+          const rr = await fetch(`${apiBase}/api/v1/auth/refresh`, { method: 'POST', credentials: 'include' });
+          const rb = await rr.json().catch(() => ({}));
+          const next = (rb?.accessToken || '').toString().trim();
+          if (next) localStorage.setItem('feco.accessToken', next);
+          ({ r: res, body } = await doUpload(next));
+        } catch {}
+      }
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          ensureLogin();
+          throw new Error('unauthorized');
+        }
+        throw new Error(body?.error || 'upload_failed');
+      }
+
+      setHint(thumbUploadStatus, 'Uploaded.', 'success');
+      if (thumbTitleEl) thumbTitleEl.value = '';
+      if (thumbFileEl) thumbFileEl.value = '';
+      await renderThumbnails();
+    } catch (e) {
+      setHint(thumbUploadStatus, String(e?.message || e), 'error');
+    } finally {
+      thumbUploadBtn.disabled = false;
+    }
+  }
+
   async function bootstrapVideosOnly() {
     const videos = await fetchVideos();
     await renderVideos(videos);
     await refreshComments();
     await refreshAdminComments();
+    await renderThumbnails();
   }
 
   async function bootstrap() {
@@ -730,16 +851,19 @@
       setHint(uploadStatus, 'Admin upload: login required.', 'info');
       if (loginBtn) loginBtn.textContent = 'Admin login';
       if (adminComments) adminComments.style.display = 'none';
+      if (adminThumbnails) adminThumbnails.style.display = 'none';
     } else if (!canUpload) {
       setDisabled(true);
       setHint(uploadStatus, `Admin upload: not allowed for role "${role || 'unknown'}".`, 'error');
       if (loginBtn) loginBtn.textContent = `Logged in (${role || 'user'})`;
       if (adminComments) adminComments.style.display = 'none';
+      if (adminThumbnails) adminThumbnails.style.display = 'none';
     } else {
       setDisabled(false);
       setHint(uploadStatus, '', 'info');
       if (loginBtn) loginBtn.textContent = 'Logged in (admin)';
       if (adminComments) adminComments.style.display = '';
+      if (adminThumbnails) adminThumbnails.style.display = '';
     }
 
     await bootstrapVideosOnly();
@@ -761,6 +885,8 @@
   refreshBtn?.addEventListener('click', () => bootstrap());
   loginBtn?.addEventListener('click', () => ensureLogin());
   uploadBtn?.addEventListener('click', () => uploadVideo());
+  thumbUploadBtn?.addEventListener('click', () => uploadThumbnail());
+  thumbRefreshBtn?.addEventListener('click', () => renderThumbnails());
   refreshCommentsBtn?.addEventListener('click', () => refreshComments());
   openCommentModalBtn?.addEventListener('click', () => openCommentModal());
   commentModalClose?.addEventListener('click', () => closeCommentModal());

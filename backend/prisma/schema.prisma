@@ -51,6 +51,14 @@ enum CrmEmailEventType {
   ERROR
 }
 
+enum CrmVideoEventType {
+  PAGE_VIEW
+  PLAY
+  PAUSE
+  PROGRESS
+  ENDED
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String
@@ -66,6 +74,7 @@ model Organization {
   contracts Contract[]
   pricingDefaults PricingDefaults?
   videos Video[]
+  videoThumbnails VideoThumbnail[]
   videoComments VideoComment[]
   prospects Prospect[]
   clients Client[]
@@ -75,6 +84,7 @@ model Organization {
   crmCampaigns CrmCampaign[]
   crmLeadCampaigns CrmLeadCampaign[]
   crmEmailMessages CrmEmailMessage[]
+  crmVideoEvents CrmVideoEvent[]
 
   googleGmailAccounts GoogleGmailAccount[]
   crmInboundEmails    CrmInboundEmail[]
@@ -96,6 +106,7 @@ model User {
   activeHotel   Hotel? @relation("UserActiveHotel", fields: [activeHotelId], references: [id], onDelete: SetNull)
   hotelScope    Hotel? @relation("UserHotelScope", fields: [hotelScopeId], references: [id], onDelete: SetNull)
   uploadedVideos Video[] @relation("UserUploadedVideos")
+  uploadedThumbnails VideoThumbnail[] @relation("UserUploadedThumbnails")
 }
 
 model Hotel {
@@ -271,6 +282,30 @@ model Video {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   uploadedByUser User?        @relation("UserUploadedVideos", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
   comments VideoComment[]
+  crmVideoEvents CrmVideoEvent[]
+  crmEmailMessages CrmEmailMessage[] @relation("CrmEmailMessageVideo")
+
+  @@index([organizationId])
+  @@index([published])
+  @@index([createdAt])
+}
+
+model VideoThumbnail {
+  id               String   @id @default(cuid())
+  organizationId   String
+  uploadedByUserId String?
+  title            String   @default("")
+  originalName     String   @default("")
+  mime             String   @default("")
+  storagePath      String   @unique
+  sizeBytes        Int      @default(0)
+  published        Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  uploadedByUser User?        @relation("UserUploadedThumbnails", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+  crmEmailMessages CrmEmailMessage[] @relation("CrmEmailMessageThumbnail")
 
   @@index([organizationId])
   @@index([published])
@@ -752,6 +787,10 @@ model CrmEmailMessage {
   providerMessageId String?
   lastError Json?
 
+  videoId     String?
+  thumbnailId String?
+  videoLabel  String @default("")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -760,6 +799,9 @@ model CrmEmailMessage {
   leadCampaign CrmLeadCampaign  @relation(fields: [leadCampaignId], references: [id], onDelete: Cascade)
   campaignEmail CrmCampaignEmail @relation(fields: [campaignEmailId], references: [id], onDelete: Restrict)
   events       CrmEmailEvent[]
+  videoEvents  CrmVideoEvent[]
+  video        Video?          @relation("CrmEmailMessageVideo", fields: [videoId], references: [id], onDelete: SetNull)
+  thumbnail    VideoThumbnail? @relation("CrmEmailMessageThumbnail", fields: [thumbnailId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
   @@index([leadId])
@@ -767,6 +809,8 @@ model CrmEmailMessage {
   @@index([sendAt])
   @@index([status, sendAt])
   @@index([providerMessageId])
+  @@index([videoId])
+  @@index([thumbnailId])
   @@unique([leadCampaignId, stepIndex])
 }
 
@@ -782,6 +826,31 @@ model CrmEmailEvent {
   message CrmEmailMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@index([messageId])
+  @@index([type, at])
+}
+
+model CrmVideoEvent {
+  id                String           @id @default(cuid())
+  organizationId    String
+  messageId         String
+  videoId           String?
+  sessionId         String           @default("")
+  type              CrmVideoEventType
+  at                DateTime         @default(now())
+  ip                String           @default("")
+  userAgent         String           @default("")
+  currentTimeSeconds Float           @default(0)
+  durationSeconds    Float           @default(0)
+  percent            Float           @default(0)
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  message      CrmEmailMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  video        Video?          @relation(fields: [videoId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([messageId])
+  @@index([videoId])
+  @@index([sessionId])
   @@index([type, at])
 }
 

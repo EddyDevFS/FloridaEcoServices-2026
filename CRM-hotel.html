@@ -636,10 +636,13 @@
 @media(max-width:720px){ .tpl-row2{ grid-template-columns:1fr; } }
 	.tpl-actions{ display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; margin-top:10px; }
 	.small{ font-size:13px; font-weight:900; }
-	.tpl-toolbar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-top:8px; }
-	.tpl-vars{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-	.chip{ border:1px solid var(--border); background:rgba(255,255,255,.02); color:var(--text); border-radius:999px; padding:6px 10px; font-weight:900; font-size:12px; }
-	.chip:hover{ border-color: rgba(37,99,235,.35); }
+.tpl-toolbar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-top:8px; }
+.tpl-vars{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.chip{ border:1px solid var(--border); background:rgba(255,255,255,.02); color:var(--text); border-radius:999px; padding:6px 10px; font-weight:900; font-size:12px; }
+.chip:hover{ border-color: rgba(37,99,235,.35); }
+.tpl-video{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:flex-end; }
+.tpl-select{ border: 1px solid var(--border); background: rgba(255,255,255,.02); color: var(--text); border-radius: 999px; padding: 6px 10px; font-weight: 900; font-size: 12px; }
+.tpl-select:hover{ border-color: rgba(37,99,235,.35); }
 	  </style>
 </head>
 
@@ -1122,6 +1125,18 @@
           Astuce: si le lead a été “sorti du pipe”, tu peux toujours consulter ici l’historique des emails (SENT/OPENED/CLICKED).
         </div>
       </div>
+
+      <div class="card" style="padding:12px;margin-top:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+          <div style="font-weight:900">Vidéo</div>
+          <div class="pill"><i class="fa-solid fa-play"></i> Watch tracking</div>
+        </div>
+        <div class="divider"></div>
+        <div id="historyVideoList" style="display:flex;flex-direction:column;gap:10px;"></div>
+        <div class="hint" style="margin-top:10px;">
+          Les clics (email) et le visionnage (page vidéo) apparaissent ici quand tu utilises un lien vers <b>/watch.html?vid=…</b> dans tes emails.
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1280,6 +1295,11 @@
       composeLeadId: null,
       historyLeadId: null,
       historyMessages: [],
+      historyVideoStats: [],
+      videoStock: [],
+      thumbnailStock: [],
+      selectedVideoByEmailIndex: {},
+      selectedThumbByEmailIndex: {},
     }
   };
 
@@ -1475,6 +1495,19 @@
         lastClickedAt: lastMessageStats?.lastClickedAt || null,
       };
     });
+
+    // Stock lists for campaign editor (video + thumbnails)
+    try{
+      const [v, t] = await Promise.all([
+        apiJson("/api/v1/public/videos"),
+        apiJson("/api/v1/public/thumbnails")
+      ]);
+      state.ui.videoStock = Array.isArray(v?.videos) ? v.videos : [];
+      state.ui.thumbnailStock = Array.isArray(t?.thumbnails) ? t.thumbnails : [];
+    }catch{
+      state.ui.videoStock = [];
+      state.ui.thumbnailStock = [];
+    }
 
     persist();
   }
@@ -2040,6 +2073,20 @@
                 <button class="chip" type="button" data-action="insertVar" data-var="{{hotelName}}">+ {{hotelName}}</button>
               </div>
 
+              <div class="tpl-video" aria-label="Video">
+                <select class="tpl-select" data-action="videoPick" data-email-index="${e.index}" data-field="videoId" title="Insérer une carte vidéo (thumbnail + lien)">
+                  <option value="">🎬 Vidéo…</option>
+                  ${(state.ui.videoStock || []).map(v => `<option value="${escapeHtml(v.id)}" ${String(v.id) === selVideo ? "selected" : ""}>${escapeHtml(v.title || ("Video " + v.id))}</option>`).join("")}
+                </select>
+                <select class="tpl-select" data-action="thumbPick" data-email-index="${e.index}" data-field="thumbnailId" title="Choisir un thumbnail (image cliquable)">
+                  <option value="">🖼️ Thumbnail…</option>
+                  ${(state.ui.thumbnailStock || []).map(t => `<option value="${escapeHtml(t.id)}" ${String(t.id) === selThumb ? "selected" : ""}>${escapeHtml(t.title || ("Thumb " + t.id))}</option>`).join("")}
+                </select>
+                <button class="chip" type="button" data-action="insertVideoCard" data-email-index="${e.index}">
+                  + Carte vidéo
+                </button>
+              </div>
+
               <div class="tpl-actions" style="margin-top:0">
                 <button class="btn btn-outline btn-small" type="button" data-action="resetEmail" data-email-index="${e.index}">
                   Réinitialiser
@@ -2068,6 +2115,29 @@
     if(el.setSelectionRange) el.setSelectionRange(pos, pos);
     el.dispatchEvent(new Event("input", { bubbles: true }));
     el.focus();
+  }
+
+  function publicBase(){
+    // Use same-origin so it works on both floridaecoservices.com and app.floridaecoservices.com
+    return String(window.location.origin || "").replace(/\/+$/,"");
+  }
+
+  function getVideoTitleById(id){
+    const v = (state.ui.videoStock || []).find(x => x && x.id === id);
+    return v ? (v.title || "") : "";
+  }
+
+  function getThumbTitleById(id){
+    const t = (state.ui.thumbnailStock || []).find(x => x && x.id === id);
+    return t ? (t.title || "") : "";
+  }
+
+  function buildVideoCardToken(videoId, thumbnailId, label){
+    const base = publicBase();
+    const thumbUrl = `${base}/api/v1/public/thumbnails/${encodeURIComponent(thumbnailId)}/file`;
+    const destUrl = `${base}/watch.html?vid=${encodeURIComponent(videoId)}`;
+    const safeLabel = String(label || "").trim() || "Watch the video";
+    return `{{videoCard:${thumbUrl}|${destUrl}|${safeLabel}}}`;
   }
 
   function updateCampaignHintUI(){
@@ -2399,6 +2469,7 @@
     }
     state.ui.historyLeadId = leadId;
     state.ui.historyMessages = [];
+    state.ui.historyVideoStats = [];
 
     $("#historyLeadTitle").textContent = lead.hotelName || "—";
     const name = `${(lead.firstName || "")} ${(lead.lastName || "")}`.trim();
@@ -2412,6 +2483,7 @@
     $("#historyCampaignPill").textContent = lead.campaignId ? getCampaignName(lead.campaignId) : "—";
 
     $("#historyList").innerHTML = `<div style="color:var(--muted);font-weight:800;">Chargement…</div>`;
+    $("#historyVideoList").innerHTML = `<div style="color:var(--muted);font-weight:800;">Chargement…</div>`;
     openModal("#leadHistoryModal");
     refreshLeadHistory();
   }
@@ -2420,7 +2492,9 @@
     closeModal("#leadHistoryModal");
     state.ui.historyLeadId = null;
     state.ui.historyMessages = [];
+    state.ui.historyVideoStats = [];
     $("#historyList").innerHTML = "";
+    $("#historyVideoList").innerHTML = "";
   }
 
   function setHistoryBusy(busy){
@@ -2436,14 +2510,17 @@
     const msgs = state.ui.historyMessages || [];
     if(!lead){
       $("#historyList").innerHTML = `<div style="color:var(--muted);font-weight:800;">Lead introuvable.</div>`;
+      $("#historyVideoList").innerHTML = `<div style="color:var(--muted);font-weight:800;">Lead introuvable.</div>`;
       return;
     }
     if(!lead._leadCampaignId){
       $("#historyList").innerHTML = `<div style="color:var(--muted);font-weight:800;">Aucune campagne associée à ce lead.</div>`;
+      $("#historyVideoList").innerHTML = `<div style="color:var(--muted);font-weight:800;">Aucune campagne associée à ce lead.</div>`;
       return;
     }
     if(!msgs.length){
       $("#historyList").innerHTML = `<div style="color:var(--muted);font-weight:800;">Aucun email enregistré.</div>`;
+      renderLeadHistoryVideo();
       return;
     }
 
@@ -2473,6 +2550,45 @@
         </div>
       `;
     }).join("");
+
+    renderLeadHistoryVideo();
+  }
+
+  function renderLeadHistoryVideo(){
+    const items = state.ui.historyVideoStats || [];
+    if(!items.length){
+      $("#historyVideoList").innerHTML = `<div style="color:var(--muted);font-weight:800;">Aucune vidéo tracée pour ce lead.</div>`;
+      return;
+    }
+
+    $("#historyVideoList").innerHTML = items.map(v => {
+      const title = v.title ? v.title : (v.videoId === "unknown" ? "Vidéo (inconnue)" : `Vidéo ${v.videoId}`);
+      const last = v.lastSeenAt ? new Date(v.lastSeenAt).toLocaleString("fr-FR") : "—";
+      const clicks = Number(v.clicksCount || 0);
+      const maxPercent = Number(v.maxPercent || 0);
+      const maxSeconds = Number(v.maxSeconds || 0);
+      const sessions = Number(v.sessionsCount || 0);
+      return `
+        <div class="card" style="padding:10px;border-radius:12px;background:rgba(255,255,255,.02);">
+          <div style="display:flex;gap:10px;align-items:flex-start;justify-content:space-between;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                ${escapeHtml(title)}
+              </div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                Dernière vue: ${escapeHtml(last)}
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+              <span class="pill"><i class="fa-solid fa-arrow-up-right-from-square"></i> Clicks${clicks ? ` (${clicks})` : ""}</span>
+              <span class="pill"><i class="fa-solid fa-chart-line"></i> Max ${escapeHtml(String(maxPercent))}%</span>
+              <span class="pill"><i class="fa-regular fa-clock"></i> ${escapeHtml(String(Math.round(maxSeconds)))}s</span>
+              <span class="pill"><i class="fa-solid fa-user"></i> Sessions${sessions ? ` (${sessions})` : ""}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
   }
 
   async function refreshLeadHistory(){
@@ -2488,12 +2604,17 @@
     }
     setHistoryBusy(true);
     try{
-      const data = await apiJson(`/api/v1/crm/lead-campaigns/${lead._leadCampaignId}/messages`);
+      const [data, vdata] = await Promise.all([
+        apiJson(`/api/v1/crm/lead-campaigns/${lead._leadCampaignId}/messages`),
+        apiJson(`/api/v1/crm/leads/${leadId}/video-stats`)
+      ]);
       state.ui.historyMessages = Array.isArray(data?.messages) ? data.messages : [];
+      state.ui.historyVideoStats = Array.isArray(vdata?.videos) ? vdata.videos : [];
       renderLeadHistory();
     }catch(err){
       toast("err","Erreur", err?.message || "Chargement historique impossible");
       $("#historyList").innerHTML = `<div style="color:var(--muted);font-weight:800;">Chargement impossible.</div>`;
+      $("#historyVideoList").innerHTML = `<div style="color:var(--muted);font-weight:800;">Chargement impossible.</div>`;
     }finally{
       setHistoryBusy(false);
     }
@@ -2774,6 +2895,23 @@
       if(field === "delayDaysAfter") patch.delayDaysAfter = Number(email.delayDaysAfter || 0);
       queueCampaignEmailPatch(c.id, emailIndex, patch);
     });
+
+    // Campaign editor selects (video/thumbnail pickers)
+    $("#campaignEditorModal").addEventListener("change", (e)=>{
+      const sel = e.target.closest("select[data-action]");
+      if(!sel) return;
+      const action = sel.getAttribute("data-action");
+      const idx = Number(sel.getAttribute("data-email-index"));
+      if(!idx) return;
+      if(action === "videoPick"){
+        state.ui.selectedVideoByEmailIndex[String(idx)] = String(sel.value || "");
+        return;
+      }
+      if(action === "thumbPick"){
+        state.ui.selectedThumbByEmailIndex[String(idx)] = String(sel.value || "");
+        return;
+      }
+    });
     $("#campaignEditorModal").addEventListener("click", (e)=>{
       const btn = e.target.closest("[data-action]");
       if(!btn) return;
@@ -2781,6 +2919,43 @@
       const action = btn.getAttribute("data-action");
       const c = getCampaignById(state.ui.editingCampaignId);
       if(!c) return;
+
+      if(action === "videoPick"){
+        // handled by change event
+        return;
+      }
+
+      if(action === "thumbPick"){
+        // handled by change event
+        return;
+      }
+
+      if(action === "insertVideoCard"){
+        const idx = Number(btn.getAttribute("data-email-index"));
+        const videoId = String(state.ui.selectedVideoByEmailIndex[String(idx)] || "");
+        const thumbnailId = String(state.ui.selectedThumbByEmailIndex[String(idx)] || "");
+        if(!videoId){
+          toast("warn","Vidéo","Choisis d'abord une vidéo.");
+          return;
+        }
+        if(!thumbnailId){
+          toast("warn","Thumbnail","Choisis d'abord un thumbnail.");
+          return;
+        }
+
+        const videoTitle = getVideoTitleById(videoId) || "Watch the video";
+        const thumbTitle = getThumbTitleById(thumbnailId) || "";
+        const defaultLabel = thumbTitle ? thumbTitle : videoTitle;
+
+        const label = prompt("Texte sous l’image (label) :", defaultLabel) || defaultLabel;
+        const token = buildVideoCardToken(videoId, thumbnailId, label);
+
+        const fallback = $(`#tplList [data-field="body"][data-email-index="${idx}"]`);
+        const target = editorLastField || fallback;
+        if(target) insertAtCursor(target, `\n\n${token}\n\n`);
+        else toast("warn","Insertion","Ouvre le textarea de contenu pour insérer la carte.");
+        return;
+      }
 
       if(action === "toggleEmail"){
         const idx = Number(btn.getAttribute("data-email-index"));
@@ -3116,3 +3291,5 @@
   }
 })();
 </script>
+      const selVideo = String((state.ui.selectedVideoByEmailIndex || {})[String(e.index)] || "");
+      const selThumb = String((state.ui.selectedThumbByEmailIndex || {})[String(e.index)] || "");

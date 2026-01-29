@@ -81,6 +81,124 @@ router.get(
   })
 );
 
+router.get(
+  '/crm/leads/:leadId/video-stats',
+  requireAuth,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    const leadId = normalizeText(req.params.leadId);
+    if (!leadId) return res.status(400).json({ error: 'missing_lead_id' });
+
+    const prisma = getPrisma();
+    const lead = await prisma.crmLead.findFirst({
+      where: { id: leadId, organizationId: req.auth!.organizationId },
+      select: { id: true }
+    });
+    if (!lead) return res.status(404).json({ error: 'lead_not_found' });
+
+    const msgs = await prisma.crmEmailMessage.findMany({
+      where: { organizationId: req.auth!.organizationId, leadId },
+      select: { id: true }
+    });
+    const messageIds = msgs.map((m) => m.id);
+    if (!messageIds.length) {
+      return res.json({ videos: [], totals: { clicksCount: 0, lastClickAt: null } });
+    }
+
+    const clickEvents = await prisma.crmEmailEvent.findMany({
+      where: { messageId: { in: messageIds }, type: 'CLICKED' },
+      select: { at: true, url: true }
+    });
+
+    const clicksByVideoId = new Map<string, number>();
+    let clicksCount = 0;
+    let lastClickAt: Date | null = null;
+
+    for (const e of clickEvents) {
+      clicksCount += 1;
+      if (!lastClickAt || e.at > lastClickAt) lastClickAt = e.at;
+      try {
+        const u = new URL(String(e.url || ''));
+        const vid = String(u.searchParams.get('vid') || u.searchParams.get('videoId') || '').trim();
+        if (vid) clicksByVideoId.set(vid, (clicksByVideoId.get(vid) || 0) + 1);
+      } catch {
+        // ignore
+      }
+    }
+
+    const videoEvents = await prisma.crmVideoEvent.findMany({
+      where: { messageId: { in: messageIds } },
+      select: {
+        videoId: true,
+        sessionId: true,
+        type: true,
+        at: true,
+        currentTimeSeconds: true,
+        durationSeconds: true,
+        percent: true
+      },
+      orderBy: { at: 'asc' }
+    });
+
+    type Agg = {
+      videoId: string;
+      sessions: Set<string>;
+      maxPercent: number;
+      maxSeconds: number;
+      lastSeenAt: Date | null;
+    };
+    const byVideo = new Map<string, Agg>();
+
+    for (const ev of videoEvents) {
+      const videoId = String(ev.videoId || '').trim() || 'unknown';
+      const sessionId = String(ev.sessionId || '').trim() || 'unknown';
+      let agg = byVideo.get(videoId);
+      if (!agg) {
+        agg = { videoId, sessions: new Set<string>(), maxPercent: 0, maxSeconds: 0, lastSeenAt: null };
+        byVideo.set(videoId, agg);
+      }
+      agg.sessions.add(sessionId);
+      const p = Number(ev.percent || 0);
+      const t = Number(ev.currentTimeSeconds || 0);
+      if (Number.isFinite(p)) agg.maxPercent = Math.max(agg.maxPercent, p);
+      if (Number.isFinite(t)) agg.maxSeconds = Math.max(agg.maxSeconds, t);
+      if (!agg.lastSeenAt || ev.at > agg.lastSeenAt) agg.lastSeenAt = ev.at;
+    }
+
+    const videoIds = Array.from(byVideo.keys()).filter((id) => id !== 'unknown');
+    const videos = videoIds.length
+      ? await prisma.video.findMany({
+          where: { id: { in: videoIds }, organizationId: req.auth!.organizationId },
+          select: { id: true, title: true }
+        })
+      : [];
+    const titleById = new Map(videos.map((v) => [v.id, v.title]));
+
+    const out = Array.from(byVideo.values())
+      .map((v) => ({
+        videoId: v.videoId,
+        title: titleById.get(v.videoId) || '',
+        clicksCount: clicksByVideoId.get(v.videoId) || 0,
+        sessionsCount: v.sessions.size,
+        maxPercent: Math.round((v.maxPercent || 0) * 10) / 10,
+        maxSeconds: Math.round((v.maxSeconds || 0) * 10) / 10,
+        lastSeenAt: v.lastSeenAt ? v.lastSeenAt.toISOString() : null
+      }))
+      .sort((a, b) => {
+        const ta = a.lastSeenAt ? new Date(a.lastSeenAt).getTime() : 0;
+        const tb = b.lastSeenAt ? new Date(b.lastSeenAt).getTime() : 0;
+        return tb - ta;
+      });
+
+    res.json({
+      videos: out,
+      totals: {
+        clicksCount,
+        lastClickAt: lastClickAt ? lastClickAt.toISOString() : null
+      }
+    });
+  })
+);
+
 router.post(
   '/crm/leads',
   requireAuth,

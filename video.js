@@ -854,6 +854,7 @@
       if (adminComments) adminComments.style.display = 'none';
       if (adminThumbnails) adminThumbnails.style.display = '';
       setHint(thumbUploadStatus, 'Admin thumbnails: login required.', 'info');
+      if (thumbJumpBtn) thumbJumpBtn.style.display = 'none';
     } else if (!canUpload) {
       setDisabled(true);
       setHint(uploadStatus, `Admin upload: not allowed for role "${role || 'unknown'}".`, 'error');
@@ -861,6 +862,7 @@
       if (adminComments) adminComments.style.display = 'none';
       if (adminThumbnails) adminThumbnails.style.display = '';
       setHint(thumbUploadStatus, `Admin thumbnails: not allowed for role "${role || 'unknown'}".`, 'error');
+      if (thumbJumpBtn) thumbJumpBtn.style.display = 'none';
     } else {
       setDisabled(false);
       setHint(uploadStatus, '', 'info');
@@ -868,6 +870,7 @@
       if (adminComments) adminComments.style.display = '';
       if (adminThumbnails) adminThumbnails.style.display = '';
       setHint(thumbUploadStatus, '', 'info');
+      if (thumbJumpBtn) thumbJumpBtn.style.display = '';
     }
 
     await bootstrapVideosOnly();
@@ -891,10 +894,6 @@
   uploadBtn?.addEventListener('click', () => uploadVideo());
   thumbUploadBtn?.addEventListener('click', () => uploadThumbnail());
   thumbRefreshBtn?.addEventListener('click', () => renderThumbnails());
-  thumbJumpBtn?.addEventListener('click', () => {
-    const target = document.getElementById('adminThumbnails');
-    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
   refreshCommentsBtn?.addEventListener('click', () => refreshComments());
   openCommentModalBtn?.addEventListener('click', () => openCommentModal());
   commentModalClose?.addEventListener('click', () => closeCommentModal());

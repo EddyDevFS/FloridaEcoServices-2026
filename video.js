@@ -852,7 +852,7 @@
       setHint(uploadStatus, 'Admin upload: login required.', 'info');
       if (loginBtn) loginBtn.textContent = 'Admin login';
       if (adminComments) adminComments.style.display = 'none';
-      if (adminThumbnails) adminThumbnails.style.display = '';
+      if (adminThumbnails) adminThumbnails.style.display = 'none';
       setHint(thumbUploadStatus, 'Admin thumbnails: login required.', 'info');
       if (thumbJumpBtn) thumbJumpBtn.style.display = 'none';
     } else if (!canUpload) {
@@ -860,15 +860,15 @@
       setHint(uploadStatus, `Admin upload: not allowed for role "${role || 'unknown'}".`, 'error');
       if (loginBtn) loginBtn.textContent = `Logged in (${role || 'user'})`;
       if (adminComments) adminComments.style.display = 'none';
-      if (adminThumbnails) adminThumbnails.style.display = '';
+      if (adminThumbnails) adminThumbnails.style.display = 'none';
       setHint(thumbUploadStatus, `Admin thumbnails: not allowed for role "${role || 'unknown'}".`, 'error');
       if (thumbJumpBtn) thumbJumpBtn.style.display = 'none';
     } else {
       setDisabled(false);
       setHint(uploadStatus, '', 'info');
       if (loginBtn) loginBtn.textContent = 'Logged in (admin)';
-      if (adminComments) adminComments.style.display = '';
-      if (adminThumbnails) adminThumbnails.style.display = '';
+      if (adminComments) adminComments.style.display = 'block';
+      if (adminThumbnails) adminThumbnails.style.display = 'block';
       setHint(thumbUploadStatus, '', 'info');
       if (thumbJumpBtn) thumbJumpBtn.style.display = '';
     }

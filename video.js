@@ -894,23 +894,6 @@
   uploadBtn?.addEventListener('click', () => uploadVideo());
   thumbUploadBtn?.addEventListener('click', () => uploadThumbnail());
   thumbRefreshBtn?.addEventListener('click', () => renderThumbnails());
-  thumbJumpBtn?.addEventListener('click', (e) => {
-    try {
-      e.preventDefault?.();
-    } catch {}
-    const target = document.getElementById('adminThumbnails');
-    if (!target) return;
-    try {
-      target.classList.remove('flash');
-      // force reflow so animation restarts
-      // eslint-disable-next-line no-unused-expressions
-      target.offsetHeight;
-      target.classList.add('flash');
-    } catch {}
-    try {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } catch {}
-  });
   refreshCommentsBtn?.addEventListener('click', () => refreshComments());
   openCommentModalBtn?.addEventListener('click', () => openCommentModal());
   commentModalClose?.addEventListener('click', () => closeCommentModal());

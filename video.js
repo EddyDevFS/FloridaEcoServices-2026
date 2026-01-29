@@ -5,6 +5,7 @@
   const empty = document.getElementById('emptyState');
   const refreshBtn = document.getElementById('refreshBtn');
   const loginBtn = document.getElementById('loginBtn');
+  const thumbJumpBtn = document.getElementById('thumbJumpBtn');
   const uploadCard = document.getElementById('uploadCard');
   const uploadBtn = document.getElementById('uploadBtn');
   const uploadStatus = document.getElementById('uploadStatus');
@@ -851,19 +852,22 @@
       setHint(uploadStatus, 'Admin upload: login required.', 'info');
       if (loginBtn) loginBtn.textContent = 'Admin login';
       if (adminComments) adminComments.style.display = 'none';
-      if (adminThumbnails) adminThumbnails.style.display = 'none';
+      if (adminThumbnails) adminThumbnails.style.display = '';
+      setHint(thumbUploadStatus, 'Admin thumbnails: login required.', 'info');
     } else if (!canUpload) {
       setDisabled(true);
       setHint(uploadStatus, `Admin upload: not allowed for role "${role || 'unknown'}".`, 'error');
       if (loginBtn) loginBtn.textContent = `Logged in (${role || 'user'})`;
       if (adminComments) adminComments.style.display = 'none';
-      if (adminThumbnails) adminThumbnails.style.display = 'none';
+      if (adminThumbnails) adminThumbnails.style.display = '';
+      setHint(thumbUploadStatus, `Admin thumbnails: not allowed for role "${role || 'unknown'}".`, 'error');
     } else {
       setDisabled(false);
       setHint(uploadStatus, '', 'info');
       if (loginBtn) loginBtn.textContent = 'Logged in (admin)';
       if (adminComments) adminComments.style.display = '';
       if (adminThumbnails) adminThumbnails.style.display = '';
+      setHint(thumbUploadStatus, '', 'info');
     }
 
     await bootstrapVideosOnly();
@@ -887,6 +891,10 @@
   uploadBtn?.addEventListener('click', () => uploadVideo());
   thumbUploadBtn?.addEventListener('click', () => uploadThumbnail());
   thumbRefreshBtn?.addEventListener('click', () => renderThumbnails());
+  thumbJumpBtn?.addEventListener('click', () => {
+    const target = document.getElementById('adminThumbnails');
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
   refreshCommentsBtn?.addEventListener('click', () => refreshComments());
   openCommentModalBtn?.addEventListener('click', () => openCommentModal());
   commentModalClose?.addEventListener('click', () => closeCommentModal());
